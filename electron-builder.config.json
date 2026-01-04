@@ -1,54 +1,52 @@
 {
-	"appId": "me.zhaozunhong.holix-ai",
-	"files": [
-		"node_modules/**/*",
-		"public/**/*",
-		"package.json",
-		".holixai/**/*"
-	],
-	"artifactName": "holix-ai-setup.${version}.exe",
-	"directories": {
-		"buildResources": "./public"
-	},
-	"extraFiles": [
-		{
-			"from": "./drizzle",
-			"to": "resources/drizzle",
-			"filter": [
-				"**/*"
-			]
-		}
-	],
-	"asar": true,
-	"productName": "Holix AI",
-	"mac": {
-		"target": "dmg"
-	},
-	"win": {
-		"target": "nsis",
-		"icon": "./public/favicon.ico"
-	},
-	"nsis": {
-		"oneClick": false,
-		"allowElevation": true,
-		"allowToChangeInstallationDirectory": true,
-		"installerIcon": "./public/favicon.ico",
-		"uninstallerIcon": "./public/favicon.ico",
-		"uninstallDisplayName": "Uninstall Holix AI",
-		"createDesktopShortcut": true,
-		"createStartMenuShortcut": true,
-		"shortcutName": "Holix AI"
-	},
-	"appImage": {
-		"artifactName": "holix-ai-setup.${version}.exe"
-	},
-	"npmRebuild": false,
-	"publish": [
-		{
-			"provider": "github",
-			"owner": "zhaogongchengsi",
-			"repo": "holix-ai",
-			"private": false
-		}
-	]
+  "appId": "me.zhaozunhong.holix-ai",
+  "files": [
+    "node_modules/**/*",
+    "public/**/*",
+    "package.json",
+    ".holixai/**/*"
+  ],
+  "artifactName": "holix-ai-setup.${version}.exe",
+  "directories": {
+    "buildResources": "./public"
+  },
+  "extraFiles": [
+    {
+      "from": "./drizzle",
+      "to": "resources/drizzle",
+      "filter": ["**/*"]
+    }
+  ],
+  "asar": true,
+  "productName": "Holix AI",
+  "mac": {
+    "target": "dmg"
+  },
+  "win": {
+    "target": "nsis",
+    "icon": "./public/favicon.ico"
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowElevation": true,
+    "allowToChangeInstallationDirectory": true,
+    "installerIcon": "./public/favicon.ico",
+    "uninstallerIcon": "./public/favicon.ico",
+    "uninstallDisplayName": "Uninstall Holix AI",
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "Holix AI"
+  },
+  "appImage": {
+    "artifactName": "holix-ai-setup.${version}.exe"
+  },
+  "npmRebuild": false,
+  "publish": [
+    {
+      "provider": "github",
+      "owner": "zhaogongchengsi",
+      "repo": "holix-ai",
+      "private": false
+    }
+  ]
 }
