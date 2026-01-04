@@ -12,6 +12,7 @@
     "studio": "drizzle-kit studio",
     "lint": "eslint . --fix",
     "preview": "electron .",
+    "package": "electron-builder build",
     "postinstall": "electron-builder install-app-deps"
   },
   "keywords": [],
