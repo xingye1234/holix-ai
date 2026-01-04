@@ -1,12 +1,7 @@
 {
   "appId": "me.zhaozunhong.holix-ai",
-  "files": [
-    "node_modules/**/*",
-    "public/**/*",
-    "package.json",
-    ".holixai/**/*"
-  ],
-  "artifactName": "holix-ai-setup.${version}.exe",
+  "files": ["node_modules/**/*", "public/**/*", "package.json", ".holix/**/*"],
+  "artifactName": "holix-ai-${version}-${os}-${arch}",
   "directories": {
     "buildResources": "./public"
   },
@@ -24,7 +19,13 @@
   },
   "win": {
     "target": "nsis",
-    "icon": "./public/favicon.ico"
+    "icon": "./public/favicon.ico",
+    "artifactName": "holix-ai-setup-${version}-${arch}.exe"
+  },
+  "linux": {
+    "target": ["AppImage", "deb"],
+    "icon": "./public",
+    "artifactName": "holix-ai-${version}-${arch}.${ext}"
   },
   "nsis": {
     "oneClick": false,
@@ -38,7 +39,7 @@
     "shortcutName": "Holix AI"
   },
   "appImage": {
-    "artifactName": "holix-ai-setup.${version}.exe"
+    "artifactName": "holix-ai-${version}-${arch}.AppImage"
   },
   "npmRebuild": false,
   "publish": [
