@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { onUpdate } from "@/lib/command";
-import { useMessageStore } from "@/store/message";
 import type { Message } from "@/node/database/schema/chat";
+import { useMessageStore } from "@/store/message";
 
 /* ------------------------------------------------------------------ */
 /* 常量 */
@@ -51,6 +51,7 @@ export function useMessageUpdates() {
 
 	const flushStreaming = () => {
 		streamingBuffer.current.forEach((value, messageUid) => {
+			console.log("Flushing streaming message:", messageUid, value);
 			updateMessage(value.chatUid, messageUid, {
 				content: value.content,
 				status: "streaming",

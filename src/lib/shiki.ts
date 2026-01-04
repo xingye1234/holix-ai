@@ -8,6 +8,7 @@ export const shiki = await createHighlighter({
 		"ts",
 		"tsx",
 		"js",
+		"jsx",
 		"json",
 		"bash",
 		"go",
@@ -17,9 +18,14 @@ export const shiki = await createHighlighter({
 		"css",
 		"html",
 		"markdown",
+		"vue",
+		"html",
+		"astro",
+		"bash",
+		"c",
+		"cpp",
 	],
 	engine: createOnigurumaEngine(() => import('shiki/wasm'))
-
 });
 
 

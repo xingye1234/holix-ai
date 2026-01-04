@@ -1,5 +1,5 @@
-import { createWithEqualityFn } from "zustand/traditional";
 import { shallow } from "zustand/shallow";
+import { createWithEqualityFn } from "zustand/traditional";
 import { trpcClient } from "@/lib/trpc-client";
 import type { Message } from "@/node/database/schema/chat";
 
@@ -11,9 +11,7 @@ import type { Message } from "@/node/database/schema/chat";
  * 冷路径：按 seq 升序排序消息
  * ⚠️ 禁止在实时更新 / stream 路径中使用
  */
-function sortMessagesBySeqAscCold(
-	messages: readonly Message[],
-): Message[] {
+function sortMessagesBySeqAscCold(messages: readonly Message[]): Message[] {
 	if (messages.length <= 1) return messages.slice();
 	return [...messages].sort((a, b) => a.seq - b.seq);
 }
@@ -39,7 +37,7 @@ interface MessageStore {
 	updateMessage(
 		chatUid: string,
 		messageUid: string,
-		updates: Partial<Message>
+		updates: Partial<Message>,
 	): void;
 }
 
@@ -139,9 +137,7 @@ export const useMessageStore = createWithEqualityFn<MessageStore>()(
 				const current = state.messagesByChatId[chatUid] || [];
 				const existing = new Set(current.map((m) => m.uid));
 
-				const incoming = messages.filter(
-					(m) => !existing.has(m.uid),
-				);
+				const incoming = messages.filter((m) => !existing.has(m.uid));
 
 				if (incoming.length === 0) return state;
 
@@ -174,9 +170,7 @@ export const useMessageStore = createWithEqualityFn<MessageStore>()(
 				const current = state.messagesByChatId[chatUid];
 				if (!current) return state;
 
-				const index = current.findIndex(
-					(m) => m.uid === messageUid,
-				);
+				const index = current.findIndex((m) => m.uid === messageUid);
 				if (index === -1) return state;
 
 				const next = [...current];
@@ -184,6 +178,14 @@ export const useMessageStore = createWithEqualityFn<MessageStore>()(
 					...next[index],
 					...updates,
 				};
+
+				console.log(
+					"[message-store] updateMessage",
+					chatUid,
+					messageUid,
+					updates,
+					next[index],
+				);
 
 				return {
 					messagesByChatId: {
@@ -197,4 +199,3 @@ export const useMessageStore = createWithEqualityFn<MessageStore>()(
 	}),
 	shallow,
 );
-
