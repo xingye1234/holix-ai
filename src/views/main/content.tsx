@@ -1,10 +1,11 @@
-import { useRef } from "react";
+import { memo, useRef } from "react";
 import { Virtuoso } from "react-virtuoso";
 import { useChatContext } from "@/context/chat";
 import { useChatMessages } from "@/hooks/message";
 import { MessageItem } from "./message-item";
 
-export function MainContent() {
+// ✅ 使用 memo 优化，只有 context 真正变化时才重渲染
+export const MainContent = memo(function MainContent() {
 	const { chat } = useChatContext();
 	const virtuosoRef = useRef(null);
 	const wrapperRef = useRef<HTMLDivElement>(null);
@@ -18,7 +19,7 @@ export function MainContent() {
 		initialIndex.current = messages.length - 1;
 	}
 
-  console.log("Rendering MainContent with messages:", messages);
+  console.log("Rendering MainContent for chat ID:", chat?.uid, "Messages count:", messages.length);
 
 	return (
 		<main ref={wrapperRef} className="h-(--app-chat-content-height)">
@@ -43,4 +44,4 @@ export function MainContent() {
 			/>
 		</main>
 	);
-}
+});

@@ -1,4 +1,3 @@
-import { shallow } from "zustand/shallow";
 import { createWithEqualityFn } from "zustand/traditional";
 import { trpcClient } from "@/lib/trpc-client";
 import type { Message } from "@/node/database/schema/chat";
@@ -45,11 +44,10 @@ interface MessageStore {
  * Store 实现（Virtuoso / AI Chat 特化）
  * =======================================================*/
 
-export const useMessageStore = createWithEqualityFn<MessageStore>()(
-	(set, get) => ({
-		messagesByChatId: {},
-		isLoading: false,
-		initialized: false,
+export const useMessageStore = createWithEqualityFn<MessageStore>()((set, get) => ({
+	messagesByChatId: {},
+	isLoading: false,
+	initialized: false,
 
 		/* ---------- 冷路径 ---------- */
 
@@ -121,10 +119,11 @@ export const useMessageStore = createWithEqualityFn<MessageStore>()(
 					return state;
 				}
 
+				// ✅ 创建新数组，但不排序
 				return {
 					messagesByChatId: {
 						...state.messagesByChatId,
-						[chatUid]: [...current, message], // ❌ 不排序
+						[chatUid]: [...current, message],
 					},
 				};
 			});
@@ -141,10 +140,11 @@ export const useMessageStore = createWithEqualityFn<MessageStore>()(
 
 				if (incoming.length === 0) return state;
 
+				// ✅ 创建新数组，但不排序
 				return {
 					messagesByChatId: {
 						...state.messagesByChatId,
-						[chatUid]: [...current, ...incoming], // ❌ 不排序
+						[chatUid]: [...current, ...incoming],
 					},
 				};
 			});
@@ -156,10 +156,11 @@ export const useMessageStore = createWithEqualityFn<MessageStore>()(
 			set((state) => {
 				const current = state.messagesByChatId[chatUid] || [];
 
+				// ✅ 创建新数组，但不排序
 				return {
 					messagesByChatId: {
 						...state.messagesByChatId,
-						[chatUid]: [...messages, ...current], // ❌ 不排序
+						[chatUid]: [...messages, ...current],
 					},
 				};
 			});
@@ -173,29 +174,19 @@ export const useMessageStore = createWithEqualityFn<MessageStore>()(
 				const index = current.findIndex((m) => m.uid === messageUid);
 				if (index === -1) return state;
 
-				const next = [...current];
-				next[index] = {
-					...next[index],
+				// ✅ 只修改目标消息对象，创建新数组保持其他消息引用不变
+				const newMessages = [...current];
+				newMessages[index] = {
+					...current[index],
 					...updates,
 				};
-
-				console.log(
-					"[message-store] updateMessage",
-					chatUid,
-					messageUid,
-					updates,
-					next[index],
-				);
 
 				return {
 					messagesByChatId: {
 						...state.messagesByChatId,
-						// ✅ index 稳定，Virtuoso 友好
-						[chatUid]: next,
+						[chatUid]: newMessages,
 					},
 				};
 			});
 		},
-	}),
-	shallow,
-);
+}));

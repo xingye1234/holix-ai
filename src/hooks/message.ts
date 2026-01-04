@@ -51,7 +51,6 @@ export function useMessageUpdates() {
 
 	const flushStreaming = () => {
 		streamingBuffer.current.forEach((value, messageUid) => {
-			console.log("Flushing streaming message:", messageUid, value);
 			updateMessage(value.chatUid, messageUid, {
 				content: value.content,
 				status: "streaming",
@@ -100,11 +99,17 @@ export function useMessageUpdates() {
 
 /* ------------------------------------------------------------------ */
 /* 当前聊天消息列表（Virtuoso 友好 selector）
+ * 使用细粒度 selector + shallow 比较，避免不必要的重渲染
  * ------------------------------------------------------------------ */
 
 export function useChatMessages(chatUid?: string) {
-	return useMessageStore((state) => {
-		if (!chatUid) return EMPTY_MESSAGES;
-		return state.messagesByChatId[chatUid] ?? EMPTY_MESSAGES;
-	});
+	return useMessageStore(
+		(state) => {
+			if (!chatUid) return EMPTY_MESSAGES;
+			return state.messagesByChatId[chatUid] ?? EMPTY_MESSAGES;
+		},
+		// ✅ 使用 shallow 比较：只有数组引用或长度变化时才触发重渲染
+		// immer 保证未变化的消息对象引用不变，Virtuoso 会自动跳过这些项
+		(a, b) => a === b || (a.length === b.length && a.every((msg, i) => msg === b[i])),
+	);
 }

@@ -88,11 +88,21 @@ const useChat = create<ChatStore>((set, get) => {
 		},
 
 		updateChat: (chatUid: string, updates: Partial<Chat>) => {
-			set((state) => ({
-				chats: state.chats.map((chat) =>
-					chat.uid === chatUid ? { ...chat, ...updates } : chat
-				),
-			}));
+			set((state) => {
+				const index = state.chats.findIndex((c) => c.uid === chatUid);
+				if (index === -1) return state;
+
+				// ✅ 只修改目标 chat 对象，其他 chat 引用保持不变
+				const newChats = [...state.chats];
+				newChats[index] = {
+					...state.chats[index],
+					...updates,
+				};
+
+				return {
+					chats: newChats,
+				};
+			});
 		},
 	};
 });

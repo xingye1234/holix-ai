@@ -10,7 +10,7 @@ import {
 	User,
 	X,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { MarkdownCode, MarkdownPre } from "@/components/markdown/code-block";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -25,7 +25,9 @@ interface MessageItemProps {
 	index: number;
 }
 
-export function MessageItem({ message, index }: MessageItemProps) {
+// ✅ 使用 memo 优化：只有 message 对象引用变化时才重渲染
+// 配合 immer，未修改的消息引用保持不变，不会触发重渲染
+export const MessageItem = memo(function MessageItem({ message, index }: MessageItemProps) {
 	const [copied, setCopied] = useState(false);
 	const isUser = message.role === "user";
 	const isSystem = message.role === "system";
@@ -270,4 +272,4 @@ export function MessageItem({ message, index }: MessageItemProps) {
 			</div>
 		</div>
 	);
-}
+});
