@@ -1,31 +1,32 @@
 import { memo, useRef } from "react";
 import { Virtuoso } from "react-virtuoso";
 import { useChatContext } from "@/context/chat";
-import { useChatMessages } from "@/hooks/message";
+import { useChatMessageIds } from "@/hooks/message";
 import { MessageItem } from "./message-item";
 
-// ✅ 使用 memo 优化，只有 context 真正变化时才重渲染
+// ✅ Telegram 架构：只订阅消息 ID 列表，不订阅消息内容
 export const MainContent = memo(function MainContent() {
 	const { chat } = useChatContext();
 	const virtuosoRef = useRef(null);
 	const wrapperRef = useRef<HTMLDivElement>(null);
 
-	const messages = useChatMessages(chat?.uid);
+	// ✅ 只获取消息 ID 数组，不包含消息内容
+	const messageIds = useChatMessageIds(chat?.uid);
 
 	const isAtBottomRef = useRef(true);
 	const initialIndex = useRef<number | null>(null);
 
-	if (initialIndex.current === null && messages.length > 0) {
-		initialIndex.current = messages.length - 1;
+	if (initialIndex.current === null && messageIds.length > 0) {
+		initialIndex.current = messageIds.length - 1;
 	}
 
-  console.log("Rendering MainContent for chat ID:", chat?.uid, "Messages count:", messages.length);
+  console.log("MainContent rendering for chat:", chat?.uid, "with message IDs:", messageIds);
 
 	return (
 		<main ref={wrapperRef} className="h-(--app-chat-content-height)">
 			<Virtuoso
 				ref={virtuosoRef}
-				data={messages}
+				data={messageIds}
 				style={{ height: "var(--app-chat-content-height)" }}
 				className="custom-scrollbar"
 				increaseViewportBy={{ top: 0, bottom: 200 }}
@@ -38,8 +39,9 @@ export const MainContent = memo(function MainContent() {
 						? { index: initialIndex.current, align: "end" }
 						: undefined
 				}
-				itemContent={(index, msg) => (
-					<MessageItem key={msg.uid} index={index} message={msg} />
+				itemContent={(index, messageId) => (
+					// ✅ 只传递 messageId，MessageItem 自己订阅消息数据
+					<MessageItem key={messageId} index={index} messageId={messageId} />
 				)}
 			/>
 		</main>

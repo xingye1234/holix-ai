@@ -20,7 +20,7 @@ function Component() {
 	const chat = useChat((state) => state.chats.find((chat) => chat.uid === id));
 	const loadMessages = useMessageStore((state) => state.loadMessages);
 	const hasMessages = useMessageStore((state) =>
-		id ? !!state.messagesByChatId[id] : false,
+		id ? !!(state.chatMessageIds && state.chatMessageIds[id]?.length) : false,
 	);
 
 	useEffect(() => {
@@ -50,8 +50,6 @@ function Component() {
 		}),
 		[isSettingsPanelOpen],
 	);
-
-  console.log("Rendering Chat Route for chat ID:", id, "Chat object:", chat);
 
 	return (
 		<ChatContext.Provider value={contextValue}>
