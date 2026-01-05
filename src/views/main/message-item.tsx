@@ -10,22 +10,34 @@ import {
 	User,
 	X,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { MarkdownCode, MarkdownPre } from "@/components/markdown/code-block";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { useMessage } from "@/hooks/message";
 import { rehypeShiki } from "@/lib/shiki";
 import { formatWithLocalTZ } from "@/lib/time";
 import { cn } from "@/lib/utils";
-import type { Message } from "@/node/database/schema/chat";
 
 interface MessageItemProps {
-	message: Message;
+	messageId: string;
 	index: number;
 }
 
-export function MessageItem({ message, index }: MessageItemProps) {
+// ✅ Telegram 架构：MessageItem 自己订阅单个消息，完全隔离
+// 只有该消息更新时才会重渲染，其他消息不受影响
+export const MessageItem = memo(function MessageItem({
+	messageId,
+	index,
+}: MessageItemProps) {
+	// ✅ 直接订阅单个消息，不依赖父组件传递
+	const message = useMessage(messageId);
+
+	// 消息可能还未加载
+	if (!message) {
+		return null;
+	}
 	const [copied, setCopied] = useState(false);
 	const isUser = message.role === "user";
 	const isSystem = message.role === "system";
@@ -270,4 +282,4 @@ export function MessageItem({ message, index }: MessageItemProps) {
 			</div>
 		</div>
 	);
-}
+});

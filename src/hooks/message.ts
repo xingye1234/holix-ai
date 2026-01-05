@@ -1,13 +1,6 @@
 import { useEffect, useRef } from "react";
 import { onUpdate } from "@/lib/command";
 import { useMessageStore } from "@/store/message";
-import type { Message } from "@/node/database/schema/chat";
-
-/* ------------------------------------------------------------------ */
-/* 常量 */
-/* ------------------------------------------------------------------ */
-
-const EMPTY_MESSAGES: Message[] = [];
 
 /* ------------------------------------------------------------------ */
 /* 初始化消息 Store（只执行一次） */
@@ -26,7 +19,7 @@ export function useInitMessages() {
 
 /* ------------------------------------------------------------------ */
 /* 消息实时更新（created / streaming / updated）
- * 完全适配 appendMessage / updateMessage
+ * Telegram 架构：直接通过消息 ID 更新，不影响列表
  * ------------------------------------------------------------------ */
 
 export function useMessageUpdates() {
@@ -41,7 +34,6 @@ export function useMessageUpdates() {
 		Map<
 			string,
 			{
-				chatUid: string;
 				content: string;
 			}
 		>
@@ -51,7 +43,8 @@ export function useMessageUpdates() {
 
 	const flushStreaming = () => {
 		streamingBuffer.current.forEach((value, messageUid) => {
-			updateMessage(value.chatUid, messageUid, {
+			// ✅ 只需要 messageUid，不需要 chatUid
+			updateMessage(messageUid, {
 				content: value.content,
 				status: "streaming",
 			});
@@ -71,7 +64,6 @@ export function useMessageUpdates() {
 		/* message.streaming → 合帧 updateMessage */
 		const unsubscribeStreaming = onUpdate("message.streaming", (payload) => {
 			streamingBuffer.current.set(payload.messageUid, {
-				chatUid: payload.chatUid,
 				content: payload.content,
 			});
 
@@ -82,7 +74,8 @@ export function useMessageUpdates() {
 
 		/* message.updated → 最终态 / error / metadata */
 		const unsubscribeUpdated = onUpdate("message.updated", (payload) => {
-			updateMessage(payload.chatUid, payload.messageUid, payload.updates);
+			// ✅ 只需要 messageUid
+			updateMessage(payload.messageUid, payload.updates);
 		});
 
 		return () => {
@@ -98,12 +91,40 @@ export function useMessageUpdates() {
 }
 
 /* ------------------------------------------------------------------ */
-/* 当前聊天消息列表（Virtuoso 友好 selector）
+/* 当前聊天消息 ID 列表（Telegram 架构）
+ * 返回消息 ID 数组，MessageItem 自己订阅单个消息
  * ------------------------------------------------------------------ */
 
-export function useChatMessages(chatUid?: string) {
-	return useMessageStore((state) => {
-		if (!chatUid) return EMPTY_MESSAGES;
-		return state.messagesByChatId[chatUid] ?? EMPTY_MESSAGES;
-	});
+export function useChatMessageIds(chatUid?: string) {
+	return useMessageStore(
+		(state) => {
+			if (!chatUid) return [];
+			// ✅ 安全检查：确保 chatMessageIds 存在
+			if (!state.chatMessageIds) return [];
+			return state.chatMessageIds[chatUid] || [];
+		},
+		// ✅ 只比较 ID 数组，不涉及消息内容
+		(a, b) => {
+			if (a === b) return true;
+			if (a.length !== b.length) return false;
+			return a.every((id, i) => id === b[i]);
+		},
+	);
+}
+
+/* ------------------------------------------------------------------ */
+/* 订阅单个消息（Telegram 架构）
+ * MessageItem 使用此 hook 订阅单个消息，完全隔离
+ * ------------------------------------------------------------------ */
+
+export function useMessage(messageUid: string) {
+	return useMessageStore(
+		(state) => {
+			// ✅ 安全检查：确保 messagesById 存在
+			if (!state.messagesById) return undefined;
+			return state.messagesById[messageUid];
+		},
+		// ✅ 浅比较消息对象
+		(a, b) => a === b,
+	);
 }

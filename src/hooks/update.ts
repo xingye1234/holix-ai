@@ -11,13 +11,12 @@ import type { UpdateNames } from "@/types/updates";
 export default function useUpdate<N extends UpdateNames>(
 	name: N,
 	fn: HandlerFor<N>,
-	deps?: React.DependencyList,
 ) {
 	useEffect(
 		() => {
 			const unsubscribe = onUpdate<N>(name, fn);
 			return unsubscribe;
 		},
-		typeof deps === "undefined" ? [name, fn] : [name, fn, ...deps],
+		[name, fn],
 	);
 }
