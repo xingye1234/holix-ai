@@ -25,8 +25,6 @@ export class AppWindow extends BrowserWindow {
 			titleBarStyle: isMacOS ? 'hiddenInset' : 'default',
 		});
 
-		console.log(resolve(import.meta.dirname, logo))
-
 		this.on("resized", async () => {
 			const [width, height] = this.getSize();
 			await configStore.set("window", { width, height });
