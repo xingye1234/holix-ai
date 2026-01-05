@@ -22,32 +22,13 @@
   "asar": true,
   "productName": "Holix AI",
   "mac": {
-    "appId": "me.zhaozunhong.holix-ai",
     "target": "dmg",
     "icon": "./public/favicon.icns"
-  },
-  "dmg": {
-    "icon": "./public/favicon.icns",
-    "iconSize": 80,
-    "contents": [
-      {
-        "x": 130,
-        "y": 220
-      },
-      {
-        "x": 410,
-        "y": 220,
-        "type": "link",
-        "path": "/Applications"
-      }
-    ]
   },
   "win": {
     "target": "nsis",
     "icon": "./public/favicon.ico",
-    "artifactName": "holix-ai-setup-${version}-${arch}.exe",
-    "uninstallDisplayName": "${productName} Uninstall",
-    "createDesktopShortcut": true
+    "artifactName": "holix-ai-setup-${version}-${arch}.exe"
   },
   "linux": {
     "target": [
