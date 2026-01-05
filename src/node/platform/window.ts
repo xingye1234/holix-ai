@@ -8,6 +8,8 @@ import { update } from "./update";
 const minWidth = 800;
 const minHeight = 540;
 
+const isMacOS = process.platform === "darwin";
+
 export class AppWindow extends BrowserWindow {
 	constructor() {
 		const { width, height } = configStore.get("window");
@@ -18,8 +20,9 @@ export class AppWindow extends BrowserWindow {
 			minHeight,
 			show: false,
 			frame: import.meta.env.DEV,
-			trafficLightPosition: { x: 10, y: 10 },
+			trafficLightPosition: { x: 10, y: 16 },
 			icon: resolve(import.meta.dirname, logo),
+			titleBarStyle: isMacOS ? 'hiddenInset' : 'default',
 		});
 
 		console.log(resolve(import.meta.dirname, logo))

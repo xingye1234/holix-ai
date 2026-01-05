@@ -8,15 +8,15 @@ export default function AppHeader() {
   const { isMacOS } = usePlatform();
   return (
     <header className="h-(--app-header-height) flex justify-between items-center app-drag-region">
-      <h1 className={`h-full font-bold flex items-center ${isMacOS ? "pl-20" : "pl-4"}`}>
-        {isMacOS ? "Holix AI (macOS)" : "Holix AI"}
-      </h1>
+      <h1 className={`h-full font-bold flex items-center ${isMacOS ? "pl-28" : "pl-4"}`}>Holix AI</h1>
       <div className="pr-4 flex items-center gap-4">
         <ModeToggle />
         <AppSetting />
-        <div className="h-4 w-px">
-          <Separator orientation="vertical" className="w-px" />
-        </div>
+        {!isMacOS && (
+          <div className="h-4 w-px">
+            <Separator orientation="vertical" className="w-px" />
+          </div>
+        )}
         <WindowControls />
       </div>
     </header>
