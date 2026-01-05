@@ -1,6 +1,11 @@
 {
   "appId": "me.zhaozunhong.holix-ai",
-  "files": ["node_modules/**/*", "public/**/*", "package.json", ".holix/**/*"],
+  "files": [
+    "node_modules/**/*",
+    "public/**/*",
+    "package.json",
+    ".holix/**/*"
+  ],
   "artifactName": "holix-ai-${version}-${os}-${arch}",
   "directories": {
     "buildResources": "./public"
@@ -9,22 +14,46 @@
     {
       "from": "./drizzle",
       "to": "resources/drizzle",
-      "filter": ["**/*"]
+      "filter": [
+        "**/*"
+      ]
     }
   ],
   "asar": true,
   "productName": "Holix AI",
   "mac": {
+    "appId": "me.zhaozunhong.holix-ai",
     "target": "dmg",
     "icon": "./public/favicon.icns"
+  },
+  "dmg": {
+    "icon": "./public/favicon.icns",
+    "iconSize": 80,
+    "contents": [
+      {
+        "x": 130,
+        "y": 220
+      },
+      {
+        "x": 410,
+        "y": 220,
+        "type": "link",
+        "path": "/Applications"
+      }
+    ]
   },
   "win": {
     "target": "nsis",
     "icon": "./public/favicon.ico",
-    "artifactName": "holix-ai-setup-${version}-${arch}.exe"
+    "artifactName": "holix-ai-setup-${version}-${arch}.exe",
+    "uninstallDisplayName": "${productName} Uninstall",
+    "createDesktopShortcut": true
   },
   "linux": {
-    "target": ["AppImage", "deb"],
+    "target": [
+      "AppImage",
+      "deb"
+    ],
     "icon": "./public",
     "artifactName": "holix-ai-${version}-${arch}.${ext}"
   },
