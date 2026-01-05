@@ -15,7 +15,8 @@
   "asar": true,
   "productName": "Holix AI",
   "mac": {
-    "target": "dmg"
+    "target": "dmg",
+    "icon": "./public/favicon.icns"
   },
   "win": {
     "target": "nsis",
