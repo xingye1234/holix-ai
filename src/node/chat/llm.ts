@@ -14,7 +14,7 @@ export interface LlmConfig {
 }
 
 export function createLlm(model: string, config?: LlmConfig) {
-	let provider = config?.provider?.toLowerCase() || inferProvider(model);
+	const provider = config?.provider?.toLowerCase() || inferProvider(model);
 
 	if (!provider) {
 		throw new Error(`Cannot infer provider for model: ${model}`);

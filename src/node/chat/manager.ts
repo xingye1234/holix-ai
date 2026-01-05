@@ -1,3 +1,4 @@
+// biome-ignore assist/source/organizeImports: <explanation>
 import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import type { AIMessage } from "@langchain/core/messages";
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
@@ -166,12 +167,9 @@ class ChatManager {
 						delta: true,
 						createdAt: Date.now(),
 					};
-
 					draftSegments.push(segment);
-
 					// 节流更新数据库（保证消息完整性，即使中途出错也有部分数据）
-					throttledDbUpdate.addItem({ content: fullContent, segments: draftSegments });
-
+					throttledDbUpdate.addItem({ content: fullContent, segments: [...draftSegments] });
 					// 推送到渲染进程（由 streamingBatcher 自动批处理，~60fps）
 					update("message.streaming", {
 						chatUid,
