@@ -178,8 +178,8 @@ importers:
         specifier: 2.3.10
         version: 2.3.10
       '@holix/cli':
-        specifier: ^1.0.5
-        version: 1.0.5(@types/node@25.0.3)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0)
+        specifier: ^1.0.6
+        version: 1.0.6(@types/node@25.0.3)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0)
       '@tailwindcss/vite':
         specifier: ^4.1.18
         version: 4.1.18(vite@7.3.0(@types/node@25.0.3)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))
@@ -993,18 +993,18 @@ packages:
     resolution: {integrity: sha512-MqO+MLfM6kjxcKoy0p1wRzG3b4ZZXtPI+z2IE26UogS2Cm/XHO+7gGRBh6gcJsOiIVoH93UwKvW4HdgiOZCy9Q==}
     engines: {node: '>=18.0.0'}
 
-  '@holix/builder@1.0.2':
-    resolution: {integrity: sha512-4rc76NpT7LbcqIp9G8ytfTR+NBIF5XTRDUGAXk69K0LMHjwAHc1RtlPmBAHfVY35hOz3KYv86DZYdPLoo4eAyg==}
+  '@holix/builder@1.0.3':
+    resolution: {integrity: sha512-n4g/2f5wHahM/15ZF7PZxgEwUlntH8WQqVD7B9smV8Iwrtfs4U+Hq+R/2cM6kwcRiVnqeq1eSvfPOfnUjJFkmQ==}
 
-  '@holix/cli@1.0.5':
-    resolution: {integrity: sha512-eB1LiGfTKZAmlgWwd5v4Ly0C6rh86KX/plzHQzRk2wOENX66Hh+WCXocYWUWQAABXLQQKJo12spUaU1rq5L7Gg==}
+  '@holix/cli@1.0.6':
+    resolution: {integrity: sha512-ioPwJtvcmszyqH1NZ8jMiMkvKtbJ+1sRchBCr+d3fsaO8f+fGj7U/HN9r6b64EAyMADKVDlb9WiXafhXrUeK7Q==}
     hasBin: true
 
-  '@holix/config@1.0.0':
-    resolution: {integrity: sha512-F/eXl3WEFFBHj88W+2DCm05zxX3CSzrWFlE96UltI15sqUJ3lXYl/Rtc4RlBfNpMnJeUrKM63eHLve566Rlt2w==}
+  '@holix/config@1.0.1':
+    resolution: {integrity: sha512-5ZXy8D4r9cTilbgx67Gl/Uq9KnHZQOinTGiWI/WksKwb5ml6PJ/6tXUhcT0IGif0B9q36o5z+77bT9U9HMfZEQ==}
 
-  '@holix/electron@1.0.2':
-    resolution: {integrity: sha512-FZK+FKOsBlj6wU0q6mnrKOzl1OLIsf2fbn9CpEhKcTub6RMt3RN5k7JvwW7FRLeVHGEiqdr2/gCAsevShdPdzA==}
+  '@holix/electron@1.0.3':
+    resolution: {integrity: sha512-YK0z7/hb2gJYVU75Ur6AmMTuiGe3W32V2XE38w0Nwte+2ZV3viPh6lYv30vCXO9bGvHaEMf6F0wYo/S/0hktdQ==}
 
   '@holix/ipc@1.0.0':
     resolution: {integrity: sha512-bVILlfmukDuP7D4GT44iFu2rdPoJOOgp04/FlQW4OVhtSDH7Egp0cPQ72Ct6ix4wCLXEgrBOdBk+QdKJuRuxiA==}
@@ -6194,9 +6194,9 @@ snapshots:
 
   '@google/generative-ai@0.24.1': {}
 
-  '@holix/builder@1.0.2(@types/node@25.0.3)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0)':
+  '@holix/builder@1.0.3(@types/node@25.0.3)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0)':
     dependencies:
-      '@holix/config': 1.0.0
+      '@holix/config': 1.0.1
       pathe: 2.0.3
       rolldown: 1.0.0-beta.44
       vite: 7.3.0(@types/node@25.0.3)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0)
@@ -6213,11 +6213,11 @@ snapshots:
       - tsx
       - yaml
 
-  '@holix/cli@1.0.5(@types/node@25.0.3)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0)':
+  '@holix/cli@1.0.6(@types/node@25.0.3)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0)':
     dependencies:
-      '@holix/builder': 1.0.2(@types/node@25.0.3)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0)
-      '@holix/config': 1.0.0
-      '@holix/electron': 1.0.2
+      '@holix/builder': 1.0.3(@types/node@25.0.3)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0)
+      '@holix/config': 1.0.1
+      '@holix/electron': 1.0.3
       '@tanstack/pacer': 0.17.0
       c12: 3.3.3
       chokidar: 4.0.3
@@ -6246,11 +6246,11 @@ snapshots:
       - tsx
       - yaml
 
-  '@holix/config@1.0.0':
+  '@holix/config@1.0.1':
     dependencies:
       zod: 3.25.76
 
-  '@holix/electron@1.0.2':
+  '@holix/electron@1.0.3':
     dependencies:
       '@holix/ipc': 1.0.0
       consola: 3.4.2
