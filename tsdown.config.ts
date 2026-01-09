@@ -17,7 +17,7 @@ export default defineConfig({
   treeshake: true,
   hooks: {
     'build:prepare': async (ctx) => {
-      const isDev = ctx.options.watch
+      const isDev = ((ctx.options as any)['--'] as string[])?.includes('--dev')
       const DEV = isDev ? 'true' : 'false'
       const PROD = isDev ? 'false' : 'true'
       const NODE_ENV = JSON.stringify(isDev ? 'development' : 'production')

@@ -13,14 +13,10 @@ const isMacOS = process.platform === 'darwin'
 
 export class AppWindow extends BrowserWindow {
   constructor() {
-    logger.info('AppWindow constructor started')
-    logger.info('Getting window config from store...')
     const { width, height } = configStore.get('window')
-    logger.info(`Window config retrieved: width=${width}, height=${height}`)
 
     // Get the logo path
     const logoPath = join(process.cwd(), 'public', 'logo.png')
-    logger.info(`Logo path: ${logoPath}`)
 
     super({
       width,
@@ -55,8 +51,6 @@ export class AppWindow extends BrowserWindow {
     this.on('close', () => {
       update('window.close', {})
     })
-
-    logger.info('AppWindow constructor completed')
   }
 
   use(router: HolixProtocolRouter) {
@@ -85,8 +79,6 @@ export class AppWindow extends BrowserWindow {
 
   showWhenReady() {
     return new Promise<void>((resolve) => {
-      // const currentChatId = configStore.get("currentChatId");
-
       const url = import.meta.env.DEV
         ? import.meta.env.BASE_URL
         : 'holix://app/'
@@ -95,10 +87,8 @@ export class AppWindow extends BrowserWindow {
 
       this.webContents.openDevTools({ mode: 'right' })
 
-      logger.info('Waiting for window to be ready to show...')
-
       this.once('ready-to-show', () => {
-        logger.info('Window is ready to show. Displaying now.')
+        logger.info('[Window] Ready to show, displaying now')
         this.show()
         resolve()
       })

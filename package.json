@@ -10,7 +10,7 @@
   "main": "./.holix/main/main.mjs",
   "scripts": {
     "dev:vite": "vite",
-    "dev:main": "tsdown --watch",
+    "dev:main": "tsdown -- --dev",
     "build:main": "tsdown",
     "build:vite": "vite build",
     "dev:app": "electron .",

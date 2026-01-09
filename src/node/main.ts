@@ -9,13 +9,20 @@ import { migrateDb } from './database/connect'
 import { createChannel } from './platform/channel'
 import { onCommandForClient } from './platform/commands'
 import { configStore } from './platform/config'
+import { AppLifecycle, LifecyclePhase } from './platform/lifecycle'
 import { logger } from './platform/logger'
 import { providerStore } from './platform/provider'
 import { AppWindow } from './platform/window'
 import { trpcRouter } from './server/handler'
 
+// ============================================
+// 环境配置
+// ============================================
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true'
 
+// ============================================
+// 协议注册
+// ============================================
 protocol.registerSchemesAsPrivileged([
   {
     scheme: SCHEME,
@@ -29,13 +36,19 @@ protocol.registerSchemesAsPrivileged([
   },
 ])
 
+// ============================================
+// 单例检查
+// ============================================
 const gotSingleInstanceLock = app.requestSingleInstanceLock()
 
 if (!gotSingleInstanceLock) {
-  logger.info(`Another instance is already running. Exiting this instance.`)
+  logger.info('Another instance is already running. Exiting this instance.')
   app.quit()
 }
 
+// ============================================
+// 路由器配置
+// ============================================
 const router = createRouter()
 configStore.use(router)
 providerStore.use(router)
@@ -43,6 +56,7 @@ onCommandForClient(router)
 trpcRouter(router)
 router.get('/channel', createChannel())
 
+// 生产环境静态文件服务
 if (import.meta.env.PROD) {
   router.use(
     createStaticMiddleware({
@@ -53,78 +67,180 @@ if (import.meta.env.PROD) {
   )
 }
 
-logger.info('Main application window created.')
-
+// ============================================
+// 生命周期管理器
+// ============================================
+const lifecycle = new AppLifecycle()
 let window: AppWindow | null = null
 
+// ============================================
+// 生命周期钩子
+// ============================================
+lifecycle.onPhase(LifecyclePhase.RUNNING, () => {
+  logger.info('[Lifecycle Hook] Application is now running')
+})
+
+lifecycle.onPhase(LifecyclePhase.STOPPING, () => {
+  logger.info('[Lifecycle Hook] Application is stopping')
+})
+
+lifecycle.onPhase(LifecyclePhase.ERROR, () => {
+  logger.error('[Lifecycle Hook] Application entered error state')
+})
+
+// ============================================
+// Electron 事件监听
+// ============================================
 app.on('second-instance', () => {
-  logger.info(
-    'Second instance detected. Bringing the main window to the front.',
-  )
+  logger.info('Second instance detected. Bringing the main window to the front.')
   if (window?.isMinimized()) {
     window?.restore()
   }
   window?.focus()
 })
 
-async function bootstrap() {
-  logger.info('Initializing application...')
-  await app.whenReady()
-  logger.info('App is ready.')
-  initChat()
-  logger.info('Chat module initialized.')
-  await configStore.init()
-  logger.info('Configuration store initialized.')
-  await providerStore.init()
-  logger.info('Provider store initialized.')
-
-  logger.info('Creating application window...')
-  try {
-    window = new AppWindow()
-    logger.info('Application window instance created.')
-  }
-  catch (err) {
-    logger.error('Failed to create AppWindow:', err)
-    throw err
-  }
-
-  logger.info('Registering protocol handler...')
-  router.register(window.webContents.session.protocol)
-  logger.info('Protocol handler registered.')
-
-  logger.info('Registering window router...')
-  window.use(router)
-  logger.info('Window router registered.')
-
-  logger.info('Showing window...')
-  await window.showWhenReady()
-  logger.info('Main window is shown.')
-}
-
-logger.info('Starting application...')
-migrateDb().catch((err) => {
-  logger.error('Database migration failed:', err)
-  app.quit()
-})
-bootstrap().catch((err) => {
-  logger.error('Failed to setup application:', err)
-  logger.error('Error stack:', err.stack)
-  app.quit()
-})
-
-app.on('window-all-closed', () => {
+app.on('window-all-closed', async () => {
   if (process.platform !== 'darwin') {
+    await lifecycle.setPhase(LifecyclePhase.STOPPING)
     app.quit()
   }
 })
 
 app.on('activate', () => {
-  if (AppWindow.getAllWindows().length === 0) {
+  if (lifecycle.getPhase() === LifecyclePhase.RUNNING && AppWindow.getAllWindows().length === 0) {
     window = new AppWindow()
     window.use(router)
   }
 })
 
-app.on('before-quit', () => {
-  logger.info('Application is quitting...')
+app.on('before-quit', async () => {
+  await lifecycle.setPhase(LifecyclePhase.STOPPING)
+  logger.info('[Main] Application is quitting...')
+  lifecycle.printPerformanceSummary()
+})
+
+app.on('will-quit', async () => {
+  await lifecycle.setPhase(LifecyclePhase.STOPPED)
+  logger.info('[Main] Application stopped')
+})
+
+// ============================================
+// 应用启动流程
+// ============================================
+async function bootstrap() {
+  try {
+    // ============================================
+    // 阶段 1: 初始化系统
+    // ============================================
+    await lifecycle.setPhase(LifecyclePhase.INITIALIZING)
+
+    await lifecycle.executeTasks([
+      {
+        name: 'Wait for Electron ready',
+        execute: () => app.whenReady(),
+        critical: true,
+        timeout: 10000,
+      },
+      {
+        name: 'Migrate database',
+        execute: () => migrateDb(),
+        critical: true,
+        timeout: 5000,
+      },
+      {
+        name: 'Initialize chat module',
+        execute: () => initChat(),
+        critical: true,
+      },
+      {
+        name: 'Initialize config store',
+        execute: () => configStore.init(),
+        critical: true,
+        timeout: 3000,
+      },
+      {
+        name: 'Initialize provider store',
+        execute: () => providerStore.init(),
+        critical: true,
+        timeout: 3000,
+      },
+    ])
+
+    // ============================================
+    // 阶段 2: 启动应用
+    // ============================================
+    await lifecycle.setPhase(LifecyclePhase.STARTING)
+
+    await lifecycle.executeTasks([
+      {
+        name: 'Create application window',
+        execute: () => {
+          window = new AppWindow()
+        },
+        critical: true,
+      },
+      {
+        name: 'Register protocol handler',
+        execute: () => {
+          if (window) {
+            router.register(window.webContents.session.protocol)
+          }
+        },
+        critical: true,
+      },
+      {
+        name: 'Register window router',
+        execute: () => {
+          if (window) {
+            window.use(router)
+          }
+        },
+        critical: true,
+      },
+      {
+        name: 'Show application window',
+        execute: async () => {
+          if (window) {
+            await window.showWhenReady()
+          }
+        },
+        critical: true,
+        timeout: 10000,
+      },
+    ])
+
+    // ============================================
+    // 阶段 3: 运行中
+    // ============================================
+    await lifecycle.setPhase(LifecyclePhase.RUNNING)
+
+    // 打印性能报告摘要（简洁格式）
+    lifecycle.printPerformanceSummary()
+
+    // 如果需要完整的 JSON 报告，可以使用：
+    // lifecycle.printPerformanceReport()
+
+    // 或者获取 JSON 对象进行其他处理：
+    // const report = lifecycle.getPerformanceReport()
+  }
+  catch (error) {
+    await lifecycle.setPhase(LifecyclePhase.ERROR)
+    logger.error('[Bootstrap] Fatal error during startup:', error)
+    logger.error('[Bootstrap] Error stack:', (error as Error).stack)
+
+    // 打印错误时的性能报告摘要
+    lifecycle.printPerformanceSummary()
+
+    app.quit()
+    throw error
+  }
+}
+
+// ============================================
+// 启动应用
+// ============================================
+logger.info('[Main] Starting Holix AI application...')
+bootstrap().catch((err) => {
+  logger.error('[Main] Bootstrap failed:', err)
+  process.exit(1)
 })

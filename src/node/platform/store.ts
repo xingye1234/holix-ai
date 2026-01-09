@@ -41,11 +41,8 @@ export class Store<D> {
     if (this.isInitialized) {
       return
     }
-    logger.info(`Initializing store: ${this.name} at path: ${this.path}`)
     await ensureFile(this.path, JSON.stringify(this.defaultData))
-    logger.info(`Store file ensured at path: ${this.path}`)
     const db: Low<D> = await JSONFilePreset(this.path, this.defaultData)
-    logger.info(`LowDB instance created for store: ${this.name}`)
     this.db = db
     this.isInitialized = true
   }

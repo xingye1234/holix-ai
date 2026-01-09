@@ -8,7 +8,7 @@ import { normalize } from 'pathe'
 export const userDataDir = join(app.isPackaged ? app.getPath('home') : process.cwd(), '.holixai')
 
 if (!existsSync(userDataDir)) {
-	fse.mkdirSync(userDataDir, { recursive: true })
+  fse.mkdirSync(userDataDir, { recursive: true })
 }
 
 export const APP_DATA_PATH = userDataDir
