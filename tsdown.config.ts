@@ -31,14 +31,6 @@ export default defineConfig({
       }
 
       ctx.options.minify = !isDev
-
-      ctx.options.noExternal = (id) => {
-        if (['@langchain'].some(ext => id === ext || id.startsWith(`${ext}/`))) {
-          return false
-        }
-
-        return isDev
-      }
     },
     'build:done': async (ctx) => {
       const isDev = ctx.options.watch
@@ -46,15 +38,9 @@ export default defineConfig({
         return
       }
 
-      const deps = ctx.chunks.map((chunk) => {
-        return (
-          chunk as {
-            imports: string[]
-          }
-        ).imports.filter(imp => !imp.startsWith('node:'))
-      })
-
-      const uniqueDeps = Array.from(new Set(deps)).flat()
+      const pkg = await readJson(join(process.cwd(), 'package.json'))
+      const devDependencies = Object.keys(pkg.devDependencies || {})
+      const uniqueDeps = Array.from(new Set(devDependencies))
 
       // 更新 electron-builder.json
       await updateElectronBuilderFiles([...uniqueDeps])
@@ -67,6 +53,17 @@ export default defineConfig({
   ],
   loader: {
     '.png': 'dataurl',
+  },
+  outputOptions: {
+    chunkFileNames: (chunkInfo) => {
+      // 所有 node_modules chunk 输出到 dist/main/vendor
+      const modules = Object.keys(chunkInfo.moduleIds)
+      const isVendor = modules.some(m => m.includes('node_modules'))
+      if (isVendor) {
+        return 'vendor/[name]-[hash].js'
+      }
+      return '[name]-[hash].js'
+    },
   },
 })
 
@@ -83,11 +80,11 @@ async function updateElectronBuilderFiles(deps: string[]) {
     const config = JSON.parse(content)
 
     // 生成 node_modules 依赖路径
-    const depFiles = deps.map(dep => `node_modules/${dep}/**/*`)
+    const depFiles = deps.map(dep => `!node_modules/${dep}/**/*`)
 
     // 保留其他非 node_modules 的文件配置
     const otherFiles = (config.files || []).filter(
-      (file: string) => !file.startsWith('node_modules/'),
+      (file: string) => !file.startsWith('!node_modules/'),
     )
 
     // 合并配置
@@ -107,4 +104,8 @@ async function updateElectronBuilderFiles(deps: string[]) {
   catch (error) {
     console.error('Failed to update electron-builder.json:', error)
   }
+}
+
+function readJson(filePath: string) {
+  return readFile(filePath, 'utf-8').then(data => JSON.parse(data))
 }
