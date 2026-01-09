@@ -4,6 +4,7 @@
     "public/**/*",
     "package.json",
     ".holix/**/*",
+    "!node_modules/**",
     "node_modules/@holix/router/**/*",
     "node_modules/@holix/static/**/*",
     "node_modules/electron/**/*",

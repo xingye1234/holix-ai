@@ -8,6 +8,7 @@ export default defineConfig(() => {
   return {
     build: {
       outDir: './.holix/client',
+      chunkSizeWarningLimit: 1500,
     },
     resolve: {
       alias: {

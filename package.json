@@ -21,6 +21,7 @@
     "studio": "drizzle-kit studio",
     "lint": "eslint . --fix",
     "package": "electron-builder build -c ./electron-builder.json",
+    "release": "pnpm build && pnpm package",
     "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
