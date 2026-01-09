@@ -1,24 +1,24 @@
 {
   "compilerOptions": {
     "target": "es2024",
+    "jsx": "react-jsx",
+    "baseUrl": ".",
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "strict": true,
-    "jsx": "react-jsx",
-    "esModuleInterop": true,
-    "types": [
-      "vite/client"
-    ],
-    "forceConsistentCasingInFileNames": true,
-    "skipLibCheck": true,
-    "sourceMap": true,
-    "resolveJsonModule": true,
-    "baseUrl": ".",
     "paths": {
       "@/*": [
         "./src/*"
       ]
     },
+    "resolveJsonModule": true,
+    "types": [
+      "vite/client"
+    ],
+    "strict": true,
+    "sourceMap": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
     "ignoreDeprecations": "6.0"
   },
   "include": [
