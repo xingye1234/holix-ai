@@ -2,16 +2,16 @@ import { resolve } from "node:path";
 import { createRouter } from "@holix/router";
 import { createStaticMiddleware } from "@holix/static";
 import { app, protocol } from "electron";
-import { initChat } from "./node/chat/init";
-import { SCHEME } from "./node/constant";
-import { migrateDb } from "./node/database/connect";
-import { createChannel } from "./node/platform/channel";
-import { onCommandForClient } from "./node/platform/commands";
-import { configStore } from "./node/platform/config";
-import { logger } from "./node/platform/logger";
-import { providerStore } from "./node/platform/provider";
-import { AppWindow } from "./node/platform/window";
-import { trpcRouter } from "./node/server/handler";
+import { initChat } from "./chat/init";
+import { SCHEME } from "./constant";
+import { migrateDb } from "./database/connect";
+import { createChannel } from "./platform/channel";
+import { onCommandForClient } from "./platform/commands";
+import { configStore } from "./platform/config";
+import { logger } from "./platform/logger";
+import { providerStore } from "./platform/provider";
+import { AppWindow } from "./platform/window";
+import { trpcRouter } from "./server/handler";
 
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = "true";
 
