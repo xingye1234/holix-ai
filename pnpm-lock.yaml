@@ -210,6 +210,9 @@ importers:
       electron-builder:
         specifier: ^26.0.12
         version: 26.0.12
+      execa:
+        specifier: ^9.6.1
+        version: 9.6.1
       shadcn:
         specifier: ^3.6.2
         version: 3.6.2(@cfworker/json-schema@4.1.1)(@types/node@25.0.3)(hono@4.11.1)(typescript@5.9.3)
