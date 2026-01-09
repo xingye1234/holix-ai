@@ -29,6 +29,13 @@ protocol.registerSchemesAsPrivileged([
   },
 ])
 
+const gotSingleInstanceLock = app.requestSingleInstanceLock()
+
+if (!gotSingleInstanceLock) {
+  logger.info(`Another instance is already running. Exiting this instance.`)
+  app.quit()
+}
+
 const router = createRouter()
 configStore.use(router)
 providerStore.use(router)
@@ -46,12 +53,9 @@ if (import.meta.env.PROD) {
   )
 }
 
-let window: AppWindow | null = null
-const gotSingleInstanceLock = app.requestSingleInstanceLock()
+logger.info('Main application window created.')
 
-if (!gotSingleInstanceLock) {
-  app.quit()
-}
+let window: AppWindow | null = null
 
 app.on('second-instance', () => {
   logger.info(
@@ -64,18 +68,63 @@ app.on('second-instance', () => {
 })
 
 async function bootstrap() {
+  logger.info('Initializing application...')
   await app.whenReady()
+  logger.info('App is ready.')
   initChat()
+  logger.info('Chat module initialized.')
   await configStore.init()
+  logger.info('Configuration store initialized.')
   await providerStore.init()
-  window = new AppWindow()
-  router.register(window.webContents.session.protocol)
-  window.use(router)
+  logger.info('Provider store initialized.')
 
+  logger.info('Creating application window...')
+  try {
+    window = new AppWindow()
+    logger.info('Application window instance created.')
+  }
+  catch (err) {
+    logger.error('Failed to create AppWindow:', err)
+    throw err
+  }
+
+  logger.info('Registering protocol handler...')
+  router.register(window.webContents.session.protocol)
+  logger.info('Protocol handler registered.')
+
+  logger.info('Registering window router...')
+  window.use(router)
+  logger.info('Window router registered.')
+
+  logger.info('Showing window...')
   await window.showWhenReady()
+  logger.info('Main window is shown.')
 }
 
-migrateDb()
+logger.info('Starting application...')
+migrateDb().catch((err) => {
+  logger.error('Database migration failed:', err)
+  app.quit()
+})
 bootstrap().catch((err) => {
   logger.error('Failed to setup application:', err)
+  logger.error('Error stack:', err.stack)
+  app.quit()
+})
+
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    app.quit()
+  }
+})
+
+app.on('activate', () => {
+  if (AppWindow.getAllWindows().length === 0) {
+    window = new AppWindow()
+    window.use(router)
+  }
+})
+
+app.on('before-quit', () => {
+  logger.info('Application is quitting...')
 })

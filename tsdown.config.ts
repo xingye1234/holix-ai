@@ -14,25 +14,25 @@ export default defineConfig({
     '@': './src',
     'public': './public',
   },
+  treeshake: true,
   hooks: {
     'build:prepare': async (ctx) => {
       const isDev = ctx.options.watch
       const DEV = isDev ? 'true' : 'false'
       const PROD = isDev ? 'false' : 'true'
-      const NODE_ENV = isDev ? 'development' : 'production'
-      const BASE_URL = isDev ? 'http://localhost:3456/' : './client'
-      ctx.options.env = {
-        ...ctx.options.env,
-        DEV,
-        NODE_ENV,
-        BASE_URL,
-        PROD,
+      const NODE_ENV = JSON.stringify(isDev ? 'development' : 'production')
+      const BASE_URL = JSON.stringify(isDev ? 'http://localhost:3456/' : './client')
+
+      ctx.options.define = {
+        'import.meta.env.DEV': DEV,
+        'import.meta.env.NODE_ENV': NODE_ENV,
+        'import.meta.env.BASE_URL': BASE_URL,
+        'import.meta.env.PROD': PROD,
       }
     },
     'build:done': async (ctx) => {
       const isDev = ctx.options.watch
       if (isDev) {
-        // 开发模式下不更新 electron-builder.json
         return
       }
 
