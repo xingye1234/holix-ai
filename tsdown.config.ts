@@ -9,10 +9,8 @@ export default defineConfig({
   target: 'es2024',
   shims: true,
   platform: 'node',
-  publicDir: 'public',
   alias: {
     '@': './src',
-    'public': './public',
   },
   treeshake: true,
   hooks: {
@@ -53,17 +51,8 @@ export default defineConfig({
   ],
   loader: {
     '.png': 'dataurl',
-  },
-  outputOptions: {
-    chunkFileNames: (chunkInfo) => {
-      // 所有 node_modules chunk 输出到 dist/main/vendor
-      const modules = Object.keys(chunkInfo.moduleIds)
-      const isVendor = modules.some(m => m.includes('node_modules'))
-      if (isVendor) {
-        return 'vendor/[name]-[hash].js'
-      }
-      return '[name]-[hash].js'
-    },
+    '.jpg': 'dataurl',
+    '.md': 'text',
   },
 })
 
