@@ -18,6 +18,7 @@ export default defineConfig({
     'build:prepare': async (ctx) => {
       const isDev = ctx.options.watch
       const DEV = isDev ? 'true' : 'false'
+      const PROD = isDev ? 'false' : 'true'
       const NODE_ENV = isDev ? 'development' : 'production'
       const BASE_URL = isDev ? 'http://localhost:3456/' : './client'
       ctx.options.env = {
@@ -25,6 +26,7 @@ export default defineConfig({
         DEV,
         NODE_ENV,
         BASE_URL,
+        PROD,
       }
     },
     'build:done': async (ctx) => {
@@ -79,7 +81,7 @@ async function updateElectronBuilderFiles(deps: string[]) {
     )
 
     // 合并配置
-    config.files = [...otherFiles, ...depFiles]
+    config.files = Array.from(new Set([...otherFiles, ...depFiles]))
 
     // 写回文件
     await writeFile(
