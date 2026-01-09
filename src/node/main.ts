@@ -2,9 +2,8 @@ import { resolve } from 'node:path'
 import process from 'node:process'
 import { createRouter } from '@holix/router'
 import { createStaticMiddleware } from '@holix/static'
-import { app, protocol } from 'electron'
+import { app } from 'electron'
 import { initChat } from './chat/init'
-import { SCHEME } from './constant'
 import { migrateDb } from './database/connect'
 import { createChannel } from './platform/channel'
 import { onCommandForClient } from './platform/commands'
@@ -14,31 +13,8 @@ import { logger } from './platform/logger'
 import { providerStore } from './platform/provider'
 import { AppWindow } from './platform/window'
 import { trpcRouter } from './server/handler'
+import './platform/protocol'
 
-// ============================================
-// 环境配置
-// ============================================
-process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true'
-
-// ============================================
-// 协议注册
-// ============================================
-protocol.registerSchemesAsPrivileged([
-  {
-    scheme: SCHEME,
-    privileges: {
-      standard: true,
-      secure: true,
-      supportFetchAPI: true,
-      corsEnabled: true,
-      allowServiceWorkers: true,
-    },
-  },
-])
-
-// ============================================
-// 单例检查
-// ============================================
 const gotSingleInstanceLock = app.requestSingleInstanceLock()
 
 if (!gotSingleInstanceLock) {
@@ -243,4 +219,12 @@ logger.info('[Main] Starting Holix AI application...')
 bootstrap().catch((err) => {
   logger.error('[Main] Bootstrap failed:', err)
   process.exit(1)
+})
+
+process.on('uncaughtException', (error) => {
+  logger.error('[Main] Uncaught Exception:', error)
+})
+
+process.on('unhandledRejection', (reason) => {
+  logger.error('[Main] Unhandled Rejection:', reason)
 })
