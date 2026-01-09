@@ -1,8 +1,9 @@
 import { dirname, join } from 'node:path'
 import process from 'node:process'
 import { app } from 'electron'
-import logger from 'electron-log/main'
 
+// eslint-disable-next-line ts/no-require-imports
+const logger: typeof import('electron-log') = require('electron-log')
 /**
  * 获取日志文件路径
  */

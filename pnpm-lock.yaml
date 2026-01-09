@@ -104,9 +104,6 @@ importers:
       electron-log:
         specifier: ^5.4.3
         version: 5.4.3
-      fs-extra:
-        specifier: ^11.3.3
-        version: 11.3.3
       ky:
         specifier: ^1.14.2
         version: 1.14.2

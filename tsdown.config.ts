@@ -29,6 +29,16 @@ export default defineConfig({
         'import.meta.env.BASE_URL': BASE_URL,
         'import.meta.env.PROD': PROD,
       }
+
+      ctx.options.minify = !isDev
+
+      ctx.options.noExternal = (id) => {
+        if (['@langchain'].some(ext => id === ext || id.startsWith(`${ext}/`))) {
+          return false
+        }
+
+        return isDev
+      }
     },
     'build:done': async (ctx) => {
       const isDev = ctx.options.watch
@@ -47,13 +57,13 @@ export default defineConfig({
       const uniqueDeps = Array.from(new Set(deps)).flat()
 
       // 更新 electron-builder.json
-      await updateElectronBuilderFiles(uniqueDeps)
+      await updateElectronBuilderFiles([...uniqueDeps])
     },
   },
   external: [
     'electron',
     /^@electron\//,
-    /^node-/,
+    /^node:/,
   ],
   loader: {
     '.png': 'dataurl',

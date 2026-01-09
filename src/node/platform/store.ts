@@ -1,11 +1,9 @@
 import type { HolixProtocolRouter } from '@holix/router'
 import type { Low } from 'lowdb'
-import { existsSync } from 'node:fs'
-import { mkdir, writeFile } from 'node:fs/promises'
+import { join } from 'node:path'
 import { JSONFilePreset } from 'lowdb/node'
-import { dirname, join } from 'pathe'
 import { APP_DATA_PATH } from '../constant'
-import { logger } from './logger'
+import { ensureFile } from './utils/file'
 
 export interface StoreOptions<T = any> {
   name: string
@@ -90,12 +88,5 @@ export class Store<D> {
     this.set(key, value)
     this.saveStore()
     return this.getStore().data
-  }
-}
-
-async function ensureFile(path: string, data: string = '{}') {
-  if (!existsSync(path)) {
-    await mkdir(dirname(path), { recursive: true })
-    await writeFile(path, data, { flag: 'wx', encoding: 'utf-8' })
   }
 }

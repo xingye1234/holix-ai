@@ -57,7 +57,6 @@
     "dotenv": "^17.2.3",
     "drizzle-orm": "^0.45.1",
     "electron-log": "^5.4.3",
-    "fs-extra": "^11.3.3",
     "ky": "^1.14.2",
     "langchain": "^1.2.3",
     "lexical": "^0.39.0",
