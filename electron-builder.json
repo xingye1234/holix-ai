@@ -1,10 +1,27 @@
 {
   "appId": "me.zhaozunhong.holix-ai",
   "files": [
-    "node_modules/**/*",
     "public/**/*",
     "package.json",
-    ".holix/**/*"
+    ".holix/**/*",
+    "node_modules/@holix/router/**/*",
+    "node_modules/@holix/static/**/*",
+    "node_modules/path/**/*",
+    "node_modules/drizzle-orm/**/*",
+    "node_modules/nanoid/**/*",
+    "node_modules/drizzle-orm/libsql/migrator/**/*",
+    "node_modules/drizzle-orm/libsql/sqlite3/**/*",
+    "node_modules/fs-extra/**/*",
+    "node_modules/pathe/**/*",
+    "node_modules/drizzle-orm/sqlite-core/**/*",
+    "node_modules/lowdb/node/**/*",
+    "node_modules/@tanstack/pacer/**/*",
+    "node_modules/@langchain/anthropic/**/*",
+    "node_modules/@langchain/openai/**/*",
+    "node_modules/@langchain/google-genai/**/*",
+    "node_modules/@langchain/ollama/**/*",
+    "node_modules/@langchain/core/messages/**/*",
+    "node_modules/zod/**/*"
   ],
   "artifactName": "holix-ai-${version}-${os}-${arch}",
   "directories": {
