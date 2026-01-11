@@ -11,12 +11,14 @@ import {
   User,
   X,
 } from 'lucide-react'
-import { memo, useMemo, useState } from 'react'
+import { memo, useCallback, useMemo, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
+import { toast } from 'sonner'
 import { MarkdownCode, MarkdownPre } from '@/components/markdown/code-block'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { useMessage } from '@/hooks/message'
+import { command } from '@/lib/command'
 import { rehypeShiki } from '@/lib/shiki'
 import { formatWithLocalTZ } from '@/lib/time'
 import { cn } from '@/lib/utils'
@@ -45,6 +47,16 @@ export const MessageItem = memo(({
   const isError = message.status === 'error'
   const isStreaming = message.status === 'streaming'
   const isPending = message.status === 'pending'
+
+  const handleCancelGeneration = useCallback(() => {
+    if (message.requestId) {
+      command('chat.abort', { requestId: message.requestId })
+      toast.success('正在取消生成...')
+    }
+    else {
+      toast.error('无法取消：缺少请求ID')
+    }
+  }, [message.requestId])
 
   const content = useMemo(() => {
     if (message.error) {
@@ -128,10 +140,7 @@ export const MessageItem = memo(({
                   variant="ghost"
                   size="sm"
                   className="h-5 w-5 p-0 ml-1 hover:bg-destructive/20 hover:text-destructive rounded-full"
-                  onClick={() => {
-                    // TODO: 实现取消功能
-                    console.log('Cancel streaming for message:', message.uid)
-                  }}
+                  onClick={handleCancelGeneration}
                 >
                   <X className="w-3 h-3" />
                 </Button>
