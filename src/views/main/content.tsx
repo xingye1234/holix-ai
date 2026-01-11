@@ -14,10 +14,8 @@ export const MainContent = memo(() => {
   const { chat } = useChatContext()
   const virtuosoRef = useRef<VirtuosoHandle>(null)
   const wrapperRef = useRef<HTMLDivElement>(null)
-
   // ✅ 只获取消息 ID 数组，不包含消息内容
   const messageIds = useChatMessageIds(chat?.uid)
-
   const isAtBottomRef = useRef(true)
   const isUserScrollingRef = useRef(false)
   const scrollTimerRef = useRef<NodeJS.Timeout | null>(null)
@@ -27,6 +25,7 @@ export const MainContent = memo(() => {
     initialIndex.current = messageIds.length - 1
   }
 
+  // eslint-disable-next-line no-console
   console.log('MainContent render: chat ID =', chat?.uid, 'message count =', messageIds.length)
 
   // 新消息添加时自动滚动
@@ -119,7 +118,7 @@ export const MainContent = memo(() => {
         }}
         atBottomThreshold={AUTO_SCROLL_THRESHOLD}
         initialTopMostItemIndex={
-          initialIndex.current != null ? { index: initialIndex.current, align: 'end' } : undefined
+          initialIndex.current != null ? { index: initialIndex.current } : undefined
         }
         itemContent={(index, messageId) => (
           // ✅ 只传递 messageId，MessageItem 自己订阅消息数据

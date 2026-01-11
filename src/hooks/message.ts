@@ -1,20 +1,20 @@
-import { useEffect, useRef } from "react";
-import { onUpdate } from "@/lib/command";
-import { useMessageStore } from "@/store/message";
+import { useEffect, useRef } from 'react'
+import { onUpdate } from '@/lib/command'
+import { useMessageStore } from '@/store/message'
 
 /* ------------------------------------------------------------------ */
 /* 初始化消息 Store（只执行一次） */
 /* ------------------------------------------------------------------ */
 
 export function useInitMessages() {
-	const init = useMessageStore((s) => s.init);
-	const initialized = useMessageStore((s) => s.initialized);
+  const init = useMessageStore(s => s.init)
+  const initialized = useMessageStore(s => s.initialized)
 
-	useEffect(() => {
-		if (!initialized) {
-			init();
-		}
-	}, [init, initialized]);
+  useEffect(() => {
+    if (!initialized) {
+      init()
+    }
+  }, [init, initialized])
 }
 
 /* ------------------------------------------------------------------ */
@@ -23,71 +23,71 @@ export function useInitMessages() {
  * ------------------------------------------------------------------ */
 
 export function useMessageUpdates() {
-	const appendMessage = useMessageStore((s) => s.appendMessage);
-	const updateMessage = useMessageStore((s) => s.updateMessage);
+  const appendMessage = useMessageStore(s => s.appendMessage)
+  const updateMessage = useMessageStore(s => s.updateMessage)
 
-	/**
-	 * streaming 合帧缓冲
-	 * key = messageUid
-	 */
-	const streamingBuffer = useRef<
-		Map<
-			string,
-			{
-				content: string;
-			}
-		>
-	>(new Map());
+  /**
+   * streaming 合帧缓冲
+   * key = messageUid
+   */
+  const streamingBuffer = useRef<
+    Map<
+      string,
+      {
+        content: string
+      }
+    >
+  >(new Map())
 
-	const rafId = useRef<number | null>(null);
+  const rafId = useRef<number | null>(null)
 
-	const flushStreaming = () => {
-		streamingBuffer.current.forEach((value, messageUid) => {
-			// ✅ 只需要 messageUid，不需要 chatUid
-			updateMessage(messageUid, {
-				content: value.content,
-				status: "streaming",
-			});
-		});
+  const flushStreaming = () => {
+    streamingBuffer.current.forEach((value, messageUid) => {
+      // ✅ 只需要 messageUid，不需要 chatUid
+      updateMessage(messageUid, {
+        content: value.content,
+        status: 'streaming',
+      })
+    })
 
-		streamingBuffer.current.clear();
-		rafId.current = null;
-	};
+    streamingBuffer.current.clear()
+    rafId.current = null
+  }
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
-	useEffect(() => {
-		/* message.created → appendMessage（热路径，不排序） */
-		const unsubscribeCreated = onUpdate("message.created", (payload) => {
-			appendMessage(payload.chatUid, payload.message);
-		});
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+  useEffect(() => {
+    /* message.created → appendMessage（热路径，不排序） */
+    const unsubscribeCreated = onUpdate('message.created', (payload) => {
+      appendMessage(payload.chatUid, payload.message)
+    })
 
-		/* message.streaming → 合帧 updateMessage */
-		const unsubscribeStreaming = onUpdate("message.streaming", (payload) => {
-			streamingBuffer.current.set(payload.messageUid, {
-				content: payload.content,
-			});
+    /* message.streaming → 合帧 updateMessage */
+    const unsubscribeStreaming = onUpdate('message.streaming', (payload) => {
+      streamingBuffer.current.set(payload.messageUid, {
+        content: payload.content,
+      })
 
-			if (rafId.current == null) {
-				rafId.current = requestAnimationFrame(flushStreaming);
-			}
-		});
+      if (rafId.current == null) {
+        rafId.current = requestAnimationFrame(flushStreaming)
+      }
+    })
 
-		/* message.updated → 最终态 / error / metadata */
-		const unsubscribeUpdated = onUpdate("message.updated", (payload) => {
-			// ✅ 只需要 messageUid
-			updateMessage(payload.messageUid, payload.updates);
-		});
+    /* message.updated → 最终态 / error / metadata */
+    const unsubscribeUpdated = onUpdate('message.updated', (payload) => {
+      // ✅ 只需要 messageUid
+      updateMessage(payload.messageUid, payload.updates)
+    })
 
-		return () => {
-			unsubscribeCreated?.();
-			unsubscribeStreaming?.();
-			unsubscribeUpdated?.();
+    return () => {
+      unsubscribeCreated?.()
+      unsubscribeStreaming?.()
+      unsubscribeUpdated?.()
 
-			if (rafId.current != null) {
-				cancelAnimationFrame(rafId.current);
-			}
-		};
-	}, [appendMessage, updateMessage]);
+      if (rafId.current != null) {
+        cancelAnimationFrame(rafId.current)
+      }
+    }
+  }, [appendMessage, updateMessage])
 }
 
 /* ------------------------------------------------------------------ */
@@ -96,20 +96,24 @@ export function useMessageUpdates() {
  * ------------------------------------------------------------------ */
 
 export function useChatMessageIds(chatUid?: string) {
-	return useMessageStore(
-		(state) => {
-			if (!chatUid) return [];
-			// ✅ 安全检查：确保 chatMessageIds 存在
-			if (!state.chatMessageIds) return [];
-			return state.chatMessageIds[chatUid] || [];
-		},
-		// ✅ 只比较 ID 数组，不涉及消息内容
-		(a, b) => {
-			if (a === b) return true;
-			if (a.length !== b.length) return false;
-			return a.every((id, i) => id === b[i]);
-		},
-	);
+  return useMessageStore(
+    (state) => {
+      if (!chatUid)
+        return []
+      // ✅ 安全检查：确保 chatMessageIds 存在
+      if (!state.chatMessageIds)
+        return []
+      return state.chatMessageIds[chatUid] || []
+    },
+    // ✅ 只比较 ID 数组，不涉及消息内容
+    (a, b) => {
+      if (a === b)
+        return true
+      if (a.length !== b.length)
+        return false
+      return a.every((id, i) => id === b[i])
+    },
+  )
 }
 
 /* ------------------------------------------------------------------ */
@@ -118,15 +122,16 @@ export function useChatMessageIds(chatUid?: string) {
  * ------------------------------------------------------------------ */
 
 export function useMessage(messageUid: string) {
-	return useMessageStore(
-		(state) => {
-			// ✅ 安全检查：确保 messagesById 存在
-			if (!state.messagesById) return undefined;
-			return state.messagesById[messageUid];
-		},
-		// ✅ 浅比较消息对象
-		(a, b) => a === b,
-	);
+  return useMessageStore(
+    (state) => {
+      // ✅ 安全检查：确保 messagesById 存在
+      if (!state.messagesById)
+        return undefined
+      return state.messagesById[messageUid]
+    },
+    // ✅ 浅比较消息对象
+    (a, b) => a === b,
+  )
 }
 
 /* ------------------------------------------------------------------ */
@@ -134,21 +139,23 @@ export function useMessage(messageUid: string) {
  * ------------------------------------------------------------------ */
 
 export function useHasMoreMessages(chatUid?: string) {
-	return useMessageStore(
-		(state) => {
-			if (!chatUid) return false;
-			return state.hasMoreMessages(chatUid);
-		},
-	);
+  return useMessageStore(
+    (state) => {
+      if (!chatUid)
+        return false
+      return state.hasMoreMessages(chatUid)
+    },
+  )
 }
 
 export function useHasNewerMessages(chatUid?: string) {
-	return useMessageStore(
-		(state) => {
-			if (!chatUid) return false;
-			return state.hasNewerMessages(chatUid);
-		},
-	);
+  return useMessageStore(
+    (state) => {
+      if (!chatUid)
+        return false
+      return state.hasNewerMessages(chatUid)
+    },
+  )
 }
 
 /* ------------------------------------------------------------------ */
@@ -156,11 +163,11 @@ export function useHasNewerMessages(chatUid?: string) {
  * ------------------------------------------------------------------ */
 
 export function useLoadMoreMessages() {
-	return useMessageStore((state) => state.loadMoreMessages);
+  return useMessageStore(state => state.loadMoreMessages)
 }
 
 export function useLoadNewerMessages() {
-	return useMessageStore((state) => state.loadNewerMessages);
+  return useMessageStore(state => state.loadNewerMessages)
 }
 
 /* ------------------------------------------------------------------ */
@@ -168,16 +175,17 @@ export function useLoadNewerMessages() {
  * ------------------------------------------------------------------ */
 
 export function useUpdateViewport() {
-	return useMessageStore((state) => state.updateViewport);
+  return useMessageStore(state => state.updateViewport)
 }
 
 export function useGetViewport(chatUid?: string) {
-	return useMessageStore(
-		(state) => {
-			if (!chatUid) return null;
-			return state.getViewport(chatUid);
-		},
-	);
+  return useMessageStore(
+    (state) => {
+      if (!chatUid)
+        return null
+      return state.getViewport(chatUid)
+    },
+  )
 }
 
 /* ------------------------------------------------------------------ */
@@ -185,5 +193,5 @@ export function useGetViewport(chatUid?: string) {
  * ------------------------------------------------------------------ */
 
 export function useMessagesLoading() {
-	return useMessageStore((state) => state.isLoading);
+  return useMessageStore(state => state.isLoading)
 }
