@@ -85,8 +85,6 @@ export class AppWindow extends BrowserWindow {
 
       import.meta.env.DEV ? this.loadURL(url) : this.loadURL(url)
 
-      this.webContents.openDevTools({ mode: 'right' })
-
       this.once('ready-to-show', () => {
         logger.info('[Window] Ready to show, displaying now')
         this.show()

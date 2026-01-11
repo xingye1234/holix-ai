@@ -189,15 +189,6 @@ async function bootstrap() {
     // 阶段 3: 运行中
     // ============================================
     await lifecycle.setPhase(LifecyclePhase.RUNNING)
-
-    // 打印性能报告摘要（简洁格式）
-    lifecycle.printPerformanceSummary()
-
-    // 如果需要完整的 JSON 报告，可以使用：
-    // lifecycle.printPerformanceReport()
-
-    // 或者获取 JSON 对象进行其他处理：
-    // const report = lifecycle.getPerformanceReport()
   }
   catch (error) {
     await lifecycle.setPhase(LifecyclePhase.ERROR)
