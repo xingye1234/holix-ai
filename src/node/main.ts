@@ -2,7 +2,7 @@ import { resolve } from 'node:path'
 import process from 'node:process'
 import { createRouter } from '@holix/router'
 import { createStaticMiddleware } from '@holix/static'
-import { app } from 'electron'
+import { app, shell } from 'electron'
 import { initChat } from './chat/init'
 import { migrateDb } from './database/connect'
 import { createChannel } from './platform/channel'
@@ -98,6 +98,23 @@ app.on('before-quit', async () => {
 app.on('will-quit', async () => {
   await lifecycle.setPhase(LifecyclePhase.STOPPED)
   logger.info('[Main] Application stopped')
+})
+
+app.on('web-contents-created', (_, contents) => {
+  contents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith('http')) {
+      shell.openExternal(url)
+      return { action: 'deny' }
+    }
+    return { action: 'allow' }
+  })
+
+  contents.on('will-navigate', (event, url) => {
+    if (url.startsWith('http') || url.startsWith('https')) {
+      event.preventDefault()
+      shell.openExternal(url)
+    }
+  })
 })
 
 // ============================================

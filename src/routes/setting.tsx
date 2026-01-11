@@ -15,6 +15,10 @@ const settingList = [
     name: '供应商设置',
     path: '/setting/provider',
   },
+  {
+    name: '帮助与支持',
+    path: '/setting/help',
+  },
 ]
 
 function AppLayoutComponent() {

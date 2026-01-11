@@ -12,3 +12,15 @@ export function toggleMaximize () {
 export function close () {
 	kyInstance.post('window/close')
 }
+
+export function toggleDevTools () {
+	return kyInstance.post('window/devtools')
+}
+
+export async function getAppVersion () {
+	return kyInstance.get('window/version').json<{ version: string }>()
+}
+
+export function openExternal (url: string) {
+	return kyInstance.post('window/open-external', { json: { url } })
+}

@@ -1,7 +1,7 @@
 import type { HolixProtocolRouter } from '@holix/router'
 import { join } from 'node:path'
 import process from 'node:process'
-import { BrowserWindow } from 'electron'
+import { app, BrowserWindow } from 'electron'
 import { configStore } from './config'
 import { logger } from './logger'
 import { update } from './update'
@@ -73,6 +73,20 @@ export class AppWindow extends BrowserWindow {
         this.close()
       }
 
+      if (action === 'devtools') {
+        if (this.webContents.isDevToolsOpened()) {
+          this.webContents.closeDevTools()
+        }
+        else {
+          this.webContents.openDevTools()
+        }
+      }
+
+      next()
+    })
+
+    router.get('/window/version', async (ctx, next) => {
+      ctx.json({ version: app.getVersion() })
       next()
     })
   }
