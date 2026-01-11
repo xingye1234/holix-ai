@@ -44,7 +44,7 @@ function Index() {
 
   const estimatedTokens = useMemo(() => estimateTokens(value), [value])
 
-  const onSend = useCallback(async () => {
+  const onSend = useCallback(() => {
     if (value.trim().length === 0)
       return
     if (!model || !provider)
