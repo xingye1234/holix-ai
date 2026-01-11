@@ -1,8 +1,8 @@
-import useChat from "@/store/chat";
-import { ChatPanel } from "./panel";
+import useChat from '@/store/chat'
+import { ChatPanel } from './panel'
 
 export function AsideChatSidebar() {
-  const chats = useChat((state) => state.chats);
+  const chats = useChat(state => state.chats)
 
   return (
     <nav className="w-full py-2 h-[calc(100vh-var(--app-header-height)-50px-10px)] overflow-auto">
@@ -12,9 +12,9 @@ export function AsideChatSidebar() {
             <li key={chat.id} className="px-2">
               <ChatPanel {...chat} />
             </li>
-          );
+          )
         })}
       </ul>
     </nav>
-  );
+  )
 }
