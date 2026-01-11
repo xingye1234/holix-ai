@@ -1,8 +1,8 @@
 import type { VirtuosoHandle } from 'react-virtuoso'
-import { memo, useEffect, useRef } from 'react'
+import { memo, useCallback, useEffect, useRef } from 'react'
 import { Virtuoso } from 'react-virtuoso'
 import { useChatContext } from '@/context/chat'
-import { useChatMessageIds } from '@/hooks/message'
+import { useChatMessageIds, useHasMoreMessages, useHasNewerMessages, useLoadMoreMessages, useLoadNewerMessages, useMessagesLoading, useUpdateViewport } from '@/hooks/message'
 import { useMessageStore } from '@/store/message'
 import { MessageItem } from './message-item'
 
@@ -17,25 +17,81 @@ export const MainContent = memo(() => {
 
   // ✅ 只获取消息 ID 数组，不包含消息内容
   const messageIds = useChatMessageIds(chat?.uid)
+  const hasMore = useHasMoreMessages(chat?.uid)
+  const hasNewer = useHasNewerMessages(chat?.uid)
+  const loadMore = useLoadMoreMessages()
+  const loadNewer = useLoadNewerMessages()
+  const isLoading = useMessagesLoading()
+  const updateViewport = useUpdateViewport()
 
   const isAtBottomRef = useRef(true)
   const isUserScrollingRef = useRef(false)
   const scrollTimerRef = useRef<NodeJS.Timeout | null>(null)
   const initialIndex = useRef<number | null>(null)
+  const isLoadingMoreRef = useRef(false)
+  const isLoadingNewerRef = useRef(false)
 
   if (initialIndex.current === null && messageIds.length > 0) {
     initialIndex.current = messageIds.length - 1
   }
 
-  console.log('MainContent render: chat ID =', chat?.uid, 'message count =', messageIds.length)
+  console.log('MainContent render: chat ID =', chat?.uid, 'message count =', messageIds.length, 'hasMore =', hasMore, 'hasNewer =', hasNewer)
+
+  // 向上滚动加载更多消息
+  const handleStartReached = useCallback(async () => {
+    if (!chat?.uid || !hasMore || isLoading || isLoadingMoreRef.current) {
+      return
+    }
+
+    isLoadingMoreRef.current = true
+    console.log('[MainContent] Loading more messages for chat:', chat.uid)
+
+    try {
+      await loadMore(chat.uid)
+    }
+    finally {
+      isLoadingMoreRef.current = false
+    }
+  }, [chat?.uid, hasMore, isLoading, loadMore])
+
+  // 向下滚动加载更新消息
+  const handleEndReached = useCallback(async () => {
+    if (!chat?.uid || !hasNewer || isLoading || isLoadingNewerRef.current) {
+      return
+    }
+
+    isLoadingNewerRef.current = true
+    console.log('[MainContent] Loading newer messages for chat:', chat.uid)
+
+    try {
+      await loadNewer(chat.uid)
+    }
+    finally {
+      isLoadingNewerRef.current = false
+    }
+  }, [chat?.uid, hasNewer, isLoading, loadNewer])
+
+  // 跟踪可见消息范围
+  const handleRangeChanged = useCallback((range: { startIndex: number, endIndex: number }) => {
+    if (!chat?.uid || messageIds.length === 0)
+      return
+
+    const firstVisibleId = messageIds[range.startIndex]
+    const lastVisibleId = messageIds[range.endIndex]
+
+    const messagesById = useMessageStore.getState().messagesById
+    const firstMsg = messagesById[firstVisibleId]
+    const lastMsg = messagesById[lastVisibleId]
+
+    if (firstMsg && lastMsg) {
+      // 节流更新，避免频繁写入 localStorage
+      updateViewport(chat.uid, firstMsg.seq, lastMsg.seq)
+    }
+  }, [chat?.uid, messageIds, updateViewport])
 
   // 新消息添加时自动滚动
   useEffect(() => {
     if (messageIds.length === 0)
-      return
-
-    // 如果用户正在主动滚动，不自动滚动
-    if (isUserScrollingRef.current)
       return
 
     // 如果接近底部，自动滚动到最新消息
@@ -90,7 +146,10 @@ export const MainContent = memo(() => {
         data={messageIds}
         style={{ height: 'var(--app-chat-content-height)' }}
         className="custom-scrollbar"
-        increaseViewportBy={{ top: 0, bottom: 200 }}
+        increaseViewportBy={{ top: 200, bottom: 200 }}
+        startReached={handleStartReached}
+        endReached={handleEndReached}
+        rangeChanged={handleRangeChanged}
         followOutput={(isAtBottom) => {
           // 如果用户正在主动滚动，不自动跟随
           if (isUserScrollingRef.current)

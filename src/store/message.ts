@@ -3,6 +3,38 @@ import { createWithEqualityFn } from 'zustand/traditional'
 import { trpcClient } from '@/lib/trpc-client'
 
 /* =========================================================
+ * 本地存储工具：持久化窗口位置
+ * ======================================================= */
+
+const VIEWPORT_STORAGE_KEY = 'holix-chat-viewports'
+
+function saveViewportToStorage(chatUid: string, viewport: { firstVisibleSeq: number, lastVisibleSeq: number }) {
+  try {
+    const stored = localStorage.getItem(VIEWPORT_STORAGE_KEY)
+    const viewports = stored ? JSON.parse(stored) : {}
+    viewports[chatUid] = viewport
+    localStorage.setItem(VIEWPORT_STORAGE_KEY, JSON.stringify(viewports))
+  }
+  catch (err) {
+    console.error('[message-store] Failed to save viewport:', err)
+  }
+}
+
+function loadViewportFromStorage(chatUid: string): { firstVisibleSeq: number, lastVisibleSeq: number } | null {
+  try {
+    const stored = localStorage.getItem(VIEWPORT_STORAGE_KEY)
+    if (!stored)
+      return null
+    const viewports = JSON.parse(stored)
+    return viewports[chatUid] || null
+  }
+  catch (err) {
+    console.error('[message-store] Failed to load viewport:', err)
+    return null
+  }
+}
+
+/* =========================================================
  * 冷路径工具：消息排序（只允许 init / load 使用）
  * ======================================================= */
 
@@ -25,6 +57,10 @@ interface MessageStore {
   messagesById: Record<string, Message>
   // 聊天消息 ID 索引：每个聊天只存储消息 ID 列表
   chatMessageIds: Record<string, string[]>
+  // 消息范围记录：每个聊天当前加载的消息范围 (minSeq, maxSeq)
+  chatMessageRange: Record<string, { minSeq: number, maxSeq: number, hasMore: boolean, hasNewer: boolean }>
+  // 可视区域记录：每个聊天当前可见的消息范围（用于恢复位置）
+  chatViewport: Record<string, { firstVisibleSeq: number, lastVisibleSeq: number }>
 
   isLoading: boolean
   initialized: boolean
@@ -32,16 +68,25 @@ interface MessageStore {
   /* 冷路径 */
   init: () => Promise<void>
   loadMessages: (chatUid: string) => Promise<void>
+  loadMoreMessages: (chatUid: string) => Promise<void>
+  loadNewerMessages: (chatUid: string) => Promise<void>
 
   /* 热路径 */
   appendMessage: (chatUid: string, message: Message) => void
   appendMessages: (chatUid: string, messages: Message[]) => void
+  prependMessages: (chatUid: string, messages: Message[]) => void
 
   updateMessage: (messageUid: string, updates: Partial<Message>) => void
+
+  /* 可视区域管理 */
+  updateViewport: (chatUid: string, firstVisibleSeq: number, lastVisibleSeq: number) => void
+  getViewport: (chatUid: string) => { firstVisibleSeq: number, lastVisibleSeq: number } | null
 
   /* Selectors */
   getMessageById: (messageUid: string) => Message | undefined
   getChatMessageIds: (chatUid: string) => string[]
+  hasMoreMessages: (chatUid: string) => boolean
+  hasNewerMessages: (chatUid: string) => boolean
 }
 
 /* =========================================================
@@ -51,6 +96,8 @@ interface MessageStore {
 export const useMessageStore = createWithEqualityFn<MessageStore>()((set, get) => ({
   messagesById: {},
   chatMessageIds: {},
+  chatMessageRange: {},
+  chatViewport: {},
   isLoading: false,
   initialized: false,
 
@@ -66,30 +113,74 @@ export const useMessageStore = createWithEqualityFn<MessageStore>()((set, get) =
       const chats = await trpcClient.chat.list()
       const messagesById: Record<string, Message> = {}
       const chatMessageIds: Record<string, string[]> = {}
+      const chatMessageRange: Record<string, { minSeq: number, maxSeq: number, hasMore: boolean, hasNewer: boolean }> = {}
+      const chatViewport: Record<string, { firstVisibleSeq: number, lastVisibleSeq: number }> = {}
 
       await Promise.all(
         chats.map(async (chat) => {
-          const msgs = await trpcClient.message.getByChatUid({
-            chatUid: chat.uid,
-            limit: 200,
-            order: 'asc',
-          })
+          // 尝试从本地存储恢复上次的可视区域
+          const savedViewport = loadViewportFromStorage(chat.uid)
 
-          const sorted = sortMessagesBySeqAscCold(msgs)
+          let msgs: Message[]
+          if (savedViewport) {
+            // 从上次位置开始加载，向上和向下各加载15条
+            const centerSeq = Math.floor((savedViewport.firstVisibleSeq + savedViewport.lastVisibleSeq) / 2)
+            msgs = await trpcClient.message.getByChatUid({
+              chatUid: chat.uid,
+              beforeSeq: centerSeq + 15,
+              limit: 30,
+              order: 'desc',
+            })
+          }
+          else {
+            // 首次加载，加载最新30条
+            msgs = await trpcClient.message.getByChatUid({
+              chatUid: chat.uid,
+              limit: 30,
+              order: 'desc',
+            })
+          }
 
-          // 扁平化存储消息
-          sorted.forEach((msg) => {
-            messagesById[msg.uid] = msg
-          })
+          // 反转为升序
+          const sorted = sortMessagesBySeqAscCold(msgs.reverse())
 
-          // 存储消息 ID 列表
-          chatMessageIds[chat.uid] = sorted.map(msg => msg.uid)
+          if (sorted.length > 0) {
+            // 扁平化存储消息
+            sorted.forEach((msg) => {
+              messagesById[msg.uid] = msg
+            })
+
+            // 存储消息 ID 列表
+            chatMessageIds[chat.uid] = sorted.map(msg => msg.uid)
+
+            // 记录消息范围
+            chatMessageRange[chat.uid] = {
+              minSeq: sorted[0].seq,
+              maxSeq: sorted[sorted.length - 1].seq,
+              hasMore: msgs.length === 30, // 如果返回30条，可能还有更多
+              hasNewer: false, // 初始加载时假设没有更新的
+            }
+
+            // 恢复或初始化可视区域
+            if (savedViewport) {
+              chatViewport[chat.uid] = savedViewport
+            }
+            else {
+              // 默认显示最后几条消息
+              chatViewport[chat.uid] = {
+                firstVisibleSeq: Math.max(sorted[0].seq, sorted[sorted.length - 1].seq - 10),
+                lastVisibleSeq: sorted[sorted.length - 1].seq,
+              }
+            }
+          }
         }),
       )
 
       set({
         messagesById,
         chatMessageIds,
+        chatMessageRange,
+        chatViewport,
         initialized: true,
         isLoading: false,
       })
@@ -104,13 +195,31 @@ export const useMessageStore = createWithEqualityFn<MessageStore>()((set, get) =
     set({ isLoading: true })
 
     try {
-      const msgs = await trpcClient.message.getByChatUid({
-        chatUid,
-        limit: 200,
-        order: 'asc',
-      })
+      // 尝试从本地存储恢复上次的可视区域
+      const savedViewport = loadViewportFromStorage(chatUid)
 
-      const sorted = sortMessagesBySeqAscCold(msgs)
+      let msgs: Message[]
+      if (savedViewport) {
+        // 从上次位置开始加载
+        const centerSeq = Math.floor((savedViewport.firstVisibleSeq + savedViewport.lastVisibleSeq) / 2)
+        msgs = await trpcClient.message.getByChatUid({
+          chatUid,
+          beforeSeq: centerSeq + 15,
+          limit: 30,
+          order: 'desc',
+        })
+      }
+      else {
+        // 首次加载，加载最新30条
+        msgs = await trpcClient.message.getByChatUid({
+          chatUid,
+          limit: 30,
+          order: 'desc',
+        })
+      }
+
+      // 反转为升序
+      const sorted = sortMessagesBySeqAscCold(msgs.reverse())
 
       set((state) => {
         const newMessagesById = { ...state.messagesById }
@@ -120,18 +229,188 @@ export const useMessageStore = createWithEqualityFn<MessageStore>()((set, get) =
           newMessagesById[msg.uid] = msg
         })
 
+        const newRange = sorted.length > 0
+          ? {
+              minSeq: sorted[0].seq,
+              maxSeq: sorted[sorted.length - 1].seq,
+              hasMore: msgs.length === 30,
+              hasNewer: false,
+            }
+          : { minSeq: 0, maxSeq: 0, hasMore: false, hasNewer: false }
+
+        // 设置或恢复可视区域
+        const newViewport = savedViewport || (sorted.length > 0
+          ? {
+              firstVisibleSeq: Math.max(sorted[0].seq, sorted[sorted.length - 1].seq - 10),
+              lastVisibleSeq: sorted[sorted.length - 1].seq,
+            }
+          : null)
+
         return {
           messagesById: newMessagesById,
           chatMessageIds: {
             ...state.chatMessageIds,
             [chatUid]: sorted.map(msg => msg.uid),
           },
+          chatMessageRange: {
+            ...state.chatMessageRange,
+            [chatUid]: newRange,
+          },
+          chatViewport: newViewport
+            ? {
+                ...state.chatViewport,
+                [chatUid]: newViewport,
+              }
+            : state.chatViewport,
           isLoading: false,
         }
       })
     }
     catch (err) {
       console.error('[message-store] loadMessages failed', err)
+      set({ isLoading: false })
+    }
+  },
+
+  async loadMoreMessages(chatUid) {
+    const state = get()
+    const range = state.chatMessageRange[chatUid]
+
+    // 没有更多消息或正在加载
+    if (!range || !range.hasMore || state.isLoading)
+      return
+
+    set({ isLoading: true })
+
+    try {
+      // 加载 minSeq 之前的30条消息
+      const msgs = await trpcClient.message.getByChatUid({
+        chatUid,
+        beforeSeq: range.minSeq - 1,
+        limit: 30,
+        order: 'desc',
+      })
+
+      if (msgs.length === 0) {
+        set(state => ({
+          chatMessageRange: {
+            ...state.chatMessageRange,
+            [chatUid]: { ...range, hasMore: false },
+          },
+          isLoading: false,
+        }))
+        return
+      }
+
+      // 反转为升序
+      const sorted = sortMessagesBySeqAscCold(msgs.reverse())
+
+      set((state) => {
+        const newMessagesById = { ...state.messagesById }
+        const currentIds = state.chatMessageIds[chatUid] || []
+        const existingSet = new Set(currentIds)
+
+        const incoming = sorted.filter(m => !existingSet.has(m.uid))
+
+        // 扁平化存储消息
+        incoming.forEach((msg) => {
+          newMessagesById[msg.uid] = msg
+        })
+
+        const newMinSeq = sorted.length > 0 ? sorted[0].seq : range.minSeq
+
+        return {
+          messagesById: newMessagesById,
+          chatMessageIds: {
+            ...state.chatMessageIds,
+            [chatUid]: [...incoming.map(m => m.uid), ...currentIds],
+          },
+          chatMessageRange: {
+            ...state.chatMessageRange,
+            [chatUid]: {
+              minSeq: newMinSeq,
+              maxSeq: range.maxSeq,
+              hasMore: msgs.length === 30,
+              hasNewer: range.hasNewer,
+            },
+          },
+          isLoading: false,
+        }
+      })
+    }
+    catch (err) {
+      console.error('[message-store] loadMoreMessages failed', err)
+      set({ isLoading: false })
+    }
+  },
+
+  async loadNewerMessages(chatUid) {
+    const state = get()
+    const range = state.chatMessageRange[chatUid]
+
+    // 没有更新的消息或正在加载
+    if (!range || !range.hasNewer || state.isLoading)
+      return
+
+    set({ isLoading: true })
+
+    try {
+      // 加载 maxSeq 之后的30条消息
+      const msgs = await trpcClient.message.getByChatUid({
+        chatUid,
+        beforeSeq: range.maxSeq + 31, // beforeSeq 是小于等于，所以 +31 才能获取之后的30条
+        limit: 30,
+        order: 'asc', // 升序查询
+      })
+
+      if (msgs.length === 0) {
+        set(state => ({
+          chatMessageRange: {
+            ...state.chatMessageRange,
+            [chatUid]: { ...range, hasNewer: false },
+          },
+          isLoading: false,
+        }))
+        return
+      }
+
+      const sorted = sortMessagesBySeqAscCold(msgs)
+
+      set((state) => {
+        const newMessagesById = { ...state.messagesById }
+        const currentIds = state.chatMessageIds[chatUid] || []
+        const existingSet = new Set(currentIds)
+
+        const incoming = sorted.filter(m => !existingSet.has(m.uid))
+
+        // 扁平化存储消息
+        incoming.forEach((msg) => {
+          newMessagesById[msg.uid] = msg
+        })
+
+        const newMaxSeq = sorted.length > 0 ? sorted[sorted.length - 1].seq : range.maxSeq
+
+        return {
+          messagesById: newMessagesById,
+          chatMessageIds: {
+            ...state.chatMessageIds,
+            [chatUid]: [...currentIds, ...incoming.map(m => m.uid)],
+          },
+          chatMessageRange: {
+            ...state.chatMessageRange,
+            [chatUid]: {
+              minSeq: range.minSeq,
+              maxSeq: newMaxSeq,
+              hasMore: range.hasMore,
+              hasNewer: msgs.length === 30,
+            },
+          },
+          isLoading: false,
+        }
+      })
+    }
+    catch (err) {
+      console.error('[message-store] loadNewerMessages failed', err)
       set({ isLoading: false })
     }
   },
@@ -188,12 +467,58 @@ export const useMessageStore = createWithEqualityFn<MessageStore>()((set, get) =
         newMessagesById[msg.uid] = msg
       })
 
+      // 更新范围
+      const range = state.chatMessageRange[chatUid]
+      const newMaxSeq = incoming.length > 0 ? Math.max(...incoming.map(m => m.seq)) : range?.maxSeq || 0
+
       return {
         ...state,
         messagesById: newMessagesById,
         chatMessageIds: {
           ...state.chatMessageIds,
           [chatUid]: [...currentIds, ...incoming.map(m => m.uid)],
+        },
+        chatMessageRange: {
+          ...state.chatMessageRange,
+          [chatUid]: {
+            minSeq: range?.minSeq || incoming[0]?.seq || 0,
+            maxSeq: newMaxSeq,
+            hasMore: range?.hasMore || false,
+            hasNewer: false, // 新消息追加到末尾，没有更新的了
+          },
+        },
+      }
+    })
+  },
+
+  prependMessages(chatUid, messages) {
+    if (messages.length === 0)
+      return
+
+    set((state) => {
+      // ✅ 安全检查
+      if (!state.chatMessageIds || !state.messagesById)
+        return state
+
+      const currentIds = state.chatMessageIds[chatUid] || []
+      const existingSet = new Set(currentIds)
+
+      const incoming = messages.filter(m => !existingSet.has(m.uid))
+
+      if (incoming.length === 0)
+        return state
+
+      const newMessagesById = { ...state.messagesById }
+      incoming.forEach((msg) => {
+        newMessagesById[msg.uid] = msg
+      })
+
+      return {
+        ...state,
+        messagesById: newMessagesById,
+        chatMessageIds: {
+          ...state.chatMessageIds,
+          [chatUid]: [...incoming.map(m => m.uid), ...currentIds],
         },
       }
     })
@@ -224,6 +549,30 @@ export const useMessageStore = createWithEqualityFn<MessageStore>()((set, get) =
     })
   },
 
+  /* ---------- 可视区域管理 ---------- */
+
+  updateViewport(chatUid, firstVisibleSeq, lastVisibleSeq) {
+    set((state) => {
+      const newViewport = { firstVisibleSeq, lastVisibleSeq }
+
+      // 保存到本地存储
+      saveViewportToStorage(chatUid, newViewport)
+
+      return {
+        ...state,
+        chatViewport: {
+          ...state.chatViewport,
+          [chatUid]: newViewport,
+        },
+      }
+    })
+  },
+
+  getViewport(chatUid) {
+    const viewport = get().chatViewport[chatUid]
+    return viewport || null
+  },
+
   /* ---------- Selectors ---------- */
 
   getMessageById(messageUid) {
@@ -232,5 +581,15 @@ export const useMessageStore = createWithEqualityFn<MessageStore>()((set, get) =
 
   getChatMessageIds(chatUid) {
     return get().chatMessageIds[chatUid] || []
+  },
+
+  hasMoreMessages(chatUid) {
+    const range = get().chatMessageRange[chatUid]
+    return range?.hasMore || false
+  },
+
+  hasNewerMessages(chatUid) {
+    const range = get().chatMessageRange[chatUid]
+    return range?.hasNewer || false
   },
 }))

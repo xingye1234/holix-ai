@@ -1,3 +1,4 @@
+import process from 'node:process'
 import { ChatAnthropic } from '@langchain/anthropic'
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai'
 import { ChatOllama } from '@langchain/ollama'
@@ -64,10 +65,7 @@ function createOpenAIAdapter(model: string, config?: LlmConfig) {
     apiKey: config?.apiKey || process.env.OPENAI_API_KEY,
     // 指定 Base URL（用于自定义端点或代理）
     configuration: {
-      baseURL:
-				config?.baseURL
-				|| process.env.OPENAI_BASE_URL
-				|| 'https://api.openai.com/v1',
+      baseURL: config?.baseURL || process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1',
     },
   })
 }

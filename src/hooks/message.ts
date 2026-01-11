@@ -128,3 +128,62 @@ export function useMessage(messageUid: string) {
 		(a, b) => a === b,
 	);
 }
+
+/* ------------------------------------------------------------------ */
+/* 判断是否还有更多消息
+ * ------------------------------------------------------------------ */
+
+export function useHasMoreMessages(chatUid?: string) {
+	return useMessageStore(
+		(state) => {
+			if (!chatUid) return false;
+			return state.hasMoreMessages(chatUid);
+		},
+	);
+}
+
+export function useHasNewerMessages(chatUid?: string) {
+	return useMessageStore(
+		(state) => {
+			if (!chatUid) return false;
+			return state.hasNewerMessages(chatUid);
+		},
+	);
+}
+
+/* ------------------------------------------------------------------ */
+/* 加载更多消息
+ * ------------------------------------------------------------------ */
+
+export function useLoadMoreMessages() {
+	return useMessageStore((state) => state.loadMoreMessages);
+}
+
+export function useLoadNewerMessages() {
+	return useMessageStore((state) => state.loadNewerMessages);
+}
+
+/* ------------------------------------------------------------------ */
+/* 可视区域管理
+ * ------------------------------------------------------------------ */
+
+export function useUpdateViewport() {
+	return useMessageStore((state) => state.updateViewport);
+}
+
+export function useGetViewport(chatUid?: string) {
+	return useMessageStore(
+		(state) => {
+			if (!chatUid) return null;
+			return state.getViewport(chatUid);
+		},
+	);
+}
+
+/* ------------------------------------------------------------------ */
+/* 获取加载状态
+ * ------------------------------------------------------------------ */
+
+export function useMessagesLoading() {
+	return useMessageStore((state) => state.isLoading);
+}
