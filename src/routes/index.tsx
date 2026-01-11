@@ -2,10 +2,12 @@ import { debounce } from '@tanstack/pacer/debouncer'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { Coins } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
+import { toast } from 'sonner'
 import { Editor } from '@/components/editor/editor'
 import ProviderModelSelector from '@/components/provider-model-selector'
 import { Button } from '@/components/ui/button'
 import { command } from '@/lib/command'
+import { getProvider } from '@/lib/provider'
 import { estimateTokens, formatTokenCount } from '@/share/token'
 import useChat from '@/store/chat'
 
@@ -42,33 +44,49 @@ function Index() {
 
   const estimatedTokens = useMemo(() => estimateTokens(value), [value])
 
-  const onSend = useCallback(() => {
+  const onSend = useCallback(async () => {
     if (value.trim().length === 0)
       return
     if (!model || !provider)
       return
 
-    const title = generateTitle(value)
+    const title = generateTitle(value);
 
-    chat
-      .createChat({ provider, model, title })
-      .then((newChat) => {
-        if (newChat) {
-          setValue('')
-          setTimeout(() => {
-            command('chat.message', {
-              chatId: newChat.uid,
-              content: value,
-            })
-            navigate({
-              to: '/chat/$id',
-              params: { id: newChat.uid },
-            })
-          }, 100)
-        }
-      })
+    (async () => {
+      const providerConfig = await getProvider(provider)
+      if (!providerConfig) {
+        throw new Error(`Provider ${provider} not found`)
+      }
+
+      if (!providerConfig.models.includes(model)) {
+        throw new Error(`Model ${model} not supported by provider ${provider}`)
+      }
+
+      if (!providerConfig.apiKey?.trim()) {
+        throw new Error(`Provider ${provider} is not configured`)
+      }
+
+      const newChat = await chat.createChat({ provider, model, title })
+
+      if (newChat) {
+        setTimeout(() => {
+          command('chat.message', {
+            chatId: newChat.uid,
+            content: value,
+          })
+          navigate({
+            to: '/chat/$id',
+            params: { id: newChat.uid },
+          })
+        }, 100)
+      }
+    })()
       .catch((err) => {
         console.error('Failed to create chat:', err)
+        toast.error(`创建聊天失败: ${err.message || err}`)
+      })
+      .finally(() => {
+        setValue('')
       })
   }, [value, model, provider, chat.createChat])
 
