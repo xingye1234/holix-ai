@@ -119,7 +119,7 @@ export const MessageItem = memo(({
       >
         {/* Status Indicator for AI */}
         {!isUser && (isStreaming || isPending) && (
-          <div className="absolute -bottom-6 left-0 flex items-center gap-1.5 text-xs text-muted-foreground bg-background/80 backdrop-blur-sm px-2 py-0.5 rounded-full border shadow-sm">
+          <div className="absolute -bottom-8 left-0 flex items-center gap-1.5 text-xs text-muted-foreground bg-background/80 backdrop-blur-sm px-2 py-0.5 rounded-full border shadow-sm">
             {isStreaming ? (
               <>
                 <Loader2 className="w-3 h-3 animate-spin text-primary" />

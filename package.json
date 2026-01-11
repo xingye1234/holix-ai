@@ -13,7 +13,7 @@
     "dev:main": "tsdown -- --dev",
     "build:main": "tsdown",
     "build:vite": "vite build",
-    "dev:app": "electron .",
+    "dev:app": "pnpm run dev:main && electron .",
     "build": "pnpm build:main && pnpm build:vite",
     "dev": "concurrently -k -n VITE,MAIN -c blue,green \"pnpm dev:vite\" \"pnpm dev:main\"",
     "type-check": "tsc --noEmit",

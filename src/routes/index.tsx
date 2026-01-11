@@ -1,5 +1,5 @@
 import { debounce } from '@tanstack/pacer/debouncer'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { Coins } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
 import { Editor } from '@/components/editor/editor'
@@ -26,6 +26,7 @@ function Index() {
   const [provider, setProvider] = useState<string>('')
   const [model, setModel] = useState<string>('')
   const chat = useChat()
+  const navigate = useNavigate()
 
   const onTextChange = useCallback(
     debounce(
@@ -58,6 +59,10 @@ function Index() {
             command('chat.message', {
               chatId: newChat.uid,
               content: value,
+            })
+            navigate({
+              to: '/chat/$id',
+              params: { id: newChat.uid },
             })
           }, 100)
         }
