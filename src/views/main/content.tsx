@@ -4,6 +4,7 @@ import { memo, useEffect, useRef, useState } from 'react'
 import { VList } from 'virtua'
 import { useChatContext } from '@/context/chat'
 import { getChatViewport } from '@/lib/chat-viewers'
+import { onUpdate } from '@/lib/command'
 import { useMessageStore } from '@/store/message'
 import { MessageItem } from './message-item'
 // ✅ Telegram 架构：只订阅消息 ID 列表，不订阅消息内容
@@ -39,6 +40,43 @@ export const MainContent = memo(() => {
 
       setMessages(messages)
     })()
+
+    if (!chat?.uid) {
+      return
+    }
+
+    // 2. 实时更新订阅
+    const handleCreated = (payload: { chatUid: string, message: Message }) => {
+      if (payload.chatUid === chat.uid) {
+        setMessages(prev => [...prev, payload.message])
+      }
+    }
+
+    const handleStreaming = (payload: { messageUid: string, content: string }) => {
+      setMessages(prev => prev.map(msg =>
+        msg.uid === payload.messageUid
+          ? { ...msg, content: payload.content, status: 'streaming' }
+          : msg,
+      ))
+    }
+
+    const handleUpdated = (payload: { messageUid: string, updates: Partial<Message> }) => {
+      setMessages(prev => prev.map(msg =>
+        msg.uid === payload.messageUid
+          ? { ...msg, ...payload.updates }
+          : msg,
+      ))
+    }
+
+    const unsubCreated = onUpdate('message.created', handleCreated)
+    const unsubStreaming = onUpdate('message.streaming', handleStreaming)
+    const unsubUpdated = onUpdate('message.updated', handleUpdated)
+
+    return () => {
+      unsubCreated?.()
+      unsubStreaming?.()
+      unsubUpdated?.()
+    }
   }, [chat?.uid])
 
   return (
