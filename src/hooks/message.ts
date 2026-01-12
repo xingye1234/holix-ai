@@ -1,21 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { onUpdate } from '@/lib/command'
+import logger from '@/lib/logger'
 import { useMessageStore } from '@/store/message'
-
-/* ------------------------------------------------------------------ */
-/* 初始化消息 Store（只执行一次） */
-/* ------------------------------------------------------------------ */
-
-export function useInitMessages() {
-  const init = useMessageStore(s => s.init)
-  const initialized = useMessageStore(s => s.initialized)
-
-  useEffect(() => {
-    if (!initialized) {
-      init()
-    }
-  }, [init, initialized])
-}
 
 /* ------------------------------------------------------------------ */
 /* 消息实时更新（created / streaming / updated）
@@ -56,6 +42,8 @@ export function useMessageUpdates() {
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
+    logger.info('Initializing message updates listener...')
+
     /* message.created → appendMessage（热路径，不排序） */
     const unsubscribeCreated = onUpdate('message.created', (payload) => {
       appendMessage(payload.chatUid, payload.message)
@@ -88,110 +76,4 @@ export function useMessageUpdates() {
       }
     }
   }, [appendMessage, updateMessage])
-}
-
-/* ------------------------------------------------------------------ */
-/* 当前聊天消息 ID 列表（Telegram 架构）
- * 返回消息 ID 数组，MessageItem 自己订阅单个消息
- * ------------------------------------------------------------------ */
-
-export function useChatMessageIds(chatUid?: string) {
-  return useMessageStore(
-    (state) => {
-      if (!chatUid)
-        return []
-      // ✅ 安全检查：确保 chatMessageIds 存在
-      if (!state.chatMessageIds)
-        return []
-      return state.chatMessageIds[chatUid] || []
-    },
-    // ✅ 只比较 ID 数组，不涉及消息内容
-    (a, b) => {
-      if (a === b)
-        return true
-      if (a.length !== b.length)
-        return false
-      return a.every((id, i) => id === b[i])
-    },
-  )
-}
-
-/* ------------------------------------------------------------------ */
-/* 订阅单个消息（Telegram 架构）
- * MessageItem 使用此 hook 订阅单个消息，完全隔离
- * ------------------------------------------------------------------ */
-
-export function useMessage(messageUid: string) {
-  return useMessageStore(
-    (state) => {
-      // ✅ 安全检查：确保 messagesById 存在
-      if (!state.messagesById)
-        return undefined
-      return state.messagesById[messageUid]
-    },
-    // ✅ 浅比较消息对象
-    (a, b) => a === b,
-  )
-}
-
-/* ------------------------------------------------------------------ */
-/* 判断是否还有更多消息
- * ------------------------------------------------------------------ */
-
-export function useHasMoreMessages(chatUid?: string) {
-  return useMessageStore(
-    (state) => {
-      if (!chatUid)
-        return false
-      return state.hasMoreMessages(chatUid)
-    },
-  )
-}
-
-export function useHasNewerMessages(chatUid?: string) {
-  return useMessageStore(
-    (state) => {
-      if (!chatUid)
-        return false
-      return state.hasNewerMessages(chatUid)
-    },
-  )
-}
-
-/* ------------------------------------------------------------------ */
-/* 加载更多消息
- * ------------------------------------------------------------------ */
-
-export function useLoadMoreMessages() {
-  return useMessageStore(state => state.loadMoreMessages)
-}
-
-export function useLoadNewerMessages() {
-  return useMessageStore(state => state.loadNewerMessages)
-}
-
-/* ------------------------------------------------------------------ */
-/* 可视区域管理
- * ------------------------------------------------------------------ */
-
-export function useUpdateViewport() {
-  return useMessageStore(state => state.updateViewport)
-}
-
-export function useGetViewport(chatUid?: string) {
-  return useMessageStore(
-    (state) => {
-      if (!chatUid)
-        return null
-      return state.getViewport(chatUid)
-    },
-  )
-}
-
-/* ------------------------------------------------------------------ */
-/* 获取加载状态
- * ------------------------------------------------------------------ */
-
-export function useMessagesLoading() {
-  return useMessageStore(state => state.isLoading)
 }

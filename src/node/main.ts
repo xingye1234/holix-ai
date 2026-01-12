@@ -100,22 +100,24 @@ app.on('will-quit', async () => {
   logger.info('[Main] Application stopped')
 })
 
-app.on('web-contents-created', (_, contents) => {
-  contents.setWindowOpenHandler(({ url }) => {
-    if (url.startsWith('http')) {
-      shell.openExternal(url)
-      return { action: 'deny' }
-    }
-    return { action: 'allow' }
-  })
+if (import.meta.env.PROD) {
+  app.on('web-contents-created', (_, contents) => {
+    contents.setWindowOpenHandler(({ url }) => {
+      if (url.startsWith('http')) {
+        shell.openExternal(url)
+        return { action: 'deny' }
+      }
+      return { action: 'allow' }
+    })
 
-  contents.on('will-navigate', (event, url) => {
-    if (url.startsWith('http') || url.startsWith('https')) {
-      event.preventDefault()
-      shell.openExternal(url)
-    }
+    contents.on('will-navigate', (event, url) => {
+      if (url.startsWith('http') || url.startsWith('https')) {
+        event.preventDefault()
+        shell.openExternal(url)
+      }
+    })
   })
-})
+}
 
 // ============================================
 // 应用启动流程
