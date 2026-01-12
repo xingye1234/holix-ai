@@ -1,4 +1,5 @@
 /* eslint-disable style/multiline-ternary */
+import type { Message } from '@/node/database/schema/chat'
 import {
   AlertCircle,
   Bot,
@@ -24,19 +25,16 @@ import { formatWithLocalTZ } from '@/lib/time'
 import { cn } from '@/lib/utils'
 
 interface MessageItemProps {
-  messageId: string
+  message: Message
   index: number
 }
 
 // ✅ Telegram 架构：MessageItem 自己订阅单个消息，完全隔离
 // 只有该消息更新时才会重渲染，其他消息不受影响
 export const MessageItem = memo(({
-  messageId,
+  message,
   index,
 }: MessageItemProps) => {
-  // ✅ 直接订阅单个消息，不依赖父组件传递
-  const message = useMessage(messageId)
-
   // 消息可能还未加载
   if (!message) {
     return null

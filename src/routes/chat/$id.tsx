@@ -18,21 +18,10 @@ function Component() {
   const [isSettingsPanelOpen, setIsSettingsPanelOpen] = useState(false)
   // ✅ 配合 immer 优化，chat 对象引用只在真正变化时才更新
   const chat = useChat(state => state.chats.find(chat => chat.uid === id))
-  const loadMessages = useMessageStore(state => state.loadMessages)
-  const hasMessages = useMessageStore(state =>
-    id ? !!(state.chatMessageIds && state.chatMessageIds[id]?.length) : false,
-  )
 
   useEffect(() => {
     updateConfig('currentChatId', id)
   }, [id])
-
-  // 当进入聊天页面且该聊天的消息未加载时，加载消息
-  useEffect(() => {
-    if (id && !hasMessages) {
-      loadMessages(id)
-    }
-  }, [id, hasMessages, loadMessages])
 
   // 使用 useMemo 优化 Context value，避免不必要的重渲染
   // 配合 immer 和 shallow selector，chat 对象引用只在真正变化时更新
