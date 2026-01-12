@@ -1,200 +1,143 @@
 import type { Message } from '@/node/database/schema/chat'
-import { create } from 'zustand'
+import { createWithEqualityFn } from 'zustand/traditional'
 import { trpcClient } from '@/lib/trpc-client'
 
-/* =========================================================
- * 类型定义
- * ======================================================= */
-
-type Seq = number
-
-interface Range {
-  from: Seq
-  to: Seq
-}
-
+/* ------------------------------------------------------------------ */
+/* 类型定义 */
+/* ------------------------------------------------------------------ */
 interface ChatCache {
-  /** seq -> message */
-  messagesBySeq: Record<Seq, Message>
-
-  /** 已经完整加载的连续区间 */
-  ranges: Range[]
+  messagesBySeq: Record<number, Message> // 按 seq 缓存
+  ranges: Array<{ from: number, to: number }> // 已加载区间
 }
 
 interface MessageStore {
-  /** chatUid -> ChatCache */
   chats: Record<string, ChatCache>
 
-  /**
-   * 获取指定区间的消息
-   * - 若内存中缺失，会自动从主线程补齐
-   * - 返回结果按 seq 升序
-   */
-  getRange: (chatUid: string, range?: Range) => Promise<Message[]>
+  /* ------------------ 核心方法 ------------------ */
+  getRange: (chatUid: string, range?: { from?: number, to?: number }) => Promise<Message[]>
+  appendMessage: (chatUid: string, message: Message) => void
+  updateMessage: (messageUid: string, updates: Partial<Message>) => void
 }
 
-/* =========================================================
- * 区间工具函数
- * ======================================================= */
+/* ------------------------------------------------------------------ */
+/* 消息 Store 实现 */
+/* ------------------------------------------------------------------ */
+export const useMessageStore = createWithEqualityFn<MessageStore>()((set, get) => {
+  // streaming 缓冲，用于合帧更新
+  const streamingBuffer = new Map<string, { content: string }>()
 
-/**
- * 计算 [need] 中哪些区间尚未被 [loaded] 覆盖
- */
-function diffRanges(
-  loaded: Range[],
-  need: Range,
-): Range[] {
-  let missing: Range[] = [{ ...need }]
-
-  for (const r of loaded) {
-    missing = missing.flatMap((m) => {
-      // 完全无交集
-      if (r.to < m.from || r.from > m.to)
-        return [m]
-
-      const res: Range[] = []
-      if (m.from < r.from)
-        res.push({ from: m.from, to: r.from - 1 })
-      if (m.to > r.to)
-        res.push({ from: r.to + 1, to: m.to })
-      return res
+  let rafId: number | null = null
+  const flushStreaming = () => {
+    streamingBuffer.forEach((value, messageUid) => {
+      get().updateMessage(messageUid, {
+        content: value.content,
+        status: 'streaming',
+      })
     })
+    streamingBuffer.clear()
+    rafId = null
   }
 
-  return missing
-}
+  return {
+    chats: {},
 
-/**
- * 合并重叠或相邻的区间
- */
-function mergeRanges(ranges: Range[]): Range[] {
-  if (ranges.length === 0)
-    return []
-
-  const sorted = [...ranges].sort((a, b) => a.from - b.from)
-  const result: Range[] = [sorted[0]]
-
-  for (const r of sorted.slice(1)) {
-    const last = result[result.length - 1]
-    if (r.from <= last.to + 1) {
-      last.to = Math.max(last.to, r.to)
-    }
-    else {
-      result.push({ ...r })
-    }
-  }
-
-  return result
-}
-
-/* =========================================================
- * 主线程 RPC 适配：向上分页加载区间
- * ======================================================= */
-
-/**
- * 使用 beforeSeq + limit + desc
- * 将 [from, to] 区间完整加载进内存
- */
-async function loadOlderRange(
-  chatUid: string,
-  from: Seq,
-  to: Seq,
-  chat: ChatCache,
-) {
-  // beforeSeq 是「小于等于」，所以从 to + 1 开始
-  let cursor = to + 1
-
-  while (cursor > from) {
-    const messages = await trpcClient.message.getByChatUid({
-      chatUid,
-      beforeSeq: cursor,
-      limit: 30,
-      order: 'desc',
-    })
-
-    if (messages.length === 0)
-      break
-
-    for (const msg of messages) {
-      // 同一条消息只写入一次
-      if (!chat.messagesBySeq[msg.seq]) {
-        chat.messagesBySeq[msg.seq] = msg
-      }
-    }
-
-    // desc 排序下，最后一条是最小 seq
-    const minSeq = messages[messages.length - 1].seq
-    cursor = minSeq
-
-    if (minSeq <= from)
-      break
-  }
-
-  // 合并已加载区间
-  chat.ranges = mergeRanges([
-    ...chat.ranges,
-    { from, to },
-  ])
-}
-
-/* =========================================================
- * Store 实现（消息内存仓库）
- * ======================================================= */
-
-export const useMessageStore = create<MessageStore>((set, get) => ({
-  chats: {},
-
-  async getRange(chatUid, range) {
-    let chat = get().chats[chatUid]
-
-    // 初始化 chat cache
-    if (!chat) {
-      chat = {
-        messagesBySeq: {},
-        ranges: [],
+    /* ------------------ 消息加载 ------------------ */
+    async getRange(chatUid, range) {
+      let chatCache = get().chats[chatUid]
+      if (!chatCache) {
+        chatCache = { messagesBySeq: {}, ranges: [] }
       }
 
-      set(state => ({
-        chats: {
-          ...state.chats,
-          [chatUid]: chat!,
-        },
-      }))
-    }
+      // range 未传 → 默认拉最新 20 条
+      if (!range) {
+        const messages = await trpcClient.message.getLatest({ chatUid, limit: 20 })
+        messages.forEach(msg => (chatCache!.messagesBySeq[msg.seq] = msg))
+        const minSeq = messages[0]?.seq ?? 0
+        const maxSeq = messages[messages.length - 1]?.seq ?? 0
+        chatCache.ranges.push({ from: minSeq, to: maxSeq })
+        set(state => ({ chats: { ...state.chats, [chatUid]: chatCache! } }))
+        return messages
+      }
 
-    if (!range) {
-      const messages = await trpcClient.message.getLatest({ chatUid, limit: 20 })
-      messages.forEach(msg => (chat.messagesBySeq[msg.seq] = msg))
+      const from = range.from ?? 0
+      const to = range.to ?? Number.MAX_SAFE_INTEGER
+
+      // 计算缺失区间
+      const missingRanges: { from: number, to: number }[] = []
+      let start = from
+      while (start <= to) {
+        if (!chatCache.messagesBySeq[start]) {
+          let end = start
+          while (end + 1 <= to && !chatCache.messagesBySeq[end + 1]) end++
+          missingRanges.push({ from: start, to: end })
+          start = end + 1
+        }
+        else {
+          start++
+        }
+      }
+
+      // 拉取缺失区间
+      for (const r of missingRanges) {
+        const msgs = await trpcClient.message.getByChatUid({
+          chatUid,
+          limit: r.to - r.from + 1,
+          order: 'asc',
+          beforeSeq: r.to,
+        })
+        msgs.forEach(msg => (chatCache!.messagesBySeq[msg.seq] = msg))
+      }
+
       // 更新 ranges
-      const minSeq = messages.length > 0 ? messages[0].seq : 0
-      const maxSeq = messages.length > 0 ? messages[messages.length - 1].seq : 0
-      chat.ranges.push({ from: minSeq, to: maxSeq })
-      // 写回 store
-      set(state => ({
-        chats: {
-          ...state.chats,
-          [chatUid]: chat,
-        },
-      }))
-      return messages
-    }
+      chatCache.ranges.push({ from, to })
+      set(state => ({ chats: { ...state.chats, [chatUid]: chatCache! } }))
 
-    // 找出缺失的区间
-    const missingRanges = diffRanges(chat.ranges, range)
+      // 返回指定区间的消息
+      const allSeqs = Object.keys(chatCache.messagesBySeq).map(s => Number.parseInt(s))
+      const filteredSeqs = allSeqs.filter(seq => seq >= from && seq <= to).sort((a, b) => a - b)
+      return filteredSeqs.map(seq => chatCache.messagesBySeq[seq])
+    },
 
-    // 逐段补齐
-    for (const r of missingRanges) {
-      await loadOlderRange(chatUid, r.from, r.to, chat)
-    }
+    /* ------------------ AI / 创建消息追加 ------------------ */
+    appendMessage(chatUid, message) {
+      set((state) => {
+        const chatCache = state.chats[chatUid] || { messagesBySeq: {}, ranges: [] }
+        if (!chatCache.messagesBySeq[message.seq]) {
+          chatCache.messagesBySeq[message.seq] = message
+        }
+        return { chats: { ...state.chats, [chatUid]: chatCache } }
+      })
+    },
 
-    // 从内存中按 seq 顺序取出
-    const result: Message[] = []
-    for (let seq = range.from; seq <= range.to; seq++) {
-      const msg = chat.messagesBySeq[seq]
-      if (msg)
-        result.push(msg)
-    }
+    /* ------------------ 消息更新 ------------------ */
+    updateMessage(messageUid, updates) {
+      set((state) => {
+        // 遍历所有 chat 查找 messageUid
+        for (const chat of Object.values(state.chats)) {
+          for (const msg of Object.values(chat.messagesBySeq)) {
+            if (msg.uid === messageUid) {
+              Object.assign(msg, updates)
+              return { chats: { ...state.chats } }
+            }
+          }
+        }
+        return state
+      })
+    },
 
-    return result
-  },
-}))
+    /* ------------------ 实时消息处理工具 ------------------ */
+    pushStreaming(messageUid: string, content: string) {
+      streamingBuffer.set(messageUid, { content })
+      if (rafId == null) {
+        rafId = requestAnimationFrame(flushStreaming)
+      }
+    },
+  }
+})
+
+/* ------------------------------------------------------------------ */
+/* 工具函数 / 类型 / 测试辅助函数 */
+/* ------------------------------------------------------------------ */
+export function sortMessagesBySeqAsc(messages: Message[]): Message[] {
+  return [...messages].sort((a, b) => a.seq - b.seq)
+}

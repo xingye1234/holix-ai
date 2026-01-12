@@ -280,6 +280,7 @@ export const MessageItem = memo(({
                 className="h-6 w-6 p-0 opacity-0 group-hover:opacity-60 hover:opacity-100 transition-opacity"
                 onClick={() => {
                   // TODO: 实现导出功能
+                  // eslint-disable-next-line no-console
                   console.log('Export message:', message.uid)
                 }}
                 title="导出消息"
