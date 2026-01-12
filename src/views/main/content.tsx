@@ -7,7 +7,7 @@ import { getChatViewport } from '@/lib/chat-viewers'
 import { onUpdate } from '@/lib/command'
 import { useMessageStore } from '@/store/message'
 import { MessageItem } from './message-item'
-// ✅ Telegram 架构：只订阅消息 ID 列表，不订阅消息内容
+
 export const MainContent = memo(() => {
   const { chat } = useChatContext()
   const wrapperRef = useRef<HTMLDivElement>(null)
