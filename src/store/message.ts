@@ -25,7 +25,7 @@ interface MessageStore {
 export const useMessageStore = createWithEqualityFn<MessageStore>()((set, get) => {
   // streaming 缓冲，用于合帧更新
   const streamingBuffer = new Map<string, { content: string }>()
-
+  const deltaSubscribers: Record<string, Set<(messages: Message[]) => void>> = {}
   let rafId: number | null = null
   const flushStreaming = () => {
     streamingBuffer.forEach((value, messageUid) => {
@@ -36,6 +36,12 @@ export const useMessageStore = createWithEqualityFn<MessageStore>()((set, get) =
     })
     streamingBuffer.clear()
     rafId = null
+  }
+
+  const notifyDelta = (chatUid: string, delta: Message[]) => {
+    if (!deltaSubscribers[chatUid])
+      return
+    deltaSubscribers[chatUid].forEach(cb => cb(delta))
   }
 
   return {

@@ -20,12 +20,17 @@ export const MainContent = memo(() => {
 
   const getRange = useMessageStore(store => store.getRange)
 
+  console.log('Render MainContent with messages:', messages)
+
   useEffect(() => {
     console.log('Offset changed:', offset, 'isEnd:', isEnd, 'isTop:', isTop)
   }, [offset, isEnd, isTop])
 
   useEffect(() => {
     // 订阅当前 chat 的消息 ID 列表
+
+    console.log('Setting up message subscriptions for chat:', chat?.uid);
+
     (async () => {
       if (!chat?.uid) {
         return
