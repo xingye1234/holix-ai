@@ -1,38 +1,7 @@
 import type { Message } from '@/node/database/schema/chat'
 import { createWithEqualityFn } from 'zustand/traditional'
+import { getChatViewport, setChatViewport } from '@/lib/chat-viewers'
 import { trpcClient } from '@/lib/trpc-client'
-
-/* =========================================================
- * 本地存储工具：持久化窗口位置
- * ======================================================= */
-
-const VIEWPORT_STORAGE_KEY = 'holix-chat-viewports'
-
-function saveViewportToStorage(chatUid: string, viewport: { firstVisibleSeq: number, lastVisibleSeq: number }) {
-  try {
-    const stored = localStorage.getItem(VIEWPORT_STORAGE_KEY)
-    const viewports = stored ? JSON.parse(stored) : {}
-    viewports[chatUid] = viewport
-    localStorage.setItem(VIEWPORT_STORAGE_KEY, JSON.stringify(viewports))
-  }
-  catch (err) {
-    console.error('[message-store] Failed to save viewport:', err)
-  }
-}
-
-function loadViewportFromStorage(chatUid: string): { firstVisibleSeq: number, lastVisibleSeq: number } | null {
-  try {
-    const stored = localStorage.getItem(VIEWPORT_STORAGE_KEY)
-    if (!stored)
-      return null
-    const viewports = JSON.parse(stored)
-    return viewports[chatUid] || null
-  }
-  catch (err) {
-    console.error('[message-store] Failed to load viewport:', err)
-    return null
-  }
-}
 
 /* =========================================================
  * 冷路径工具：消息排序（只允许 init / load 使用）
@@ -119,7 +88,7 @@ export const useMessageStore = createWithEqualityFn<MessageStore>()((set, get) =
       await Promise.all(
         chats.map(async (chat) => {
           // 尝试从本地存储恢复上次的可视区域
-          const savedViewport = loadViewportFromStorage(chat.uid)
+          const savedViewport = await getChatViewport(chat.uid)
 
           let msgs: Message[]
           if (savedViewport) {
@@ -196,7 +165,7 @@ export const useMessageStore = createWithEqualityFn<MessageStore>()((set, get) =
 
     try {
       // 尝试从本地存储恢复上次的可视区域
-      const savedViewport = loadViewportFromStorage(chatUid)
+      const savedViewport = await getChatViewport(chatUid)
 
       let msgs: Message[]
       if (savedViewport) {
@@ -556,7 +525,7 @@ export const useMessageStore = createWithEqualityFn<MessageStore>()((set, get) =
       const newViewport = { firstVisibleSeq, lastVisibleSeq }
 
       // 保存到本地存储
-      saveViewportToStorage(chatUid, newViewport)
+      setChatViewport(chatUid, newViewport)
 
       return {
         ...state,
