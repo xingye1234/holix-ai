@@ -1,6 +1,7 @@
 import type { Message } from '@/node/database/schema/chat'
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
+import logger from '@/lib/logger'
 import { trpcClient } from '@/lib/trpc-client'
 
 // 用于返回稳定的空数组，避免 selector 每次返回新数组导致组件重复渲染
@@ -126,6 +127,7 @@ export const useMessageStore = create<MessageStore>()(
       const chatIds = get().chatMessages[chatUid] ?? []
       const firstSeq
         = chatIds.length > 0 ? get().messages[chatIds[0]].seq : undefined
+
       if (firstSeq === undefined)
         return
 
@@ -135,6 +137,8 @@ export const useMessageStore = create<MessageStore>()(
         order: 'asc',
         beforeSeq: firstSeq,
       })
+
+      logger.info(`MessageStore: Loaded ${messages.length} messages before seq ${firstSeq} for chat ${chatUid}`)
 
       if (!messages.length)
         return

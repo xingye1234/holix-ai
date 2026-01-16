@@ -110,10 +110,6 @@ export function useLoadMoreMessages(chatUid: string) {
   return useCallback(() => {
     if (!chatUid)
       return
-    const first = messages[0]
-    if (!first)
-      return
-
     loadBefore(chatUid, 10) // 默认每次加载 10 条，可改
   }, [chatUid, messages, loadBefore])
 }
