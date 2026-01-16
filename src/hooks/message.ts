@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { onUpdate } from '@/lib/command'
 import logger from '@/lib/logger'
 import { useMessageStore } from '@/store/message'
@@ -76,4 +76,44 @@ export function useMessageUpdates() {
       }
     }
   }, [appendMessage, updateMessage])
+}
+
+export function useChatMessages(chatUid: string) {
+  return useMessageStore(s => s.getMessages(chatUid))
+}
+
+/**
+ * 首次加载最新消息，只会执行一次
+ */
+export function useInitialMessageLoad(chatUid: string) {
+  const loadLatest = useMessageStore(s => s.loadLatest)
+  const loadedRef = useRef(false)
+
+  useEffect(() => {
+    if (!chatUid)
+      return
+    if (loadedRef.current)
+      return
+
+    loadedRef.current = true
+    loadLatest(chatUid)
+  }, [chatUid, loadLatest])
+}
+
+/**
+ * 滚动到顶部时加载更多历史消息
+ */
+export function useLoadMoreMessages(chatUid: string) {
+  const messages = useChatMessages(chatUid)
+  const loadBefore = useMessageStore(s => s.loadBefore)
+
+  return useCallback(() => {
+    if (!chatUid)
+      return
+    const first = messages[0]
+    if (!first)
+      return
+
+    loadBefore(chatUid, 10) // 默认每次加载 10 条，可改
+  }, [chatUid, messages, loadBefore])
 }
