@@ -3,6 +3,7 @@ import { memo, useCallback, useRef } from 'react'
 import { VList } from 'virtua'
 import { useChatContext } from '@/context/chat'
 import { useChatMessages, useInitialMessageLoad, useLoadMoreMessages } from '@/hooks/message'
+import logger from '@/lib/logger'
 import { MessageItem } from './message-item'
 
 export const MainContent = memo(() => {
@@ -17,6 +18,8 @@ export const MainContent = memo(() => {
 
   const handleScroll = useCallback((offset: number) => {
     if (offset === 0) {
+      logger.info('MainContent: Scroll to top, loading more messages...')
+
       loadMore()
     }
   }, [])

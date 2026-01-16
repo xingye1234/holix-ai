@@ -3,6 +3,9 @@ import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { trpcClient } from '@/lib/trpc-client'
 
+// 用于返回稳定的空数组，避免 selector 每次返回新数组导致组件重复渲染
+const EMPTY_MESSAGE_IDS: string[] = []
+
 /* ---------------------------------- */
 /* Store Shape */
 /* ---------------------------------- */
@@ -40,9 +43,7 @@ export const useMessageStore = create<MessageStore>()(
     /* ---------------- selectors ---------------- */
     getMessages(chatUid) {
       const ids = get().chatMessages[chatUid]
-      if (!ids)
-        return []
-      return ids
+      return ids ?? EMPTY_MESSAGE_IDS
     },
 
     getMessageById(messageUid) {
