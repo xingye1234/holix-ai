@@ -57,6 +57,8 @@ export const MessageItem = memo(({
     }
   }, [message.requestId])
 
+  const generating = useMemo(() => !isUser && (isStreaming || isPending), [isStreaming, isPending, isUser])
+
   const content = useMemo(() => {
     if (message.error) {
       return message.content || ''
@@ -90,31 +92,26 @@ export const MessageItem = memo(({
 
   return (
     <div
-      className={cn(
-        'flex w-full gap-3 p-4 group',
-        isUser ? 'flex-row-reverse' : 'flex-row',
-      )}
+      className={cn('flex w-full gap-3 p-4 group', isUser ? 'flex-row-reverse' : 'flex-row', generating && 'mb-8')}
       data-message-index={index}
     >
       {/* Avatar */}
       <Avatar className="w-8 h-8 border shrink-0 shadow-sm">
-        {isUser
-          ? (
-              <>
-                <AvatarImage src="" />
-                <AvatarFallback className="bg-primary text-primary-foreground">
-                  <User className="w-4 h-4" />
-                </AvatarFallback>
-              </>
-            )
-          : (
-              <>
-                <AvatarImage src="" />
-                <AvatarFallback className="bg-secondary text-secondary-foreground">
-                  <Bot className="w-4 h-4" />
-                </AvatarFallback>
-              </>
-            )}
+        {isUser ? (
+          <>
+            <AvatarImage src="" />
+            <AvatarFallback className="bg-primary text-primary-foreground">
+              <User className="w-4 h-4" />
+            </AvatarFallback>
+          </>
+        ) : (
+          <>
+            <AvatarImage src="" />
+            <AvatarFallback className="bg-secondary text-secondary-foreground">
+              <Bot className="w-4 h-4" />
+            </AvatarFallback>
+          </>
+        )}
       </Avatar>
 
       {/* Content Bubble */}
@@ -129,7 +126,7 @@ export const MessageItem = memo(({
         )}
       >
         {/* Status Indicator for AI */}
-        {!isUser && (isStreaming || isPending) && (
+        {generating && (
           <div className="absolute -bottom-8 left-0 flex items-center gap-1.5 text-xs text-muted-foreground bg-background/80 backdrop-blur-sm px-2 py-0.5 rounded-full border shadow-sm">
             {isStreaming ? (
               <>
@@ -168,27 +165,13 @@ export const MessageItem = memo(({
               // @ts-expect-error - rehypeShiki type mismatch with react-markdown
               rehypePlugins={[rehypeShiki]}
               components={{
-                p: ({ children }) => (
-                  <p className="mb-2 last:mb-0">{children}</p>
-                ),
-                ul: ({ children }) => (
-                  <ul className="list-disc pl-4 mb-2 last:mb-0">{children}</ul>
-                ),
-                ol: ({ children }) => (
-                  <ol className="list-decimal pl-4 mb-2 last:mb-0">
-                    {children}
-                  </ol>
-                ),
+                p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                ul: ({ children }) => <ul className="list-disc pl-4 mb-2 last:mb-0">{children}</ul>,
+                ol: ({ children }) => <ol className="list-decimal pl-4 mb-2 last:mb-0">{children}</ol>,
                 li: ({ children }) => <li className="mb-1">{children}</li>,
-                h1: ({ children }) => (
-                  <h1 className="text-lg font-bold mb-2">{children}</h1>
-                ),
-                h2: ({ children }) => (
-                  <h2 className="text-base font-bold mb-2">{children}</h2>
-                ),
-                h3: ({ children }) => (
-                  <h3 className="text-sm font-bold mb-2">{children}</h3>
-                ),
+                h1: ({ children }) => <h1 className="text-lg font-bold mb-2">{children}</h1>,
+                h2: ({ children }) => <h2 className="text-base font-bold mb-2">{children}</h2>,
+                h3: ({ children }) => <h3 className="text-sm font-bold mb-2">{children}</h3>,
                 code: MarkdownCode({ isUser }),
                 pre: MarkdownPre({ isUser }),
                 a: ({ children, href }) => (
@@ -205,9 +188,7 @@ export const MessageItem = memo(({
                   <blockquote
                     className={cn(
                       'border-l-2 pl-4 italic mb-2',
-                      isUser
-                        ? 'border-primary-foreground/50'
-                        : 'border-primary/50',
+                      isUser ? 'border-primary-foreground/50' : 'border-primary/50',
                     )}
                   >
                     {children}
@@ -218,26 +199,18 @@ export const MessageItem = memo(({
               {content}
             </ReactMarkdown>
           ) : (
-            <span className="italic opacity-50">
-              {isStreaming ? '...' : 'No content'}
-            </span>
+            <span className="italic opacity-50">{isStreaming ? '...' : 'No content'}</span>
           )}
         </div>
 
         {/* Error Message Detail */}
         {isError && message.error && (
-          <div className="mt-2 text-xs opacity-80 border-t border-destructive/20 pt-2">
-            {message.error}
-          </div>
+          <div className="mt-2 text-xs opacity-80 border-t border-destructive/20 pt-2">{message.error}</div>
         )}
 
         {/* Footer: Time (and for AI: Token Count, Actions) */}
         {!isUser ? (
-          <div
-            className={cn(
-              'flex items-center justify-between gap-2 mt-2 pt-1.5 border-t border-border/30',
-            )}
-          >
+          <div className={cn('flex items-center justify-between gap-2 mt-2 pt-1.5 border-t border-border/30')}>
             <div className="flex items-center gap-2 text-[10px] opacity-60">
               <span>{formatWithLocalTZ(message.createdAt, 'HH:mm')}</span>
               {content && (
@@ -267,13 +240,7 @@ export const MessageItem = memo(({
                 }}
                 title={copied ? '已复制' : '复制消息'}
               >
-                {copied
-                  ? (
-                      <Check className="w-3 h-3 text-green-500" />
-                    )
-                  : (
-                      <Copy className="w-3 h-3" />
-                    )}
+                {copied ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
               </Button>
               <Button
                 variant="ghost"
@@ -292,9 +259,7 @@ export const MessageItem = memo(({
           </div>
         ) : (
           <div className="flex items-center gap-1 mt-2 select-none justify-end">
-            <span className="text-[10px] opacity-40">
-              {formatWithLocalTZ(message.createdAt, 'HH:mm')}
-            </span>
+            <span className="text-[10px] opacity-40">{formatWithLocalTZ(message.createdAt, 'HH:mm')}</span>
           </div>
         )}
       </div>
