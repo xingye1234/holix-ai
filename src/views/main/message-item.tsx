@@ -18,23 +18,24 @@ import { toast } from 'sonner'
 import { MarkdownCode, MarkdownPre } from '@/components/markdown/code-block'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
-import { useMessage } from '@/hooks/message'
+import { useMessageById } from '@/hooks/message'
 import { command } from '@/lib/command'
 import { rehypeShiki } from '@/lib/shiki'
 import { formatWithLocalTZ } from '@/lib/time'
 import { cn } from '@/lib/utils'
 
 interface MessageItemProps {
-  message: Message
+  id: string
   index: number
 }
 
 // ✅ Telegram 架构：MessageItem 自己订阅单个消息，完全隔离
 // 只有该消息更新时才会重渲染，其他消息不受影响
 export const MessageItem = memo(({
-  message,
+  id,
   index,
 }: MessageItemProps) => {
+  const message = useMessageById(id)
   // 消息可能还未加载
   if (!message) {
     return null

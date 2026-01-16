@@ -1,5 +1,5 @@
 import type { VListHandle } from 'virtua'
-import { memo, useCallback, useEffect, useRef, useState } from 'react'
+import { memo, useCallback, useRef } from 'react'
 import { VList } from 'virtua'
 import { useChatContext } from '@/context/chat'
 import { useChatMessages, useInitialMessageLoad, useLoadMoreMessages } from '@/hooks/message'
@@ -29,7 +29,7 @@ export const MainContent = memo(() => {
         onScroll={handleScroll}
       >
         {messages.map((msg, index) => (
-          <MessageItem key={msg.uid} message={msg} index={index} />
+          <MessageItem key={msg} id={msg} index={index} />
         ))}
       </VList>
     </main>

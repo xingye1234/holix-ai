@@ -17,7 +17,7 @@ interface MessageStore {
   initialLoaded: Set<string>
 
   /** ---------------- selectors ---------------- */
-  getMessages: (chatUid: string) => Message[]
+  getMessages: (chatUid: string) => string[]
 
   getMessageById: (messageUid: string) => Message | undefined
 
@@ -42,7 +42,7 @@ export const useMessageStore = create<MessageStore>()(
       const ids = get().chatMessages[chatUid]
       if (!ids)
         return []
-      return ids.map(id => get().messages[id]).filter(Boolean)
+      return ids
     },
 
     getMessageById(messageUid) {

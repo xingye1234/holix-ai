@@ -117,3 +117,7 @@ export function useLoadMoreMessages(chatUid: string) {
     loadBefore(chatUid, 10) // 默认每次加载 10 条，可改
   }, [chatUid, messages, loadBefore])
 }
+
+export function useMessageById(messageUid: string) {
+  return useMessageStore(s => s.getMessageById(messageUid))
+}
