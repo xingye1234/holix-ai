@@ -12,6 +12,7 @@ import {
 } from '../database/message-operations'
 import { logger } from '../platform/logger'
 import { update } from '../platform/update'
+import builtinMessages from './builtin/messages'
 
 /**
  * 单个聊天会话的状态
@@ -308,7 +309,10 @@ class ChatManager {
     contextMessages: Message[],
     userMessageContent: string,
   ) {
-    const messages: (HumanMessage | SystemMessage | AIMessage)[] = []
+    // 添加内置提示词
+    const messages: (HumanMessage | SystemMessage | AIMessage)[] = [
+      ...builtinMessages,
+    ]
 
     // 添加历史消息
     for (const msg of contextMessages) {

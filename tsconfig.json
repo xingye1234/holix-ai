@@ -22,7 +22,7 @@
     "ignoreDeprecations": "6.0"
   },
   "include": [
-    "src",
-    "./holix.config.ts"
+    "src/**/*",
+    "./vite.config.ts"
   ]
 }
