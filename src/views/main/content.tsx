@@ -1,14 +1,17 @@
 import type { VListHandle } from 'virtua'
-import { memo, useCallback, useRef } from 'react'
+import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { VList } from 'virtua'
 import { useChatContext } from '@/context/chat'
 import { useChatMessages, useInitialMessageLoad, useLoadMoreMessages } from '@/hooks/message'
+import { useRafThrottle } from '@/hooks/throttle'
+import useUpdate from '@/hooks/update'
 import logger from '@/lib/logger'
 import { MessageItem } from './message-item'
 
 export const MainContent = memo(() => {
-  const { chat } = useChatContext()
+  const didInitialScroll = useRef(false)
   const vListRef = useRef<VListHandle>(null)
+  const { chat } = useChatContext()
   // 订阅 store 消息
   const messages = useChatMessages(chat?.uid ?? '')
   // 首次加载最新消息
@@ -19,10 +22,69 @@ export const MainContent = memo(() => {
   const handleScroll = useCallback((offset: number) => {
     if (offset === 0) {
       logger.info('MainContent: Scroll to top, loading more messages...')
-
       loadMore()
     }
   }, [])
+
+  const scrollButton = useRafThrottle(() => {
+    const list = vListRef.current
+    if (!list)
+      return
+
+    const lastIndex = messages.length - 1
+    if (lastIndex < 0)
+      return
+
+    const { scrollOffset, viewportSize, scrollSize } = list
+
+    const THRESHOLD = Math.max(100, viewportSize * 0.25)
+
+    const isAtBottom = scrollOffset + viewportSize >= scrollSize - THRESHOLD
+
+    if (isAtBottom) {
+      list.scrollToIndex(messages.length - 1, {
+        align: 'end',
+        smooth: true,
+      })
+      logger.info('MainContent: Auto scroll to bottom on new message')
+    }
+  })
+
+  useEffect(() => {
+    if (didInitialScroll.current)
+      return
+
+    if (!messages.length)
+      return
+
+    const list = vListRef.current
+    if (!list)
+      return
+
+    list.scrollToIndex(messages.length - 1, {
+      align: 'end',
+    })
+
+    logger.info('MainContent: Initial scroll to bottom')
+
+    didInitialScroll.current = true
+  }, [messages.length])
+
+  useUpdate('message.streaming', (payload) => {
+    if (payload.chatUid !== chat?.uid) {
+      return
+    }
+
+    scrollButton()
+  })
+
+  useUpdate('message.updated', (payload) => {
+    if (payload.chatUid !== chat?.uid) {
+      return
+    }
+
+    scrollButton()
+  })
 
   return (
     <main className="h-(--app-chat-content-height)">

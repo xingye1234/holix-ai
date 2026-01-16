@@ -1,5 +1,4 @@
 /* eslint-disable style/multiline-ternary */
-import type { Message } from '@/node/database/schema/chat'
 import {
   AlertCircle,
   Bot,
