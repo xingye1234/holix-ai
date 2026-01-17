@@ -1,13 +1,12 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useEffect, useMemo, useState } from 'react'
-import { Button } from '@/components/ui/button'
 import { ChatContext } from '@/context/chat'
 import { SettingsPanelProvider } from '@/context/settings-panel'
 import { updateConfig } from '@/lib/config'
 import useChat from '@/store/chat'
-import { useMessageStore } from '@/store/message'
 import { MainContent } from '@/views/main/content'
 import MainFooter from '@/views/main/footer'
+import ChatPanel from '@/views/main/panel'
 
 export const Route = createFileRoute('/chat/$id')({
   component: Component,
@@ -52,23 +51,7 @@ function Component() {
 
           {/* Settings Panel */}
           {isSettingsPanelOpen && (
-            <div className="w-80 border-l bg-background flex flex-col">
-              <div className="h-(--app-header-height) border-b px-4 flex items-center justify-between">
-                <h2 className="text-sm font-semibold">设置</h2>
-                <Button
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                  onClick={() => setIsSettingsPanelOpen(false)}
-                  title="关闭"
-                  variant="ghost"
-                >
-                  ✕
-                </Button>
-              </div>
-              <div className="flex-1 overflow-auto p-4">
-                <p className="text-sm text-muted-foreground">设置面板内容</p>
-                {/* TODO: 添加设置选项 */}
-              </div>
-            </div>
+            <ChatPanel />
           )}
         </div>
       </SettingsPanelProvider>
