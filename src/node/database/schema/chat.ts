@@ -1,208 +1,209 @@
-import { type InferInsertModel, type InferSelectModel, sql } from "drizzle-orm";
-import * as t from "drizzle-orm/sqlite-core";
-import { index, sqliteTableCreator } from "drizzle-orm/sqlite-core";
+import type { InferInsertModel, InferSelectModel } from 'drizzle-orm'
+import { sql } from 'drizzle-orm'
+import * as t from 'drizzle-orm/sqlite-core'
+import { index, sqliteTableCreator } from 'drizzle-orm/sqlite-core'
 
-export const sqliteTable = sqliteTableCreator((name) => name);
+export const sqliteTable = sqliteTableCreator(name => name)
 
-export type DraftSegment = {
-	/** 流内唯一 ID（顺序可恢复） */
-	id: string;
+export interface DraftSegment {
+  /** 流内唯一 ID（顺序可恢复） */
+  id: string
 
-	/** 本段内容（增量 or 完整） */
-	content: string;
+  /** 本段内容（增量 or 完整） */
+  content: string
 
-	/** 阶段 */
-	phase: "thinking" | "answer" | "tool" | "partial";
+  /** 阶段 */
+  phase: 'thinking' | 'answer' | 'tool' | 'partial'
 
-	/** 来源 */
-	source: "model" | "tool" | "system";
+  /** 来源 */
+  source: 'model' | 'tool' | 'system'
 
-	// 是否合并
-	committed?: boolean;
+  // 是否合并
+  committed?: boolean
 
-	/** 是否为增量 chunk */
-	delta?: boolean;
+  /** 是否为增量 chunk */
+  delta?: boolean
 
-	/** 时间戳 */
-	createdAt: number;
-};
+  /** 时间戳 */
+  createdAt: number
+}
 
-export type PendingMessage = {
-	/** 本地唯一 ID */
-	id: string;
+export interface PendingMessage {
+  /** 本地唯一 ID */
+  id: string
 
-	/** 用户输入内容（支持 Markdown / Code） */
-	content: string;
+  /** 用户输入内容（支持 Markdown / Code） */
+  content: string
 
-	/** 是否被选中准备发送 */
-	ready?: boolean;
+  /** 是否被选中准备发送 */
+  ready?: boolean
 
-	/** 创建时间 */
-	createdAt: number;
+  /** 创建时间 */
+  createdAt: number
 
-	/** 最近编辑时间 */
-	updatedAt?: number;
-};
+  /** 最近编辑时间 */
+  updatedAt?: number
+}
 
-export type DraftContent = DraftSegment[];
+export type DraftContent = DraftSegment[]
 
 export interface Workspace {
-	type: "directory";
-	value: string;
+  type: 'directory'
+  value: string
 }
 
 type Workspaces = Workspace[]
 
 export const chats = sqliteTable(
-	"chat",
-	{
-		/** 数据库主键 */
-		id: t.int().primaryKey({ autoIncrement: true }),
+  'chat',
+  {
+    /** 数据库主键 */
+    id: t.int().primaryKey({ autoIncrement: true }),
 
-		/** 稳定对外 ID */
-		uid: t.text("uid").notNull().unique(),
+    /** 稳定对外 ID */
+    uid: t.text('uid').notNull().unique(),
 
-		/** 会话标题 */
-		title: t.text("title").notNull(),
+    /** 会话标题 */
+    title: t.text('title').notNull(),
 
-		/** 最近一条消息预览（仅 UI 缓存） */
-		lastMessagePreview: t.text("last_message_preview"),
+    /** 最近一条消息预览（仅 UI 缓存） */
+    lastMessagePreview: t.text('last_message_preview'),
 
-		/** 模型提供方 */
-		provider: t.text("provider").notNull(), // openai / azure / local / custom
+    /** 模型提供方 */
+    provider: t.text('provider').notNull(), // openai / azure / local / custom
 
-		/** 模型名称 */
-		model: t.text("model").notNull(),
+    /** 模型名称 */
+    model: t.text('model').notNull(),
 
-		/** 会话生命周期状态 */
-		status: t
-			.text("status", {
-				enum: ["active", "archived", "error"],
-			})
-			.notNull()
-			.default("active"),
+    /** 会话生命周期状态 */
+    status: t
+      .text('status', {
+        enum: ['active', 'archived', 'error'],
+      })
+      .notNull()
+      .default('active'),
 
-		/** 是否置顶 */
-		pinned: t.integer("pinned", { mode: "boolean" }).notNull().default(false),
+    /** 是否置顶 */
+    pinned: t.integer('pinned', { mode: 'boolean' }).notNull().default(false),
 
-		/** 是否归档 */
-		archived: t
-			.integer("archived", { mode: "boolean" })
-			.notNull()
-			.default(false),
+    /** 是否归档 */
+    archived: t
+      .integer('archived', { mode: 'boolean' })
+      .notNull()
+      .default(false),
 
-		/** 创建时间（毫秒） */
-		createdAt: t.integer("created_at").notNull().default(sql`(strftime('%s','now') * 1000)`),
+    /** 创建时间（毫秒） */
+    createdAt: t.integer('created_at').notNull().default(sql`(strftime('%s','now') * 1000)`),
 
-		/** 最近更新时间（左侧列表排序核心） */
-		updatedAt: t.integer("updated_at").notNull().default(sql`(strftime('%s','now') * 1000)`),
-		/** 当前会话最后一条消息序号（增量同步用） */
-		lastSeq: t.integer("last_seq").notNull().default(0),
-		/** 待发送消息列表（本地缓存） */
-		pendingMessages: t.text("pending_messages").$type<PendingMessage[]>(),
-		// 会话预设 / 系统提示
-		prompts: t.text("prompts").$type<string[]>().notNull().default([]),
+    /** 最近更新时间（左侧列表排序核心） */
+    updatedAt: t.integer('updated_at').notNull().default(sql`(strftime('%s','now') * 1000)`),
+    /** 当前会话最后一条消息序号（增量同步用） */
+    lastSeq: t.integer('last_seq').notNull().default(0),
+    /** 待发送消息列表（本地缓存） */
+    pendingMessages: t.text('pending_messages').$type<PendingMessage[]>(),
+    // 会话预设 / 系统提示
+    prompts: t.text('prompts').$type<string[]>().notNull().default([]),
 
-		/** 工作区 */
-		workspace: t.text("workspace").$type<Workspaces>(),
-	},
-	(table) => ({
-		chatUidIdx: index("idx_chat_uid").on(table.uid),
-		chatUpdateIdx: index("idx_chat_updated").on(table.updatedAt),
-	}),
-);
+    /** 工作区 */
+    workspace: t.text('workspace').$type<Workspaces>(),
+  },
+  table => ({
+    chatUidIdx: index('idx_chat_uid').on(table.uid),
+    chatUpdateIdx: index('idx_chat_updated').on(table.updatedAt),
+  }),
+)
 
 export const message = sqliteTable(
-	"message",
-	{
-		/** 数据库主键 */
-		id: t.integer("id").primaryKey({ autoIncrement: true }),
+  'message',
+  {
+    /** 数据库主键 */
+    id: t.integer('id').primaryKey({ autoIncrement: true }),
 
-		/** 稳定消息 ID（streaming / IPC / 前端追踪） */
-		uid: t.text("uid").notNull().unique(),
+    /** 稳定消息 ID（streaming / IPC / 前端追踪） */
+    uid: t.text('uid').notNull().unique(),
 
-		/** 会话内顺序号（严格递增） */
-		seq: t.integer("seq").notNull(),
+    /** 会话内顺序号（严格递增） */
+    seq: t.integer('seq').notNull(),
 
-		/** 所属会话 */
-		chatUid: t
-			.text("chat_uid")
-			.notNull()
-			.references(() => chats.uid, { onDelete: "cascade" }),
+    /** 所属会话 */
+    chatUid: t
+      .text('chat_uid')
+      .notNull()
+      .references(() => chats.uid, { onDelete: 'cascade' }),
 
-		/** 模型视角角色 */
-		role: t
-			.text("role", {
-				enum: ["user", "assistant", "system", "tool"],
-			})
-			.notNull(),
+    /** 模型视角角色 */
+    role: t
+      .text('role', {
+        enum: ['user', 'assistant', 'system', 'tool'],
+      })
+      .notNull(),
 
-		/** 系统 / 产品语义类型 */
-		kind: t.text("kind").notNull(),
-		// message | tool_call | tool_result | thinking | partial
+    /** 系统 / 产品语义类型 */
+    kind: t.text('kind').notNull(),
+    // message | tool_call | tool_result | thinking | partial
 
-		/** 最终消息内容（done 时必有） */
-		content: t.text("content"),
+    /** 最终消息内容（done 时必有） */
+    content: t.text('content'),
 
-		/** streaming / 草稿内容 */
-		draftContent: t.text("draft_content").$type<DraftContent>(),
+    /** streaming / 草稿内容 */
+    draftContent: t.text('draft_content').$type<DraftContent>(),
 
-		/** 消息状态 */
-		status: t
-			.text("status", {
-				enum: ["pending", "streaming", "done", "aborted", "error"],
-			})
-			.notNull()
-			.default("done"),
+    /** 消息状态 */
+    status: t
+      .text('status', {
+        enum: ['pending', 'streaming', 'done', 'aborted', 'error'],
+      })
+      .notNull()
+      .default('done'),
 
-		/** assistant 消息使用的模型 */
-		model: t.text("model"),
+    /** assistant 消息使用的模型 */
+    model: t.text('model'),
 
-		/** 是否参与搜索 */
-		searchable: t
-			.integer("searchable", { mode: "boolean" })
-			.notNull()
-			.default(true),
+    /** 是否参与搜索 */
+    searchable: t
+      .integer('searchable', { mode: 'boolean' })
+      .notNull()
+      .default(true),
 
-		/** 搜索索引版本（未来重建索引用） */
-		searchIndexVersion: t.integer("search_index_version"),
+    /** 搜索索引版本（未来重建索引用） */
+    searchIndexVersion: t.integer('search_index_version'),
 
-		/** 上下文链（回复 / tool 结果等） */
-		parentUid: t.text("parent_uid"),
+    /** 上下文链（回复 / tool 结果等） */
+    parentUid: t.text('parent_uid'),
 
-		/** 一次 AI 请求的唯一标识 */
-		requestId: t.text("request_id"),
+    /** 一次 AI 请求的唯一标识 */
+    requestId: t.text('request_id'),
 
-		/** assistant 消息对应的 streaming 请求 */
-		streamId: t.text("stream_id"),
+    /** assistant 消息对应的 streaming 请求 */
+    streamId: t.text('stream_id'),
 
-		/** tool / MCP 信息 */
-		toolName: t.text("tool_name"),
-		toolPayload: t.text("tool_payload", { mode: "json" }),
+    /** tool / MCP 信息 */
+    toolName: t.text('tool_name'),
+    toolPayload: t.text('tool_payload', { mode: 'json' }),
 
-		/** 错误信息 */
-		error: t.text("error"),
+    /** 错误信息 */
+    error: t.text('error'),
 
-		/** 创建时间 */
-		createdAt: t
-			.integer("created_at")
-			.notNull()
-			.default(sql`(strftime('%s','now') * 1000)`),
+    /** 创建时间 */
+    createdAt: t
+      .integer('created_at')
+      .notNull()
+      .default(sql`(strftime('%s','now') * 1000)`),
 
-		/** 更新时间 */
-		updatedAt: t
-			.integer("updated_at")
-			.notNull()
-			.default(sql`(strftime('%s','now') * 1000)`),
-	},
-	(table) => ({
-		chatIdx: index("idx_messages_chat").on(table.chatUid),
-		chatSeqIdx: index("idx_messages_chat_seq").on(table.chatUid, table.seq),
-		timeIdx: index("idx_messages_time").on(table.createdAt),
-	}),
-);
+    /** 更新时间 */
+    updatedAt: t
+      .integer('updated_at')
+      .notNull()
+      .default(sql`(strftime('%s','now') * 1000)`),
+  },
+  table => ({
+    chatIdx: index('idx_messages_chat').on(table.chatUid),
+    chatSeqIdx: index('idx_messages_chat_seq').on(table.chatUid, table.seq),
+    timeIdx: index('idx_messages_time').on(table.createdAt),
+  }),
+)
 
-export type Chat = InferSelectModel<typeof chats>;
-export type Message = InferSelectModel<typeof message>;
-export type ChatInsert = InferInsertModel<typeof chats>;
-export type MessageInsert = InferInsertModel<typeof message>;
+export type Chat = InferSelectModel<typeof chats>
+export type Message = InferSelectModel<typeof message>
+export type ChatInsert = InferInsertModel<typeof chats>
+export type MessageInsert = InferInsertModel<typeof message>
