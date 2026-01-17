@@ -21,6 +21,8 @@ export interface EditorProps {
 
   ariaPlaceholder?: string
 
+  value?: string
+
   onChange?: (
     editorState: EditorState,
     editor: LexicalEditor,

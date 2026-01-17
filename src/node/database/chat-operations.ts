@@ -3,10 +3,11 @@
  * 提供 Chat 表的核心操作方法
  */
 
-import { eq, sql } from "drizzle-orm";
-import { nanoid } from "nanoid";
-import { getDatabase } from "./connect";
-import { type Chat, type ChatInsert, chats } from "./schema/chat";
+import type { Chat, ChatInsert } from './schema/chat'
+import { eq, sql } from 'drizzle-orm'
+import { nanoid } from 'nanoid'
+import { getDatabase } from './connect'
+import { chats } from './schema/chat'
 
 /**
  * 创建新会话
@@ -17,35 +18,35 @@ import { type Chat, type ChatInsert, chats } from "./schema/chat";
  * @returns 创建的会话记录
  */
 export async function createChat(params: {
-	provider: string;
-	model: string;
-	title: string;
+  provider: string
+  model: string
+  title: string
 }): Promise<Chat> {
-	const db = await getDatabase();
-	const uid = nanoid();
-	const now = Date.now();
+  const db = await getDatabase()
+  const uid = nanoid()
+  const now = Date.now()
 
-	const insert: ChatInsert = {
-		uid,
-		title: params.title,
-		provider: params.provider,
-		model: params.model,
-		status: "active",
-		pinned: false,
-		archived: false,
-		createdAt: now,
-		updatedAt: now,
-		lastSeq: 0,
-		lastMessagePreview: null,
-		pendingMessages: null,
-		prompts: JSON.stringify([]) as any,
-		workspace: null,
-	};
+  const insert: ChatInsert = {
+    uid,
+    title: params.title,
+    provider: params.provider,
+    model: params.model,
+    status: 'active',
+    pinned: false,
+    archived: false,
+    createdAt: now,
+    updatedAt: now,
+    lastSeq: 0,
+    lastMessagePreview: null,
+    pendingMessages: null,
+    prompts: JSON.stringify([]) as any,
+    workspace: null,
+  }
 
-	await db.insert(chats).values(insert);
+  await db.insert(chats).values(insert)
 
-	const [chat] = await db.select().from(chats).where(eq(chats.uid, uid));
-	return chat;
+  const [chat] = await db.select().from(chats).where(eq(chats.uid, uid))
+  return chat
 }
 
 /**
@@ -54,17 +55,17 @@ export async function createChat(params: {
  * @param model - 新的模型名称
  */
 export async function updateChatModel(
-	chatUid: string,
-	model: string,
+  chatUid: string,
+  model: string,
 ): Promise<void> {
-	const db = await getDatabase();
-	await db
-		.update(chats)
-		.set({
-			model,
-			updatedAt: Date.now(),
-		})
-		.where(eq(chats.uid, chatUid));
+  const db = await getDatabase()
+  await db
+    .update(chats)
+    .set({
+      model,
+      updatedAt: Date.now(),
+    })
+    .where(eq(chats.uid, chatUid))
 }
 
 /**
@@ -73,20 +74,20 @@ export async function updateChatModel(
  * @param updates - 要更新的字段
  */
 export async function updateChat(
-	chatUid: string,
-	updates: Partial<Pick<Chat, "provider" | "model" | "title" | "status" | "pinned" | "archived">>,
+  chatUid: string,
+  updates: Partial<Pick<Chat, 'provider' | 'model' | 'title' | 'status' | 'pinned' | 'archived'>>,
 ): Promise<Chat> {
-	const db = await getDatabase();
-	await db
-		.update(chats)
-		.set({
-			...updates,
-			updatedAt: Date.now(),
-		})
-		.where(eq(chats.uid, chatUid));
-	
-	const [chat] = await db.select().from(chats).where(eq(chats.uid, chatUid));
-	return chat;
+  const db = await getDatabase()
+  await db
+    .update(chats)
+    .set({
+      ...updates,
+      updatedAt: Date.now(),
+    })
+    .where(eq(chats.uid, chatUid))
+
+  const [chat] = await db.select().from(chats).where(eq(chats.uid, chatUid))
+  return chat
 }
 
 /**
@@ -95,17 +96,17 @@ export async function updateChat(
  * @param preview - 预览文本
  */
 export async function updateLastMessagePreview(
-	chatUid: string,
-	preview: string | null,
+  chatUid: string,
+  preview: string | null,
 ): Promise<void> {
-	const db = await getDatabase();
-	await db
-		.update(chats)
-		.set({
-			lastMessagePreview: preview,
-			updatedAt: Date.now(),
-		})
-		.where(eq(chats.uid, chatUid));
+  const db = await getDatabase()
+  await db
+    .update(chats)
+    .set({
+      lastMessagePreview: preview,
+      updatedAt: Date.now(),
+    })
+    .where(eq(chats.uid, chatUid))
 }
 
 /**
@@ -114,17 +115,17 @@ export async function updateLastMessagePreview(
  * @param title - 新标题
  */
 export async function updateChatTitle(
-	chatUid: string,
-	title: string,
+  chatUid: string,
+  title: string,
 ): Promise<void> {
-	const db = await getDatabase();
-	await db
-		.update(chats)
-		.set({
-			title,
-			updatedAt: Date.now(),
-		})
-		.where(eq(chats.uid, chatUid));
+  const db = await getDatabase()
+  await db
+    .update(chats)
+    .set({
+      title,
+      updatedAt: Date.now(),
+    })
+    .where(eq(chats.uid, chatUid))
 }
 
 /**
@@ -133,9 +134,9 @@ export async function updateChatTitle(
  * @returns 会话记录，不存在则返回 null
  */
 export async function getChatByUid(chatUid: string): Promise<Chat | null> {
-	const db = await getDatabase();
-	const [chat] = await db.select().from(chats).where(eq(chats.uid, chatUid));
-	return chat || null;
+  const db = await getDatabase()
+  const [chat] = await db.select().from(chats).where(eq(chats.uid, chatUid))
+  return chat || null
 }
 
 /**
@@ -143,14 +144,14 @@ export async function getChatByUid(chatUid: string): Promise<Chat | null> {
  * @param chatUid - 会话 UID
  */
 export async function archiveChat(chatUid: string): Promise<void> {
-	const db = await getDatabase();
-	await db
-		.update(chats)
-		.set({
-			archived: true,
-			updatedAt: Date.now(),
-		})
-		.where(eq(chats.uid, chatUid));
+  const db = await getDatabase()
+  await db
+    .update(chats)
+    .set({
+      archived: true,
+      updatedAt: Date.now(),
+    })
+    .where(eq(chats.uid, chatUid))
 }
 
 /**
@@ -158,14 +159,14 @@ export async function archiveChat(chatUid: string): Promise<void> {
  * @param chatUid - 会话 UID
  */
 export async function unarchiveChat(chatUid: string): Promise<void> {
-	const db = await getDatabase();
-	await db
-		.update(chats)
-		.set({
-			archived: false,
-			updatedAt: Date.now(),
-		})
-		.where(eq(chats.uid, chatUid));
+  const db = await getDatabase()
+  await db
+    .update(chats)
+    .set({
+      archived: false,
+      updatedAt: Date.now(),
+    })
+    .where(eq(chats.uid, chatUid))
 }
 
 /**
@@ -174,17 +175,17 @@ export async function unarchiveChat(chatUid: string): Promise<void> {
  * @param pinned - 是否置顶
  */
 export async function updateChatPinned(
-	chatUid: string,
-	pinned: boolean,
+  chatUid: string,
+  pinned: boolean,
 ): Promise<void> {
-	const db = await getDatabase();
-	await db
-		.update(chats)
-		.set({
-			pinned,
-			updatedAt: Date.now(),
-		})
-		.where(eq(chats.uid, chatUid));
+  const db = await getDatabase()
+  await db
+    .update(chats)
+    .set({
+      pinned,
+      updatedAt: Date.now(),
+    })
+    .where(eq(chats.uid, chatUid))
 }
 
 /**
@@ -192,8 +193,8 @@ export async function updateChatPinned(
  * @param chatUid - 会话 UID
  */
 export async function deleteChat(chatUid: string): Promise<void> {
-	const db = await getDatabase();
-	await db.delete(chats).where(eq(chats.uid, chatUid));
+  const db = await getDatabase()
+  await db.delete(chats).where(eq(chats.uid, chatUid))
 }
 
 /**
@@ -202,19 +203,62 @@ export async function deleteChat(chatUid: string): Promise<void> {
  * @param seq - 新的序号
  */
 export async function updateChatLastSeq(
-	chatUid: string,
-	seq: number,
+  chatUid: string,
+  seq: number,
 ): Promise<void> {
-	const db = await getDatabase();
-	await db
-		.update(chats)
-		.set({
-			lastSeq: seq,
-			updatedAt: Date.now(),
-		})
-		.where(eq(chats.uid, chatUid));
+  const db = await getDatabase()
+  await db
+    .update(chats)
+    .set({
+      lastSeq: seq,
+      updatedAt: Date.now(),
+    })
+    .where(eq(chats.uid, chatUid))
 }
 
+/**
+ * 更新会话的提示词列表
+ * @param chatUid - 会话 UID
+ * @param prompts - 提示词数组
+ */
+export async function updateChatPrompts(
+  chatUid: string,
+  prompts: string[],
+): Promise<Chat> {
+  const db = await getDatabase()
+  await db
+    .update(chats)
+    .set({
+      prompts: JSON.stringify(prompts) as any,
+      updatedAt: Date.now(),
+    })
+    .where(eq(chats.uid, chatUid))
+
+  const [chat] = await db.select().from(chats).where(eq(chats.uid, chatUid))
+  return chat
+}
+
+/**
+ * 更新会话的工作区
+ * @param chatUid - 会话 UID
+ * @param workspace - 工作区配置数组
+ */
+export async function updateChatWorkspace(
+  chatUid: string,
+  workspace: Chat['workspace'],
+): Promise<Chat> {
+  const db = await getDatabase()
+  await db
+    .update(chats)
+    .set({
+      workspace: workspace ? JSON.stringify(workspace) as any : null,
+      updatedAt: Date.now(),
+    })
+    .where(eq(chats.uid, chatUid))
+
+  const [chat] = await db.select().from(chats).where(eq(chats.uid, chatUid))
+  return chat
+}
 
 /**
  * 查询所有会话
@@ -224,29 +268,30 @@ export async function updateChatLastSeq(
  * @returns 会话列表
  */
 export async function getAllChats(options?: {
-	includeArchived?: boolean;
-	orderBy?: "updatedAt" | "createdAt" | "title";
-	order?: "asc" | "desc";
+  includeArchived?: boolean
+  orderBy?: 'updatedAt' | 'createdAt' | 'title'
+  order?: 'asc' | 'desc'
 }): Promise<Chat[]> {
-	const db = await getDatabase();
+  const db = await getDatabase()
 
-	let query = db.select().from(chats);
+  let query = db.select().from(chats)
 
-	// 默认不包含已归档的会话
-	if (!options?.includeArchived) {
-		query = query.where(eq(chats.archived, false)) as any;
-	}
+  // 默认不包含已归档的会话
+  if (!options?.includeArchived) {
+    query = query.where(eq(chats.archived, false)) as any
+  }
 
-	// 排序
-	const orderBy = options?.orderBy || "updatedAt";
-	const order = options?.order || "desc";
+  // 排序
+  const orderBy = options?.orderBy || 'updatedAt'
+  const order = options?.order || 'desc'
 
-	if (order === "desc") {
-		query = query.orderBy(sql`${chats[orderBy]} DESC`) as any;
-	} else {
-		query = query.orderBy(sql`${chats[orderBy]} ASC`) as any;
-	}
+  if (order === 'desc') {
+    query = query.orderBy(sql`${chats[orderBy]} DESC`) as any
+  }
+  else {
+    query = query.orderBy(sql`${chats[orderBy]} ASC`) as any
+  }
 
-	const result = await query;
-	return result;
+  const result = await query
+  return result
 }

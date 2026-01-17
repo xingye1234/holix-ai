@@ -1,196 +1,196 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
+import { createFileRoute } from '@tanstack/react-router'
+import { useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
 import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
 
-export const Route = createFileRoute("/setting/general")({
-	component: RouteComponent,
-});
+export const Route = createFileRoute('/setting/general')({
+  component: RouteComponent,
+})
 
 function RouteComponent() {
-	const [autoStart, setAutoStart] = useState(false);
-	const [minimizeToTray, setMinimizeToTray] = useState(true);
-	const [closeToTray, setCloseToTray] = useState(true);
-	const [autoUpdate, setAutoUpdate] = useState(true);
-	const [showNotifications, setShowNotifications] = useState(true);
-	const [language, setLanguage] = useState("zh-CN");
-	const [theme, setTheme] = useState("system");
+  const [autoStart, setAutoStart] = useState(false)
+  const [minimizeToTray, setMinimizeToTray] = useState(true)
+  const [closeToTray, setCloseToTray] = useState(true)
+  const [autoUpdate, setAutoUpdate] = useState(true)
+  const [showNotifications, setShowNotifications] = useState(true)
+  const [language, setLanguage] = useState('zh-CN')
+  const [theme, setTheme] = useState('system')
 
-	return (
-		<div className="p-6">
-			<div className="mb-6">
-				<h1 className="text-2xl font-bold">常规设置</h1>
-				<p className="text-muted-foreground mt-1">管理应用的基本设置和行为</p>
-			</div>
+  return (
+    <div className="p-6">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold">常规设置</h1>
+        <p className="text-muted-foreground mt-1">管理应用的基本设置和行为</p>
+      </div>
 
-			<div className="max-w-2xl space-y-6">
-				{/* 外观设置 */}
-				<div className="space-y-4">
-					<h2 className="text-lg font-semibold">外观</h2>
+      <div className="max-w-2xl space-y-6">
+        {/* 外观设置 */}
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold">外观</h2>
 
-					<div className="rounded-lg border p-4 space-y-4">
-						<div className="flex items-center justify-between">
-							<div>
-								<Label className="text-base">主题</Label>
-								<p className="text-sm text-muted-foreground mt-1">
-									选择应用的外观主题
-								</p>
-							</div>
-							<Select value={theme} onValueChange={setTheme}>
-								<SelectTrigger className="w-32">
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="light">浅色</SelectItem>
-									<SelectItem value="dark">深色</SelectItem>
-									<SelectItem value="system">跟随系统</SelectItem>
-								</SelectContent>
-							</Select>
-						</div>
+          <div className="rounded-lg border p-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="text-base">主题</Label>
+                <p className="text-sm text-muted-foreground mt-1">
+                  选择应用的外观主题
+                </p>
+              </div>
+              <Select value={theme} onValueChange={setTheme}>
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="light">浅色</SelectItem>
+                  <SelectItem value="dark">深色</SelectItem>
+                  <SelectItem value="system">跟随系统</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-						<div className="flex items-center justify-between">
-							<div>
-								<Label className="text-base">语言</Label>
-								<p className="text-sm text-muted-foreground mt-1">
-									选择应用的显示语言
-								</p>
-							</div>
-							<Select value={language} onValueChange={setLanguage}>
-								<SelectTrigger className="w-32">
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="zh-CN">简体中文</SelectItem>
-									<SelectItem value="zh-TW">繁體中文</SelectItem>
-									<SelectItem value="en-US">English</SelectItem>
-									<SelectItem value="ja-JP">日本語</SelectItem>
-								</SelectContent>
-							</Select>
-						</div>
-					</div>
-				</div>
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="text-base">语言</Label>
+                <p className="text-sm text-muted-foreground mt-1">
+                  选择应用的显示语言
+                </p>
+              </div>
+              <Select value={language} onValueChange={setLanguage}>
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="zh-CN">简体中文</SelectItem>
+                  <SelectItem value="zh-TW">繁體中文</SelectItem>
+                  <SelectItem value="en-US">English</SelectItem>
+                  <SelectItem value="ja-JP">日本語</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
 
-				{/* 启动设置 */}
-				<div className="space-y-4">
-					<h2 className="text-lg font-semibold">启动与关闭</h2>
+        {/* 启动设置 */}
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold">启动与关闭</h2>
 
-					<div className="rounded-lg border p-4 space-y-4">
-						<div className="flex items-center justify-between">
-							<div>
-								<Label className="text-base">开机自启动</Label>
-								<p className="text-sm text-muted-foreground mt-1">
-									系统启动时自动打开应用
-								</p>
-							</div>
-							<Switch checked={autoStart} onCheckedChange={setAutoStart} />
-						</div>
+          <div className="rounded-lg border p-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="text-base">开机自启动</Label>
+                <p className="text-sm text-muted-foreground mt-1">
+                  系统启动时自动打开应用
+                </p>
+              </div>
+              <Switch checked={autoStart} onCheckedChange={setAutoStart} />
+            </div>
 
-						<div className="flex items-center justify-between">
-							<div>
-								<Label className="text-base">最小化到托盘</Label>
-								<p className="text-sm text-muted-foreground mt-1">
-									点击最小化按钮时隐藏到系统托盘
-								</p>
-							</div>
-							<Switch
-								checked={minimizeToTray}
-								onCheckedChange={setMinimizeToTray}
-							/>
-						</div>
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="text-base">最小化到托盘</Label>
+                <p className="text-sm text-muted-foreground mt-1">
+                  点击最小化按钮时隐藏到系统托盘
+                </p>
+              </div>
+              <Switch
+                checked={minimizeToTray}
+                onCheckedChange={setMinimizeToTray}
+              />
+            </div>
 
-						<div className="flex items-center justify-between">
-							<div>
-								<Label className="text-base">关闭到托盘</Label>
-								<p className="text-sm text-muted-foreground mt-1">
-									点击关闭按钮时隐藏到系统托盘而不是退出
-								</p>
-							</div>
-							<Switch checked={closeToTray} onCheckedChange={setCloseToTray} />
-						</div>
-					</div>
-				</div>
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="text-base">关闭到托盘</Label>
+                <p className="text-sm text-muted-foreground mt-1">
+                  点击关闭按钮时隐藏到系统托盘而不是退出
+                </p>
+              </div>
+              <Switch checked={closeToTray} onCheckedChange={setCloseToTray} />
+            </div>
+          </div>
+        </div>
 
-				{/* 通知设置 */}
-				<div className="space-y-4">
-					<h2 className="text-lg font-semibold">通知</h2>
+        {/* 通知设置 */}
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold">通知</h2>
 
-					<div className="rounded-lg border p-4">
-						<div className="flex items-center justify-between">
-							<div>
-								<Label className="text-base">显示通知</Label>
-								<p className="text-sm text-muted-foreground mt-1">
-									接收系统消息和提示通知
-								</p>
-							</div>
-							<Switch
-								checked={showNotifications}
-								onCheckedChange={setShowNotifications}
-							/>
-						</div>
-					</div>
-				</div>
+          <div className="rounded-lg border p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="text-base">显示通知</Label>
+                <p className="text-sm text-muted-foreground mt-1">
+                  接收系统消息和提示通知
+                </p>
+              </div>
+              <Switch
+                checked={showNotifications}
+                onCheckedChange={setShowNotifications}
+              />
+            </div>
+          </div>
+        </div>
 
-				{/* 更新设置 */}
-				<div className="space-y-4">
-					<h2 className="text-lg font-semibold">更新</h2>
+        {/* 更新设置 */}
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold">更新</h2>
 
-					<div className="rounded-lg border p-4 space-y-4">
-						<div className="flex items-center justify-between">
-							<div>
-								<Label className="text-base">自动检查更新</Label>
-								<p className="text-sm text-muted-foreground mt-1">
-									定期检查并提示可用的新版本
-								</p>
-							</div>
-							<Switch checked={autoUpdate} onCheckedChange={setAutoUpdate} />
-						</div>
+          <div className="rounded-lg border p-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="text-base">自动检查更新</Label>
+                <p className="text-sm text-muted-foreground mt-1">
+                  定期检查并提示可用的新版本
+                </p>
+              </div>
+              <Switch checked={autoUpdate} onCheckedChange={setAutoUpdate} />
+            </div>
 
-						<div className="flex items-center gap-3 pt-2">
-							<Button variant="outline" size="sm">
-								检查更新
-							</Button>
-							<span className="text-sm text-muted-foreground">
-								当前版本: v1.0.0
-							</span>
-						</div>
-					</div>
-				</div>
+            <div className="flex items-center gap-3 pt-2">
+              <Button variant="outline" size="sm">
+                检查更新
+              </Button>
+              <span className="text-sm text-muted-foreground">
+                当前版本: v1.0.0
+              </span>
+            </div>
+          </div>
+        </div>
 
-				{/* 数据与缓存 */}
-				<div className="space-y-4">
-					<h2 className="text-lg font-semibold">数据与存储</h2>
+        {/* 数据与缓存 */}
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold">数据与存储</h2>
 
-					<div className="rounded-lg border p-4 space-y-4">
-						<div>
-							<Label className="text-base">清除缓存</Label>
-							<p className="text-sm text-muted-foreground mt-1 mb-3">
-								清除应用缓存数据以释放磁盘空间
-							</p>
-							<Button variant="outline" size="sm">
-								清除缓存
-							</Button>
-						</div>
+          <div className="rounded-lg border p-4 space-y-4">
+            <div>
+              <Label className="text-base">清除缓存</Label>
+              <p className="text-sm text-muted-foreground mt-1 mb-3">
+                清除应用缓存数据以释放磁盘空间
+              </p>
+              <Button variant="outline" size="sm">
+                清除缓存
+              </Button>
+            </div>
 
-						<div className="border-t pt-4">
-							<Label className="text-base text-destructive">重置应用</Label>
-							<p className="text-sm text-muted-foreground mt-1 mb-3">
-								恢复所有设置到默认状态，此操作不可撤销
-							</p>
-							<Button variant="destructive" size="sm">
-								重置设置
-							</Button>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-	);
+            <div className="border-t pt-4">
+              <Label className="text-base text-destructive">重置应用</Label>
+              <p className="text-sm text-muted-foreground mt-1 mb-3">
+                恢复所有设置到默认状态，此操作不可撤销
+              </p>
+              <Button variant="destructive" size="sm">
+                重置设置
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 }

@@ -73,8 +73,8 @@ export function Editor(props: EditorProps) {
         <HistoryPlugin delay={300} />
         <AutoFocusPlugin />
         {onChange && <OnChangePlugin onChange={onChange} />}
-        {props.textValue !== undefined && (
-          <ControlledTextPlugin textValue={props.textValue} />
+        {(props.textValue !== undefined || props.value !== undefined) && (
+          <ControlledTextPlugin textValue={props.value ?? props.textValue ?? ''} />
         )}
         {props.keyboard && <KeyboardPlugin {...props.keyboard} />}
       </LexicalComposer>
