@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useSettingsPanel } from '@/context/settings-panel'
 import Prompts from './right-prompts'
+import RightWorkspace from './right-workspace'
 
 export default function ChatPanel() {
   const { close } = useSettingsPanel()
@@ -22,12 +23,14 @@ export default function ChatPanel() {
         <Tabs defaultValue="prompts" className="w-full p-2 h-full">
           <TabsList className="p-1 w-full">
             <TabsTrigger value="prompts">提示词</TabsTrigger>
-            <TabsTrigger value="password">工作区</TabsTrigger>
+            <TabsTrigger value="workspace">工作区</TabsTrigger>
           </TabsList>
           <TabsContent value="prompts">
             <Prompts />
           </TabsContent>
-          <TabsContent value="password">Change your password here.</TabsContent>
+          <TabsContent value="workspace">
+            <RightWorkspace />
+          </TabsContent>
         </Tabs>
       </div>
     </div>
