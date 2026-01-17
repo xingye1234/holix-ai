@@ -1,17 +1,23 @@
-import { useCallback } from 'react'
+import { useCallback, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { ButtonGroup } from '@/components/ui/button-group'
 import { useChatContext } from '@/context/chat'
-import { trpcClient } from '@/lib/trpc-client'
+import { setTRPCOptions, trpcClient } from '@/lib/trpc-client'
 
 export default function RightWorkspace() {
   const { chat } = useChatContext()
 
+  // 设置全局超时时间
+  useEffect(() => {
+    setTRPCOptions({ timeout: 60000 * 30 }) // 10分钟超时
+    return () => {
+      setTRPCOptions({ timeout: 15000 }) // 恢复默认15秒超时
+    }
+  }, [])
+
   const selectFiles = useCallback(async () => {
     const { canceled, filePaths } = await trpcClient.dialog.selectFile({})
-
     if (canceled) {
-      console.log('用户取消了文件选择')
       return
     }
 
@@ -20,9 +26,7 @@ export default function RightWorkspace() {
 
   const selectFolder = useCallback(async () => {
     const { canceled, filePaths } = await trpcClient.dialog.selectFolder({})
-
     if (canceled) {
-      console.log('用户取消了文件选择')
       return
     }
 
