@@ -48,7 +48,7 @@ export interface PendingMessage {
 export type DraftContent = DraftSegment[]
 
 export interface Workspace {
-  type: 'directory'
+  type: 'directory' | 'file'
   value: string
 }
 

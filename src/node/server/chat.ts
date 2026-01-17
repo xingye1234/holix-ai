@@ -104,7 +104,7 @@ export const chatRouter = router({
         chatUid: z.string(),
         workspace: z.array(
           z.object({
-            type: z.literal('directory'),
+            type: z.literal('directory').or(z.literal('file')),
             value: z.string(),
           }),
         ).nullable(),
