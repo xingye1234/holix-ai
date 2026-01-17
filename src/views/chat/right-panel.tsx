@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useSettingsPanel } from '@/context/settings-panel'
+import Prompts from './right-prompts'
 
 export default function ChatPanel() {
   const { close } = useSettingsPanel()
@@ -18,12 +19,14 @@ export default function ChatPanel() {
         </Button>
       </div>
       <div className="flex-1 overflow-auto h-[calc(100vh-var(--app-header-height)-var(--app-header-height))]">
-        <Tabs defaultValue="account" className="w-full p-2 h-full">
+        <Tabs defaultValue="prompts" className="w-full p-2 h-full">
           <TabsList className="p-1 w-full">
-            <TabsTrigger value="account">提示词</TabsTrigger>
+            <TabsTrigger value="prompts">提示词</TabsTrigger>
             <TabsTrigger value="password">工作区</TabsTrigger>
           </TabsList>
-          <TabsContent value="account">Make changes to your account here.</TabsContent>
+          <TabsContent value="prompts">
+            <Prompts />
+          </TabsContent>
           <TabsContent value="password">Change your password here.</TabsContent>
         </Tabs>
       </div>

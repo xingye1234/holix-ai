@@ -4,9 +4,9 @@ import { ChatContext } from '@/context/chat'
 import { SettingsPanelProvider } from '@/context/settings-panel'
 import { updateConfig } from '@/lib/config'
 import useChat from '@/store/chat'
+import ChatPanel from '@/views/chat/right-panel'
 import { MainContent } from '@/views/main/content'
 import MainFooter from '@/views/main/footer'
-import ChatPanel from '@/views/main/panel'
 
 export const Route = createFileRoute('/chat/$id')({
   component: Component,
