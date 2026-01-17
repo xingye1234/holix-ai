@@ -25,6 +25,7 @@ interface ChatSession {
   llm: BaseChatModel
   abortController: AbortController
   status: 'running' | 'completed' | 'aborted' | 'error'
+  systemMessages?: SystemMessage[]
 }
 
 /**
@@ -43,8 +44,9 @@ class ChatManager {
     llm: BaseChatModel
     userMessageContent: string
     contextMessages?: Message[]
+    systemMessages?: string[]
   }): Promise<string> {
-    const { chatUid, llm, userMessageContent, contextMessages = [] } = params
+    const { chatUid, llm, userMessageContent, contextMessages = [], systemMessages = [] } = params
 
     // 生成唯一 ID
     const requestId = nanoid()
@@ -74,6 +76,7 @@ class ChatManager {
       llm,
       abortController,
       status: 'running',
+      systemMessages: systemMessages.map(msg => new SystemMessage(msg)),
     }
 
     this.sessions.set(requestId, session)
@@ -136,7 +139,7 @@ class ChatManager {
       })
 
       // 构建消息历史
-      const messages = this.buildMessages(contextMessages, userMessageContent)
+      const messages = this.buildMessages(contextMessages, userMessageContent, session.systemMessages)
 
       // 流式调用 LLM
       const draftSegments: DraftContent = []
@@ -308,10 +311,12 @@ class ChatManager {
   private buildMessages(
     contextMessages: Message[],
     userMessageContent: string,
+    systemMessages?: SystemMessage[],
   ) {
     // 添加内置提示词
     const messages: (HumanMessage | SystemMessage | AIMessage)[] = [
       ...builtinMessages,
+      ...(systemMessages || []),
     ]
 
     // 添加历史消息

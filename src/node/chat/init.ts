@@ -65,12 +65,15 @@ export function initChat() {
     // 获取最近的上下文消息（例如最近 10 条）
     const contextMessages = await getLatestMessages(chatId, 10)
 
+    const systemMessages = typeof chat.prompts === 'string' ? JSON.parse(chat.prompts) : (chat.prompts || [])
+
     // 使用 ChatManager 启动会话（异步处理，不阻塞）
     const requestId = await chatManager.startSession({
       chatUid: chatId,
       llm,
       userMessageContent: content,
       contextMessages,
+      systemMessages,
     })
 
     logger.info(

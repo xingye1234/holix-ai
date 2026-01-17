@@ -33,36 +33,6 @@ let globalOptions: TRPCRequestOptions = {
 }
 
 /**
- * 创建客户端代理，将方法调用转换为 HTTP 请求
- */
-function createClientProxy<T extends Record<string, any>>(
-  path: string[] = [],
-): T {
-  return new Proxy(
-    {} as T,
-    {
-      get(_target, prop: string) {
-        const currentPath = [...path, prop]
-
-        // 返回一个函数，该函数发送 HTTP 请求
-        return (input?: any, options?: TRPCRequestOptions) => {
-          const routePath = currentPath.join('.')
-          const mergedOptions = { ...globalOptions, ...options }
-
-          return kyInstance
-            .post(`trpc/${routePath}`, {
-              json: input ?? {},
-              timeout: mergedOptions.timeout,
-              signal: mergedOptions.signal,
-            })
-            .json()
-        }
-      },
-    },
-  )
-}
-
-/**
  * 创建嵌套路由客户端
  */
 function createNestedClient<T extends Record<string, any>>(
