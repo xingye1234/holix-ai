@@ -128,6 +128,8 @@ export const useMessageStore = create<MessageStore>()(
       const firstSeq
         = chatIds.length > 0 ? get().messages[chatIds[0]].seq : undefined
 
+      logger.info(`MessageStore: Loading ${limit} messages before seq ${firstSeq} for chat ${chatUid}`)
+
       if (firstSeq === undefined)
         return
 
