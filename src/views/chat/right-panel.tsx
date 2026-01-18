@@ -11,7 +11,7 @@ export default function ChatPanel() {
   return (
     <motion.div
       initial={{ width: 0 }}
-      animate={{ width: 400 }}
+      animate={{ width: 350 }}
       exit={{ width: 0 }}
       transition={{ duration: 0.2 }}
       className={cn('h-full w-100 border-l bg-background flex flex-col overflow-hidden')}
