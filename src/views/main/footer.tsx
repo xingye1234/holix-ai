@@ -11,6 +11,7 @@ import { useSettingsPanel } from '@/context/settings-panel'
 import { command } from '@/lib/command'
 import { trpcClient } from '@/lib/trpc-client'
 import { estimateTokens, formatTokenCount } from '../../share/token'
+import DraftsView from './drafts'
 
 export default function MainFooter() {
   const [value, setValue] = useState('')
@@ -132,8 +133,8 @@ export default function MainFooter() {
   return (
     <footer className="w-full mt-auto h-(--app-chat-footer-height) border-t">
       <div className="h-(--app-chat-input-header-height) border-b px-2 flex items-center justify-between">
-        <div>
-          1
+        <div className="mr-auto">
+          <DraftsView />
         </div>
         <div className="text-sm text-muted-foreground flex ml-auto items-center gap-2">
           <Coins className="w-4 h-4" />
