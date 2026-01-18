@@ -7,6 +7,7 @@ import { useChatMessages, useInitialMessageLoad, useLoadMoreMessages } from '@/h
 import { useRafThrottle } from '@/hooks/throttle'
 import useUpdate from '@/hooks/update'
 import logger from '@/lib/logger'
+import { useMessageStore } from '@/store/message'
 import { MessageItem } from './message-item'
 
 export const MainContent = memo(() => {
@@ -82,9 +83,17 @@ export const MainContent = memo(() => {
     scrollButton()
   })
 
-  const onDeleteMessage = useCallback((messageId: string) => {
-    logger.info(`MainContent: Message ${messageId} deleted, refreshing list`)
-  }, [messages])
+  const deleteMessage = useMessageStore(state => state.deleteMessage)
+
+  const onDeleteMessage = useCallback(async (messageId: string) => {
+    try {
+      await deleteMessage(messageId)
+      logger.info(`MainContent: Message ${messageId} deleted, refreshing list`)
+    }
+    catch (err) {
+      logger.error(`MainContent: deleteMessage failed for ${messageId}`, err)
+    }
+  }, [deleteMessage])
 
   return (
     <main className="h-(--app-chat-content-height)">

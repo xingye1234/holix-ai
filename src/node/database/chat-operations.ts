@@ -3,7 +3,8 @@
  * 提供 Chat 表的核心操作方法
  */
 
-import type { Chat, ChatInsert } from './schema/chat'
+import type { Chat, ChatInsert, PendingMessage } from './schema/chat'
+
 import { eq, sql } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import { getDatabase } from './connect'
@@ -252,6 +253,28 @@ export async function updateChatWorkspace(
     .update(chats)
     .set({
       workspace: workspace ? JSON.stringify(workspace) as any : null,
+      updatedAt: Date.now(),
+    })
+    .where(eq(chats.uid, chatUid))
+
+  const [chat] = await db.select().from(chats).where(eq(chats.uid, chatUid))
+  return chat
+}
+
+/**
+ * 更新会话的 pendingMessages（用于本地待发送消息缓存）
+ * @param chatUid - 会话 UID
+ * @param pendingMessages - 待发送消息数组，传入 null 可清空
+ */
+export async function updatePendingMessages(
+  chatUid: string,
+  pendingMessages: PendingMessage[] | null,
+): Promise<Chat> {
+  const db = await getDatabase()
+  await db
+    .update(chats)
+    .set({
+      pendingMessages: pendingMessages ? (JSON.stringify(pendingMessages) as any) : null,
       updatedAt: Date.now(),
     })
     .where(eq(chats.uid, chatUid))

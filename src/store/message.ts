@@ -29,6 +29,7 @@ interface MessageStore {
   appendMessage: (chatUid: string, message: Message) => void
   prependMessages: (chatUid: string, messages: Message[]) => void
   updateMessage: (messageUid: string, patch: Partial<Message>) => void
+  deleteMessage: (messageUid: string) => Promise<void>
 
   /** ---------------- loaders ---------------- */
   loadLatest: (chatUid: string, limit?: number) => Promise<void>
@@ -167,6 +168,42 @@ export const useMessageStore = create<MessageStore>()(
           (a, b) => state.messages[a].seq - state.messages[b].seq,
         )
       })
+    },
+
+    async deleteMessage(messageUid: string) {
+      try {
+        // 尝试从本地缓存读取消息，若不存在则回退到后端查询以获取 chatUid
+        let msg = get().messages[messageUid]
+        if (!msg) {
+          try {
+            // 可能抛出错误（找不到消息）
+            msg = await trpcClient.message.getById({ messageUid })
+          }
+          catch {
+            logger.warn(`MessageStore: deleteMessage - message not found locally or remotely: ${messageUid}`)
+            return
+          }
+        }
+
+        // 调用后端删除
+        await trpcClient.message.delete({ messageUid })
+
+        // 从 store 中移除
+        set((state) => {
+          const local = state.messages[messageUid]
+          const chatUid = local ? local.chatUid : msg.chatUid
+
+          if (chatUid && state.chatMessages[chatUid]) {
+            state.chatMessages[chatUid] = state.chatMessages[chatUid].filter(id => id !== messageUid)
+          }
+
+          if (state.messages[messageUid])
+            delete state.messages[messageUid]
+        })
+      }
+      catch (err) {
+        logger.error('MessageStore: deleteMessage failed', err)
+      }
     },
   })),
 )
