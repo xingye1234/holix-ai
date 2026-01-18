@@ -44,6 +44,10 @@ export const useMessageStore = create<MessageStore>()(
     /* ---------------- selectors ---------------- */
     getMessages(chatUid) {
       const ids = get().chatMessages[chatUid]
+      // 自动触发首次加载
+      if (!ids || !ids.length) {
+        get().loadLatest(chatUid)
+      }
       return ids ?? EMPTY_MESSAGE_IDS
     },
 

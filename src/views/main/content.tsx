@@ -32,6 +32,7 @@ export const MainContent = memo(() => {
       return
 
     const lastIndex = messages.length - 1
+
     if (lastIndex < 0)
       return
 

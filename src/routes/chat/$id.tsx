@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { AnimatePresence } from 'framer-motion'
 import { useEffect, useMemo, useState } from 'react'
 import { ChatContext } from '@/context/chat'
 import { SettingsPanelProvider } from '@/context/settings-panel'
@@ -49,10 +50,7 @@ function Component() {
             <MainFooter />
           </div>
 
-          {/* Settings Panel */}
-          {isSettingsPanelOpen && (
-            <ChatPanel />
-          )}
+          <AnimatePresence>{isSettingsPanelOpen && <ChatPanel />}</AnimatePresence>
         </div>
       </SettingsPanelProvider>
     </ChatContext.Provider>
