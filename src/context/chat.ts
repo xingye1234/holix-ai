@@ -1,4 +1,4 @@
-import type { Chat } from '@/node/database/schema/chat'
+import type { Chat, PendingMessage } from '@/node/database/schema/chat'
 import { createContext, useContext } from 'react'
 
 /**
@@ -9,6 +9,7 @@ export interface ChatContextValue {
   chat: Chat | null
   /** 聊天 ID */
   chatId: string
+  pendingMessages: PendingMessage[]
 }
 
 /**

@@ -1,5 +1,8 @@
+import type { PendingMessage } from '@/node/database/schema/chat'
 import { Coins, Send, Settings } from 'lucide-react'
-import { useCallback, useMemo, useState } from 'react'
+import { nanoid } from 'nanoid'
+import { useCallback, useMemo, useRef, useState } from 'react'
+import { toast } from 'sonner'
 import { Editor } from '@/components/editor/editor'
 import ProviderModelSelector from '@/components/provider-model-selector'
 import { Button } from '@/components/ui/button'
@@ -11,17 +14,16 @@ import { estimateTokens, formatTokenCount } from '../../share/token'
 
 export default function MainFooter() {
   const [value, setValue] = useState('')
-  const { chat } = useChatContext()
+  const { chat, pendingMessages } = useChatContext()
   const { toggle: toggleSettingsPanel } = useSettingsPanel()
+  const saveDraftInProgress = useRef(false)
   const [_, setProvider] = useState<string | undefined>(
     chat?.provider ?? undefined,
   )
   const [__, setModel] = useState<string | undefined>(chat?.model ?? undefined)
-
   const onTextChange = useCallback((text: string) => {
     setValue(text)
   }, [])
-
   const estimatedTokens = useMemo(() => estimateTokens(value), [value])
 
   const handleProviderChange = useCallback(
@@ -29,12 +31,10 @@ export default function MainFooter() {
       setProvider(newProvider)
       if (chat) {
         try {
-          const newChat = await trpcClient.chat.update({
+          await trpcClient.chat.update({
             uid: chat.uid,
             provider: newProvider,
           })
-
-          console.log('Updated chat provider:', newChat)
         }
         catch (error) {
           console.error('Failed to update provider:', error)
@@ -75,9 +75,66 @@ export default function MainFooter() {
     setValue('')
   }, [chat, value])
 
+  const onSaveDraft = useCallback(() => {
+    // Ctrl+S 保存草稿：弹窗确认并保存为 pendingMessage
+    if (!chat || value.trim().length === 0 || saveDraftInProgress.current) {
+      return true
+    }
+
+    saveDraftInProgress.current = true
+
+    toast('保存为草稿？', {
+      position: 'bottom-center',
+      action: {
+        label: '保存',
+        onClick: async () => {
+          try {
+            const pending: PendingMessage = {
+              id: nanoid(),
+              content: value,
+              ready: true,
+              createdAt: Date.now(),
+              updatedAt: Date.now(),
+            }
+
+            await trpcClient.chat.updatePendingMessages({
+              chatUid: chat.uid,
+              pendingMessages: [...pendingMessages, pending],
+            })
+
+            toast.success('已保存为草稿')
+          }
+          catch (err) {
+            console.error('Failed to save draft:', err)
+            toast.error('保存草稿失败')
+          }
+          finally {
+            saveDraftInProgress.current = false
+          }
+        },
+      },
+
+      cancel: {
+        label: '取消',
+        onClick() {
+          saveDraftInProgress.current = false
+        },
+      },
+
+      actionButtonStyle: {
+        marginLeft: '15px',
+      },
+    })
+
+    return true
+  }, [chat, pendingMessages, value])
+
   return (
     <footer className="w-full mt-auto h-(--app-chat-footer-height) border-t">
       <div className="h-(--app-chat-input-header-height) border-b px-2 flex items-center justify-between">
+        <div>
+          1
+        </div>
         <div className="text-sm text-muted-foreground flex ml-auto items-center gap-2">
           <Coins className="w-4 h-4" />
           <span>{formatTokenCount(estimatedTokens)}</span>
@@ -113,9 +170,7 @@ export default function MainFooter() {
               return false
             },
             onCtrlS: () => {
-              // Ctrl+S 保存草稿或其他操作
-              console.log('Saving draft:', value)
-              // 这里可以添加保存草稿的逻辑
+              onSaveDraft()
               return true
             },
           }}

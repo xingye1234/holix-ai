@@ -1,3 +1,4 @@
+import type { PendingMessage } from '@/node/database/schema/chat'
 import { createFileRoute } from '@tanstack/react-router'
 import { AnimatePresence } from 'framer-motion'
 import { useEffect, useMemo, useState } from 'react'
@@ -26,7 +27,15 @@ function Component() {
   // 使用 useMemo 优化 Context value，避免不必要的重渲染
   // 配合 immer 和 shallow selector，chat 对象引用只在真正变化时更新
   const contextValue = useMemo(
-    () => ({ chat: chat || null, chatId: id }),
+    () => {
+      const pendingMessages: PendingMessage[] = chat
+        ? typeof chat.pendingMessages === 'string'
+          ? JSON.parse(chat.pendingMessages ?? '[]')
+          : (chat.pendingMessages ?? [])
+        : []
+
+      return { chat: chat || null, chatId: id, pendingMessages }
+    },
     [chat, id],
   )
 

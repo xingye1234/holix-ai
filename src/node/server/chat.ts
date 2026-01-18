@@ -7,6 +7,7 @@ import {
   updateChatModel,
   updateChatPrompts,
   updateChatWorkspace,
+  updatePendingMessages,
 } from '../database/chat-operations'
 import { update } from '../platform/update'
 import { procedure, router } from './trpc'
@@ -113,6 +114,30 @@ export const chatRouter = router({
     .mutation(async ({ input }) => {
       const chat = await updateChatWorkspace(input.chatUid, input.workspace)
       // 通知渲染线程更新
+      update('chat.updated', chat)
+      return chat
+    }),
+
+  // 更新 pendingMessages（前端保存草稿/待发送消息）
+  updatePendingMessages: procedure()
+    .input(
+      z.object({
+        chatUid: z.string(),
+        pendingMessages: z
+          .array(
+            z.object({
+              id: z.string(),
+              content: z.string(),
+              ready: z.boolean().optional(),
+              createdAt: z.number(),
+              updatedAt: z.number().optional(),
+            }),
+          )
+          .nullable(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const chat = await updatePendingMessages(input.chatUid, input.pendingMessages as any)
       update('chat.updated', chat)
       return chat
     }),
