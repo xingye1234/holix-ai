@@ -1,6 +1,7 @@
 import type { VListHandle } from 'virtua'
 import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { VList } from 'virtua'
+import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuShortcut, ContextMenuTrigger } from '@/components/ui/context-menu'
 import { useChatContext } from '@/context/chat'
 import { useChatMessages, useInitialMessageLoad, useLoadMoreMessages } from '@/hooks/message'
 import { useRafThrottle } from '@/hooks/throttle'
@@ -81,15 +82,15 @@ export const MainContent = memo(() => {
     scrollButton()
   })
 
+  const onDeleteMessage = useCallback((messageId: string) => {
+    logger.info(`MainContent: Message ${messageId} deleted, refreshing list`)
+  }, [messages])
+
   return (
     <main className="h-(--app-chat-content-height)">
-      <VList
-        ref={vListRef}
-        style={{ height: 'var(--app-chat-content-height)' }}
-        onScroll={handleScroll}
-      >
+      <VList ref={vListRef} style={{ height: 'var(--app-chat-content-height)' }} onScroll={handleScroll}>
         {messages.map((msg, index) => (
-          <MessageItem key={msg} id={msg} index={index} />
+          <MessageItem key={msg} id={msg} index={index} onDelete={onDeleteMessage} />
         ))}
       </VList>
     </main>
