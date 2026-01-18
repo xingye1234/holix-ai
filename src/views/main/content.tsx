@@ -9,7 +9,6 @@ import logger from '@/lib/logger'
 import { MessageItem } from './message-item'
 
 export const MainContent = memo(() => {
-  const didInitialScroll = useRef(false)
   const vListRef = useRef<VListHandle>(null)
   const { chat } = useChatContext()
   // 订阅 store 消息
@@ -52,9 +51,6 @@ export const MainContent = memo(() => {
   })
 
   useEffect(() => {
-    if (didInitialScroll.current)
-      return
-
     if (!messages.length)
       return
 
@@ -67,9 +63,7 @@ export const MainContent = memo(() => {
     })
 
     logger.info('MainContent: Initial scroll to bottom')
-
-    didInitialScroll.current = true
-  }, [messages.length])
+  }, [messages.length, chat?.uid])
 
   useUpdate('message.streaming', (payload) => {
     if (payload.chatUid !== chat?.uid) {
