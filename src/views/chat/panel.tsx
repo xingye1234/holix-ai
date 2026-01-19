@@ -10,7 +10,6 @@ import useChat from '@/store/chat'
 
 export function ChatPanel(props: Chat) {
   const navigate = useNavigate()
-
   const removeChat = useChat(state => state.removeChat)
 
   const onDelete = useCallback(
