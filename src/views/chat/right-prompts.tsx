@@ -123,7 +123,7 @@ export default function Prompts() {
                     </Button>
                   </PromptDialog>
 
-                  <Button variant="danger" size="sm" onClick={() => onDelete(index)}>
+                  <Button variant="destructive" size="sm" onClick={() => onDelete(index)}>
                     <Trash />
                   </Button>
                 </ItemActions>
