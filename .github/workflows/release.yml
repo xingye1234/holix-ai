@@ -42,10 +42,19 @@ jobs:
           pnpm run release -- --publish never
 
       # 4. 上传 dist 作为 artifact
+      - name: Determine artifact name
+        id: artifact-name
+        run: |
+          if [ "${{ matrix.os }}" = "macos-latest" ]; then
+            echo "name=dist-macos" >> $GITHUB_OUTPUT
+          else
+            echo "name=dist-windows" >> $GITHUB_OUTPUT
+          fi
+
       - name: Upload dist artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: dist-${{ matrix.os }}
+          name: ${{ steps.artifact-name.outputs.name }}
           path: dist/**/*
   release:
     name: Publish GitHub Release
@@ -57,6 +66,13 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: artifacts
+
+      - name: Debug list downloaded artifacts
+        run: |
+          echo "--- artifacts root ---"
+          ls -la artifacts || true
+          echo "--- recursive ---"
+          find artifacts -maxdepth 3 -type f -print || true
 
       - name: Create GitHub Release
         id: create_release
