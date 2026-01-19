@@ -1,5 +1,5 @@
 import type { Chat } from '@/node/database/schema/chat'
-import { Link } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import { Delete, Ellipsis } from 'lucide-react'
 import { useCallback } from 'react'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
@@ -9,10 +9,13 @@ import { cn } from '@/lib/utils'
 import useChat from '@/store/chat'
 
 export function ChatPanel(props: Chat) {
+  const navigate = useNavigate()
+
   const removeChat = useChat(state => state.removeChat)
 
   const onDelete = useCallback(
     () => {
+      navigate({ to: '/' })
       removeChat(props.uid)
     },
     [props.uid],
