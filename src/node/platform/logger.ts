@@ -1,23 +1,15 @@
-import { dirname, join } from 'node:path'
+import { join } from 'node:path'
 import process from 'node:process'
 import { app } from 'electron'
 
-// eslint-disable-next-line ts/no-require-imports
+import { APP_DATA_PATH } from '../constant'
+// eslint-disable-next-line ts/no-require-imports, perfectionist/sort-imports
 const logger: typeof import('electron-log') = require('electron-log')
 /**
  * 获取日志文件路径
  */
 function getLogPath(): string {
-  const isDev = import.meta.env.DEV || process.env.NODE_ENV === 'development'
-  if (isDev) {
-    return join(process.cwd(), '.holixai', 'logs')
-  }
-  else {
-    const appPath = app.isPackaged
-      ? dirname(process.execPath)
-      : app.getAppPath()
-    return join(appPath, 'logs')
-  }
+  return join(APP_DATA_PATH, 'logs')
 }
 
 let isInitialized = false

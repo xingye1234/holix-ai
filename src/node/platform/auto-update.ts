@@ -1,16 +1,15 @@
-import type { UpdateInfo as ElectronUpdateInfo, ProgressInfo } from 'electron-updater'
-import { app } from 'electron'
-import {
-  autoUpdater,
-} from 'electron-updater'
-import { sendChannelMessage } from './channel'
+import type { UpdateInfo as ElectronUpdateInfo, ProgressInfo, UpdateDownloadedEvent } from 'electron-updater'
 import { logger } from './logger'
+import { update } from './update'
 
-export async function initAutoUpdater() {
+export function initAutoUpdater() {
   if (!import.meta.env.PROD) {
     logger.info('[AutoUpdate] Skipping init in non-PROD environment')
     return
   }
+
+  // eslint-disable-next-line ts/no-require-imports
+  const { autoUpdater }: typeof import('electron-updater') = require('electron-updater')
 
   try {
     // 配置 logger
@@ -23,67 +22,46 @@ export async function initAutoUpdater() {
     autoUpdater.autoDownload = true
 
     autoUpdater.on('checking-for-update', () => {
-      sendChannelMessage({ type: 'auto-update', event: 'checking-for-update' })
+      logger.info('[AutoUpdate] Checking for updates...')
+      update('update.checking-for-update', { info: {} })
     })
 
     autoUpdater.on('update-available', (info: ElectronUpdateInfo) => {
-      sendChannelMessage({ type: 'auto-update', event: 'update-available', info })
+      update('update.available', { info })
     })
 
     autoUpdater.on('update-not-available', (info: any) => {
-      sendChannelMessage({ type: 'auto-update', event: 'update-not-available', info })
+      update('update.not-available', { info })
     })
 
     autoUpdater.on('error', (err: any) => {
-      sendChannelMessage({ type: 'auto-update', event: 'error', message: String(err) })
+      update('update.error', { message: String(err) })
       logger.error('[AutoUpdate] error', err)
     })
 
     autoUpdater.on('download-progress', (progressObj: ProgressInfo) => {
-      sendChannelMessage({ type: 'auto-update', event: 'download-progress', progress: progressObj })
+      update('download.progress', { info: progressObj })
     })
 
-    autoUpdater.on('update-downloaded', (info: any) => {
-      sendChannelMessage({ type: 'auto-update', event: 'update-downloaded', info })
+    autoUpdater.on('update-downloaded', (event: UpdateDownloadedEvent) => {
+      update('update.downloaded', { event })
     })
-
-    // 在启动时进行一次检查（非强制）
-    setTimeout(() => {
-      try {
-        autoUpdater.checkForUpdates().catch((e: any) => logger.error('[AutoUpdate] check failed', e))
-      }
-      catch (e) {
-        logger.error('[AutoUpdate] checkForUpdates error', e)
-      }
-    }, 5_000)
 
     logger.info('[AutoUpdate] Initialized')
   }
   catch (error) {
     logger.warn('[AutoUpdate] electron-updater not available or failed to init:', error)
   }
-}
 
-export async function checkForUpdates() {
-  if (!autoUpdater)
-    return
-  try {
-    await autoUpdater.checkForUpdates()
-  }
-  catch (e) {
-    logger.error('[AutoUpdate] checkForUpdates failed', e)
-  }
-}
+  return {
+    autoUpdater,
 
-export async function installUpdateAndQuit() {
-  if (!autoUpdater)
-    return
-  try {
-    // quitAndInstall may throw in some environments
-    await autoUpdater.quitAndInstall()
-    app.quit()
-  }
-  catch (e) {
-    logger.error('[AutoUpdate] quitAndInstall failed', e)
+    checkForUpdates() {
+      return autoUpdater.checkForUpdates()
+    },
+
+    installUpdateAndQuit() {
+      return autoUpdater.quitAndInstall()
+    },
   }
 }

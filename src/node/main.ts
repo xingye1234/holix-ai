@@ -5,6 +5,7 @@ import { createStaticMiddleware } from '@holix/static'
 import { app, shell } from 'electron'
 import { initChat } from './chat/init'
 import { migrateDb } from './database/connect'
+import { initAutoUpdater } from './platform/auto-update'
 import { createChannel } from './platform/channel'
 import { onCommandForClient } from './platform/commands'
 import { configStore } from './platform/config'
@@ -14,7 +15,6 @@ import { providerStore } from './platform/provider'
 import { AppWindow } from './platform/window'
 import { trpcRouter } from './server/handler'
 import './platform/protocol'
-import { initAutoUpdater } from './platform/auto-update'
 
 const gotSingleInstanceLock = app.requestSingleInstanceLock()
 
@@ -160,6 +160,14 @@ async function bootstrap() {
         critical: true,
         timeout: 3000,
       },
+      {
+        name: 'init autoUpdater',
+        execute: () => {
+          initAutoUpdater()
+        },
+        critical: false,
+        timeout: 5000,
+      },
     ])
 
     // ============================================
@@ -213,7 +221,8 @@ async function bootstrap() {
     // 初始化自动更新（生产环境）
     try {
       await initAutoUpdater()
-    } catch (e) {
+    }
+    catch (e) {
       logger.warn('[Main] initAutoUpdater failed', e)
     }
   }
