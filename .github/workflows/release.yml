@@ -67,4 +67,4 @@ jobs:
           name: ${{ github.ref_name }}
           files: artifacts/**/*
         env:
-          GITHUB_TOKEN: ${{ secrets.HOLIX_RELEASE }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
