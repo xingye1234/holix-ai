@@ -1,15 +1,24 @@
 import type { Chat } from '@/node/database/schema/chat'
 import { Link } from '@tanstack/react-router'
+import { Delete, Ellipsis } from 'lucide-react'
+import { useCallback } from 'react'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { timeAgo } from '@/lib/time'
 import { cn } from '@/lib/utils'
 
 export function ChatPanel(props: Chat) {
+  const onDelete = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+
+    console.log('Delete chat', props.uid)
+  }, [])
+
   return (
     <Link
       to="/chat/$id"
       params={{ id: props.uid }}
       className={cn(
-        'flex flex-col items-start gap-2 rounded-lg border p-3 text-left text-sm transition-all select-none',
+        'flex items-center gap-2 rounded-lg border p-3 text-left text-sm transition-all select-none',
         'bg-card/30 border-border/40 hover:bg-card hover:border-border/80 hover:shadow-xs',
       )}
       activeProps={{
@@ -19,18 +28,28 @@ export function ChatPanel(props: Chat) {
     >
       <div className="flex w-full flex-col gap-1">
         <div className="flex items-center justify-between">
-          <span className="font-semibold truncate max-w-[70%]">
-            {props.title}
-          </span>
-          <span className="ml-auto text-[10px] text-muted-foreground/80">
-            {timeAgo(props.updatedAt)}
-          </span>
+          <span className="font-semibold truncate max-w-[70%]">{props.title}</span>
+          <span className="ml-auto text-[10px] text-muted-foreground/80">{timeAgo(props.updatedAt)}</span>
         </div>
 
         <span className="line-clamp-2 text-xs text-muted-foreground w-full wrap-break-word opacity-90">
           {props.lastMessagePreview || 'No messages yet'}
         </span>
       </div>
+      <Popover>
+        <PopoverTrigger>
+          <Ellipsis size={16} />
+        </PopoverTrigger>
+        <PopoverContent className="w-50 p-2" align="start" side="bottom">
+          <div
+            className="flex justify-between items-center cursor-pointer text-destructive hover:text-destructive/80 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md p-2 text-sm"
+            onClick={onDelete}
+          >
+            <span>删除会话</span>
+            <Delete size={14} className="mr-2" />
+          </div>
+        </PopoverContent>
+      </Popover>
     </Link>
   )
 }
