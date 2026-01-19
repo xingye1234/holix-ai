@@ -11,6 +11,7 @@ import { useMessageStore } from '@/store/message'
 export function useMessageUpdates() {
   const appendMessage = useMessageStore(s => s.appendMessage)
   const updateMessage = useMessageStore(s => s.updateMessage)
+  const deleteMessagesByChatUid = useMessageStore(s => s.deleteMessagesByChatUid)
 
   /**
    * streaming 合帧缓冲
@@ -66,10 +67,16 @@ export function useMessageUpdates() {
       updateMessage(payload.messageUid, payload.updates)
     })
 
+    const unsubscribeChatDelete = onUpdate('chat.deleted', (payload) => {
+      logger.info(`Chat ${payload.uid} deleted, removing its messages from store`)
+      deleteMessagesByChatUid(payload.uid)
+    })
+
     return () => {
       unsubscribeCreated?.()
       unsubscribeStreaming?.()
       unsubscribeUpdated?.()
+      unsubscribeChatDelete?.()
 
       if (rafId.current != null) {
         cancelAnimationFrame(rafId.current)

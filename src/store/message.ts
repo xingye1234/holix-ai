@@ -30,6 +30,7 @@ interface MessageStore {
   prependMessages: (chatUid: string, messages: Message[]) => void
   updateMessage: (messageUid: string, patch: Partial<Message>) => void
   deleteMessage: (messageUid: string) => Promise<void>
+  deleteMessagesByChatUid: (chatUid: string) => void
 
   /** ---------------- loaders ---------------- */
   loadLatest: (chatUid: string, limit?: number) => Promise<void>
@@ -167,6 +168,18 @@ export const useMessageStore = create<MessageStore>()(
         state.chatMessages[chatUid].sort(
           (a, b) => state.messages[a].seq - state.messages[b].seq,
         )
+      })
+    },
+
+    deleteMessagesByChatUid(chatUid: string) {
+      set((state) => {
+        const messageIds = state.chatMessages[chatUid]
+        if (!messageIds || messageIds.length === 0)
+          return
+
+        for (const messageUid of messageIds) {
+          delete state.messages[messageUid]
+        }
       })
     },
 
