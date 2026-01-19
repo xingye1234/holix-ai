@@ -2,16 +2,21 @@ import type { Chat } from '@/node/database/schema/chat'
 import { Link } from '@tanstack/react-router'
 import { Delete, Ellipsis } from 'lucide-react'
 import { useCallback } from 'react'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { timeAgo } from '@/lib/time'
 import { cn } from '@/lib/utils'
+import useChat from '@/store/chat'
 
 export function ChatPanel(props: Chat) {
-  const onDelete = useCallback((e: React.MouseEvent) => {
-    e.preventDefault()
+  const removeChat = useChat(state => state.removeChat)
 
-    console.log('Delete chat', props.uid)
-  }, [])
+  const onDelete = useCallback(
+    () => {
+      removeChat(props.uid)
+    },
+    [props.uid],
+  )
 
   return (
     <Link
@@ -41,13 +46,24 @@ export function ChatPanel(props: Chat) {
           <Ellipsis size={16} />
         </PopoverTrigger>
         <PopoverContent className="w-50 p-2" align="start" side="bottom">
-          <div
-            className="flex justify-between items-center cursor-pointer text-destructive hover:text-destructive/80 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md p-2 text-sm"
-            onClick={onDelete}
-          >
-            <span>删除会话</span>
-            <Delete size={14} className="mr-2" />
-          </div>
+          <AlertDialog>
+            <AlertDialogTrigger className="w-full flex justify-between items-center cursor-pointer text-destructive hover:text-destructive/80 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md p-2 text-sm">
+              <span>删除会话</span>
+              <Delete size={14} className="mr-2" />
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>删除会话</AlertDialogTitle>
+                <AlertDialogDescription>
+                  确认要删除该会话及其所有消息吗？此操作无法撤销。
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>取消</AlertDialogCancel>
+                <AlertDialogAction onClick={onDelete}>Continue</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </PopoverContent>
       </Popover>
     </Link>

@@ -1,5 +1,6 @@
 import type { Chat } from '@/node/database/schema/chat'
 import { create } from 'zustand'
+import logger from '@/lib/logger'
 import { trpcClient } from '@/lib/trpc-client'
 
 interface ChatStore {
@@ -20,6 +21,8 @@ interface ChatStore {
   addChat: (chat: Chat) => void
   // 更新会话
   updateChat: (chatUid: string, updates: Partial<Chat>) => void
+  // 移除会话
+  removeChat: (chatUid: string) => Promise<boolean>
 }
 
 const useChat = create<ChatStore>((set, get) => {
@@ -108,6 +111,19 @@ const useChat = create<ChatStore>((set, get) => {
           chats: newChats,
         }
       })
+    },
+    removeChat: async (chatUid: string) => {
+      try {
+        await trpcClient.chat.delete({ chatUid })
+        set(state => ({
+          chats: state.chats.filter(c => c.uid !== chatUid),
+        }))
+        return true
+      }
+      catch (error) {
+        logger.error('Failed to delete chat:', error)
+        return false
+      }
     },
   }
 })

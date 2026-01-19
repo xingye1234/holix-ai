@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import {
   createChat,
+  deleteChat,
   getAllChats,
   getChatByUid,
   updateChat,
@@ -140,5 +141,17 @@ export const chatRouter = router({
       const chat = await updatePendingMessages(input.chatUid, input.pendingMessages as any)
       update('chat.updated', chat)
       return chat
+    }),
+  // 删除会话（带通知）
+  delete: procedure()
+    .input(
+      z.object({
+        chatUid: z.string(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      await deleteChat(input.chatUid)
+      update('chat.deleted', { uid: input.chatUid })
+      return { success: true }
     }),
 })

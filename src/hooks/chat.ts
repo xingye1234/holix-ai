@@ -31,6 +31,15 @@ export function useChatUpdates() {
       updateChat(payload.uid, payload)
     })
 
+    // 注册 chat 删除事件监听
+    const unsubscribeDelete = onUpdate('chat.deleted', (payload) => {
+      // payload: { uid }
+      if (payload && (payload as any).uid) {
+        const uid = (payload as any).uid
+        useChat.getState().removeChat(uid)
+      }
+    })
+
     // 注册 chat 创建事件监听
     const unsubscribeCreate = onUpdate('chat.create', (payload) => {
       addChat(payload)
@@ -40,6 +49,9 @@ export function useChatUpdates() {
     return () => {
       if (typeof unsubscribeUpdate === 'function') {
         unsubscribeUpdate()
+      }
+      if (typeof unsubscribeDelete === 'function') {
+        unsubscribeDelete()
       }
       if (typeof unsubscribeCreate === 'function') {
         unsubscribeCreate()

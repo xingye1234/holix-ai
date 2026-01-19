@@ -8,7 +8,8 @@ import type { Chat, ChatInsert, PendingMessage } from './schema/chat'
 import { eq, sql } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import { getDatabase } from './connect'
-import { chats } from './schema/chat'
+import { deleteMessagesByChatUid } from './message-operations'
+import { chats, message } from './schema/chat'
 
 /**
  * 创建新会话
@@ -195,7 +196,12 @@ export async function updateChatPinned(
  */
 export async function deleteChat(chatUid: string): Promise<void> {
   const db = await getDatabase()
-  await db.delete(chats).where(eq(chats.uid, chatUid))
+
+  // 使用事务保证原子删除：先删消息再删会话
+  await (db as any).transaction?.(async (tx: any) => {
+    await tx.delete(message).where(eq(message.chatUid, chatUid))
+    await tx.delete(chats).where(eq(chats.uid, chatUid))
+  })
 }
 
 /**

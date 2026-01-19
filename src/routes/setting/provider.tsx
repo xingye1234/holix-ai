@@ -188,14 +188,14 @@ function RouteComponent() {
               <div className="pt-4">
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="danger">删除供应商</Button>
+                    <Button variant="destructive">删除供应商</Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-80">
                     <div className="space-y-4">
                       <p>您确定要删除此供应商吗？此操作无法撤销。</p>
                       <div className="flex justify-end gap-2">
                         <Button
-                          variant="danger"
+                          variant="destructive"
                           onClick={async () => {
                             removeProvider(provider.name)
                               .then(async () => {
