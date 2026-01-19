@@ -15,19 +15,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Node 20：Electron / ES2024 稳定组合
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'pnpm'
-
-      # 关键：pnpm 10（与你本地 lockfile 完全一致）
+      # ① 先安装 pnpm（这是关键）
       - name: Setup pnpm
         uses: pnpm/action-setup@v3
         with:
           version: 10
           run_install: false
+
+      # ② 再 setup node + pnpm cache
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
 
       - name: Verify versions
         run: |
