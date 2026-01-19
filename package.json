@@ -20,7 +20,7 @@
     "gen:db": "drizzle-kit generate",
     "studio": "drizzle-kit studio",
     "lint": "eslint . --fix",
-    "package": "electron-builder build -c ./electron-builder.json",
+    "package": "electron-builder build -c ./electron-builder.json --publish never",
     "release": "pnpm build && pnpm package",
     "postinstall": "electron-builder install-app-deps",
     "test": "vitest --run"
