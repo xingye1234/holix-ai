@@ -62,6 +62,7 @@
     "dotenv": "^17.2.3",
     "drizzle-orm": "^0.45.1",
     "electron-log": "^5.4.3",
+    "electron-updater": "^6.7.3",
     "framer-motion": "^12.26.2",
     "idb-keyval": "^6.2.2",
     "immer": "^11.1.3",

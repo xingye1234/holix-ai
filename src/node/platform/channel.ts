@@ -1,88 +1,89 @@
-import { randomUUID } from "node:crypto";
-import type { RouteHandler } from "@holix/router";
+import type { RouteHandler } from '@holix/router'
+import { randomUUID } from 'node:crypto'
 
 class ConnectionSender {
-	id: string;
-	connect: ReadableStreamDefaultController
-	constructor(
-		id: string, connect: ReadableStreamDefaultController
-	) {
-		this.id = id;
-		this.connect = connect;
-	}
+  id: string
+  connect: ReadableStreamDefaultController
+  constructor(
+    id: string,
+    connect: ReadableStreamDefaultController,
+  ) {
+    this.id = id
+    this.connect = connect
+  }
 
-	sendMessage(data: unknown) {
-		const message = `data: ${JSON.stringify(data)}\n\n`;
-		this.enqueue(message);
-	}
+  sendMessage(data: unknown) {
+    const message = `data: ${JSON.stringify(data)}\n\n`
+    this.enqueue(message)
+  }
 
-	enqueue(data: string) {
-		this.connect.enqueue(new TextEncoder().encode(data));
-	}
+  enqueue(data: string) {
+    this.connect.enqueue(new TextEncoder().encode(data))
+  }
 
-	heartbeat() {
-		this.enqueue(`: heartbeat\n\n`);
-	}
+  heartbeat() {
+    this.enqueue(`: heartbeat\n\n`)
+  }
 }
 
-const connectionLoop = new Map<string, ConnectionSender>();
+const connectionLoop = new Map<string, ConnectionSender>()
 
 export function createChannel() {
-	const handle: RouteHandler = async (ctx, next) => {
-		const connectionId = randomUUID();
-		const stream = new ReadableStream({
-			start(controller) {
-				const sender = new ConnectionSender(connectionId, controller);
-				sender.sendMessage({
-					type: "connected",
-					message: "已连接到 SSE 流",
-					connectionId,
-				})
-				connectionLoop.set(connectionId, sender);
-				const heartbeat = setInterval(() => {
-					try {
-						sender.heartbeat();
-					} catch (_: unknown) {
-						clearInterval(heartbeat);
-						connectionLoop.delete(connectionId);
-					}
-				}, 15000);
-				const cleanup = () => {
-					clearInterval(heartbeat);
-					connectionLoop.delete(connectionId);
-				};
+  const handle: RouteHandler = async (ctx, next) => {
+    const connectionId = randomUUID()
+    const stream = new ReadableStream({
+      start(controller) {
+        const sender = new ConnectionSender(connectionId, controller)
+        sender.sendMessage({
+          type: 'connected',
+          message: '已连接到 SSE 流',
+          connectionId,
+        })
+        connectionLoop.set(connectionId, sender)
+        const heartbeat = setInterval(() => {
+          try {
+            sender.heartbeat()
+          }
+          catch {
+            clearInterval(heartbeat)
+            connectionLoop.delete(connectionId)
+          }
+        }, 15000)
+        const cleanup = () => {
+          clearInterval(heartbeat)
+          connectionLoop.delete(connectionId)
+        }
 
-				ctx.req.signal?.addEventListener("abort", cleanup)
+        ctx.req.signal?.addEventListener('abort', cleanup)
 
-				return cleanup
-			},
-			cancel() {
-				connectionLoop.delete(connectionId);
-			}
-		});
+        return cleanup
+      },
+      cancel() {
+        connectionLoop.delete(connectionId)
+      },
+    })
 
-		ctx
-			.status(200)
-			.headers({
-				"Content-Type": "text/event-stream",
-				"Cache-Control": "no-cache",
-				Connection: "keep-alive",
-			})
-			// @ts-expect-error
-			.stream(stream);
+    ctx
+      .status(200)
+      .headers({
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      })
+      .stream(stream)
 
-		await next();
-	};
+    await next()
+  }
 
-	return handle;
+  return handle
 }
 
 /**
- * 
+ *
  * @param data 需要发送的数据
  */
 export function sendChannelMessage<T = unknown>(data: T) {
-	for (const [, connection] of connectionLoop) {
-		connection.sendMessage(data);
-	}
+  for (const [, connection] of connectionLoop) {
+    connection.sendMessage(data)
+  }
 }

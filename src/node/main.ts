@@ -14,6 +14,7 @@ import { providerStore } from './platform/provider'
 import { AppWindow } from './platform/window'
 import { trpcRouter } from './server/handler'
 import './platform/protocol'
+import { initAutoUpdater } from './platform/auto-update'
 
 const gotSingleInstanceLock = app.requestSingleInstanceLock()
 
@@ -208,6 +209,13 @@ async function bootstrap() {
     // 阶段 3: 运行中
     // ============================================
     await lifecycle.setPhase(LifecyclePhase.RUNNING)
+
+    // 初始化自动更新（生产环境）
+    try {
+      await initAutoUpdater()
+    } catch (e) {
+      logger.warn('[Main] initAutoUpdater failed', e)
+    }
   }
   catch (error) {
     await lifecycle.setPhase(LifecyclePhase.ERROR)
