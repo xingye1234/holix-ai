@@ -112,9 +112,5 @@
     "typescript": "^5.9.3",
     "vite": "npm:rolldown-vite@latest",
     "vitest": "^4.0.16"
-  },
-  "drizzle-kit": {
-    "schema": "./src/node/database/schema/ky.ts",
-    "out": "./migrations"
   }
 }
