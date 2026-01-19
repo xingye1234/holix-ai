@@ -17,35 +17,36 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'pnpm'
-
+      # 1. 安装 pnpm
       - name: Setup pnpm
         uses: pnpm/action-setup@v3
         with:
           version: 10
           run_install: false
 
+      # 2. 安装 Node
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build & package (no publish)
+      # 3. 打包（不 publish）
+      - name: Build and package
         run: |
           pnpm run build
-          pnpm run package
+          pnpm run release -- --publish never
 
+      # 4. 上传 dist 作为 artifact
       - name: Upload dist artifacts
         uses: actions/upload-artifact@v4
         with:
           name: dist-${{ matrix.os }}
           path: dist/**/*
-  
   release:
     name: Publish GitHub Release
     runs-on: ubuntu-latest
