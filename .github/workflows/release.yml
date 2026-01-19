@@ -44,6 +44,7 @@ jobs:
       # 4. 上传 dist 作为 artifact
       - name: Determine artifact name
         id: artifact-name
+        shell: bash
         run: |
           if [ "${{ matrix.os }}" = "macos-latest" ]; then
             echo "name=dist-macos" >> $GITHUB_OUTPUT
