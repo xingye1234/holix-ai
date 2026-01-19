@@ -130,22 +130,33 @@ export default function MainFooter() {
     return true
   }, [chat, pendingMessages, value])
 
+  const onDraftEdit = useCallback((draft: PendingMessage) => {
+    setValue(draft.content)
+  }, [])
+
+  const onDraftSend = useCallback((draft: PendingMessage) => {
+    if (!chat)
+      return
+
+    if (draft.content.trim().length === 0)
+      return
+
+    command('chat.message', {
+      chatId: chat.uid,
+      content: draft.content,
+    })
+  }, [pendingMessages])
+
   return (
     <footer className="w-full mt-auto h-(--app-chat-footer-height) border-t">
       <div className="h-(--app-chat-input-header-height) border-b px-2 flex items-center justify-between">
         <div className="mr-auto">
-          <DraftsView />
+          <DraftsView onEdit={onDraftEdit} onSend={onDraftSend} />
         </div>
         <div className="text-sm text-muted-foreground flex ml-auto items-center gap-2">
           <Coins className="w-4 h-4" />
           <span>{formatTokenCount(estimatedTokens)}</span>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 w-7 p-0"
-            onClick={toggleSettingsPanel}
-            title="设置"
-          >
+          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={toggleSettingsPanel} title="设置">
             <Settings className="w-4 h-4" />
           </Button>
         </div>
@@ -187,11 +198,7 @@ export default function MainFooter() {
             onModelChange={handleModelChange}
           />
         </div>
-        <Button
-          className="ml-auto"
-          disabled={!chat || value.trim().length === 0}
-          onClick={onSend}
-        >
+        <Button className="ml-auto" disabled={!chat || value.trim().length === 0} onClick={onSend}>
           <Send />
           Send
         </Button>
