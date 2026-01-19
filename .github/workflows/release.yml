@@ -27,6 +27,11 @@ jobs:
         with:
           version: 8
 
+      - name: Verify pnpm
+        run: |
+          pnpm -v
+          pnpm config get store-dir
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
