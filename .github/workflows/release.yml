@@ -91,8 +91,8 @@ jobs:
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: artifacts/dist-macos/holix-ai-0.0.1-mac-arm64.dmg
-          asset_name: holix-ai-0.0.1-mac-arm64.dmg
+          asset_path: artifacts/dist-macos/holix-ai-0.0.1-arm64.dmg
+          asset_name: holix-ai-0.0.1-arm64.dmg
           asset_content_type: application/octet-stream
         env:
           GITHUB_TOKEN: ${{ secrets.HOLIX_RELEASE }}
@@ -124,8 +124,8 @@ jobs:
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: artifacts/dist-windows/holix-ai-0.0.1.exe
-          asset_name: holix-ai-0.0.1.exe
+          asset_path: artifacts/dist-windows/holix-ai-setup-0.0.1-x64.exe
+          asset_name: holix-ai-setup-0.0.1-x64.exe
           asset_content_type: application/octet-stream
         env:
           GITHUB_TOKEN: ${{ secrets.HOLIX_RELEASE }}
@@ -135,8 +135,8 @@ jobs:
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: artifacts/dist-windows/holix-ai-0.0.1.exe.blockmap
-          asset_name: holix-ai-0.0.1.exe.blockmap
+          asset_path: artifacts/dist-windows/holix-ai-setup-0.0.1-x64.exe.blockmap
+          asset_name: holix-ai-setup-0.0.1-x64.exe.blockmap
           asset_content_type: application/octet-stream
         env:
           GITHUB_TOKEN: ${{ secrets.HOLIX_RELEASE }}
