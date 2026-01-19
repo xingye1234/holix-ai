@@ -1,8 +1,8 @@
 import { join } from 'node:path'
 import process from 'node:process'
 import { app } from 'electron'
-
 import { APP_DATA_PATH } from '../constant'
+
 // eslint-disable-next-line ts/no-require-imports, perfectionist/sort-imports
 const logger: typeof import('electron-log') = require('electron-log')
 /**

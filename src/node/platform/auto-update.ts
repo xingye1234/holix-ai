@@ -2,14 +2,14 @@ import type { UpdateInfo as ElectronUpdateInfo, ProgressInfo, UpdateDownloadedEv
 import { logger } from './logger'
 import { update } from './update'
 
+// eslint-disable-next-line ts/no-require-imports, perfectionist/sort-imports
+const { autoUpdater }: typeof import('electron-updater') = require('electron-updater')
+
 export function initAutoUpdater() {
   if (!import.meta.env.PROD) {
     logger.info('[AutoUpdate] Skipping init in non-PROD environment')
     return
   }
-
-  // eslint-disable-next-line ts/no-require-imports
-  const { autoUpdater }: typeof import('electron-updater') = require('electron-updater')
 
   try {
     // 配置 logger
@@ -52,16 +52,12 @@ export function initAutoUpdater() {
   catch (error) {
     logger.warn('[AutoUpdate] electron-updater not available or failed to init:', error)
   }
+}
 
-  return {
-    autoUpdater,
+export function checkForUpdates() {
+  autoUpdater.checkForUpdates()
+}
 
-    checkForUpdates() {
-      return autoUpdater.checkForUpdates()
-    },
-
-    installUpdateAndQuit() {
-      return autoUpdater.quitAndInstall()
-    },
-  }
+export function installUpdateAndQuit() {
+  autoUpdater.quitAndInstall()
 }
