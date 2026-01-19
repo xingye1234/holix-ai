@@ -7,7 +7,6 @@
     "node_modules/@libsql/**/*",
     "node_modules/drizzle-orm/lib/sqlite3.js"
   ],
-  "artifactName": "holix-ai-${version}-${os}-${arch}",
   "directories": {
     "buildResources": "./public"
   },
@@ -24,7 +23,8 @@
   "productName": "Holix AI",
   "mac": {
     "target": "dmg",
-    "icon": "./public/favicon.icns"
+    "icon": "./public/favicon.icns",
+    "artifactName": "holix-ai-${version}-${arch}.${ext}"
   },
   "win": {
     "target": "nsis",
@@ -49,9 +49,6 @@
     "createDesktopShortcut": true,
     "createStartMenuShortcut": true,
     "shortcutName": "Holix AI"
-  },
-  "appImage": {
-    "artifactName": "holix-ai-${version}-${arch}.AppImage"
   },
   "npmRebuild": false,
   "publish": [
