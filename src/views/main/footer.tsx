@@ -130,8 +130,24 @@ export default function MainFooter() {
     return true
   }, [chat, pendingMessages, value])
 
+  const onDraftDelete = useCallback(
+    async (draft: PendingMessage) => {
+      if (!chat)
+        return
+
+      const updatedMessages = pendingMessages.filter(m => m.id !== draft.id)
+
+      await trpcClient.chat.updatePendingMessages({
+        chatUid: chat.uid,
+        pendingMessages: updatedMessages,
+      })
+    },
+    [pendingMessages, chat],
+  )
+
   const onDraftEdit = useCallback((draft: PendingMessage) => {
     setValue(draft.content)
+    onDraftDelete(draft)
   }, [])
 
   const onDraftSend = useCallback((draft: PendingMessage) => {
@@ -145,13 +161,15 @@ export default function MainFooter() {
       chatId: chat.uid,
       content: draft.content,
     })
+
+    onDraftDelete(draft)
   }, [pendingMessages])
 
   return (
     <footer className="w-full mt-auto h-(--app-chat-footer-height) border-t">
       <div className="h-(--app-chat-input-header-height) border-b px-2 flex items-center justify-between">
         <div className="mr-auto">
-          <DraftsView onEdit={onDraftEdit} onSend={onDraftSend} />
+          <DraftsView onEdit={onDraftEdit} onSend={onDraftSend} onDelete={onDraftDelete} />
         </div>
         <div className="text-sm text-muted-foreground flex ml-auto items-center gap-2">
           <Coins className="w-4 h-4" />
