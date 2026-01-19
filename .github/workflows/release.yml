@@ -17,31 +17,29 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      # 1. 安装 pnpm
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v3
         with:
-          version: 10
-          run_install: false
+          fetch-depth: 0
 
-      # 2. 安装 Node
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'pnpm'
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 10
+          run_install: false
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # 3. 打包（不 publish）
-      - name: Build and package
+      - name: Build & package (no publish)
         run: |
           pnpm run build
-          pnpm run release -- --publish never
+          pnpm run package
 
-      # 4. 上传 dist 作为 artifact
       - name: Upload dist artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -54,17 +52,84 @@ jobs:
     needs: build
 
     steps:
-      - name: Download all dist artifacts
+      - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts
 
-      # 5. 发布到 GitHub Release（把 dist 里所有文件原样上传）
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        id: create_release
+        uses: actions/create-release@v1
         with:
           tag_name: ${{ github.ref_name }}
-          name: ${{ github.ref_name }}
-          files: artifacts/**/*
+          release_name: ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.HOLIX_RELEASE }}
+
+      - name: Upload mac assets
+        if: ${{ always() }}
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: artifacts/dist-macos/holix-ai-0.0.1-mac-arm64.dmg
+          asset_name: holix-ai-0.0.1-mac-arm64.dmg
+          asset_content_type: application/octet-stream
+        env:
+          GITHUB_TOKEN: ${{ secrets.HOLIX_RELEASE }}
+
+      - name: Upload mac blockmap
+        if: ${{ always() }}
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: artifacts/dist-macos/holix-ai-0.0.1-arm64.dmg.blockmap
+          asset_name: holix-ai-0.0.1-arm64.dmg.blockmap
+          asset_content_type: application/octet-stream
+        env:
+          GITHUB_TOKEN: ${{ secrets.HOLIX_RELEASE }}
+
+      - name: Upload mac latest
+        if: ${{ always() }}
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: artifacts/dist-macos/latest-mac.yml
+          asset_name: latest-mac.yml
+          asset_content_type: application/octet-stream
+        env:
+          GITHUB_TOKEN: ${{ secrets.HOLIX_RELEASE }}
+
+      - name: Upload win assets
+        if: ${{ always() }}
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: artifacts/dist-windows/holix-ai-0.0.1.exe
+          asset_name: holix-ai-0.0.1.exe
+          asset_content_type: application/octet-stream
+        env:
+          GITHUB_TOKEN: ${{ secrets.HOLIX_RELEASE }}
+
+      - name: Upload win blockmap
+        if: ${{ always() }}
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: artifacts/dist-windows/holix-ai-0.0.1.exe.blockmap
+          asset_name: holix-ai-0.0.1.exe.blockmap
+          asset_content_type: application/octet-stream
+        env:
+          GITHUB_TOKEN: ${{ secrets.HOLIX_RELEASE }}
+
+      - name: Upload win latest
+        if: ${{ always() }}
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: artifacts/dist-windows/latest.yml
+          asset_name: latest.yml
+          asset_content_type: application/octet-stream
         env:
           GITHUB_TOKEN: ${{ secrets.HOLIX_RELEASE }}
