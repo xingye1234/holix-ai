@@ -9,7 +9,6 @@ import { router } from './router'
 export default function App() {
   // 初始化所有数据
   useInitChats()
-  useMessageUpdates()
 
   // 监听所有更新事件
   useChatUpdates()
