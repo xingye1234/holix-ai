@@ -82,7 +82,7 @@ export function useMessageUpdates() {
         cancelAnimationFrame(rafId.current)
       }
     }
-  }, [appendMessage, updateMessage])
+  }, [appendMessage, updateMessage, deleteMessagesByChatUid])
 }
 
 export function useChatMessages(chatUid: string) {

@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import logger from '@/lib/logger'
 import {
   createChat,
   deleteChat,
@@ -150,6 +151,7 @@ export const chatRouter = router({
       }),
     )
     .mutation(async ({ input }) => {
+      logger.info(`Deleting chat: ${input.chatUid}`)
       await deleteChat(input.chatUid)
       update('chat.deleted', { uid: input.chatUid })
       return { success: true }
