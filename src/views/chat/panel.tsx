@@ -33,7 +33,7 @@ export function ChatPanel(props: Chat) {
       }}
       aria-label={`Open chat: ${props.title}`}
     >
-      <div className="flex w-full flex-col gap-1">
+      <div className="flex w-full flex-col gap-1 max-w-[90%]">
         <div className="flex items-center justify-between">
           <span className="font-semibold truncate max-w-[70%]">{props.title}</span>
           <span className="ml-auto text-[10px] text-muted-foreground/80">{timeAgo(props.updatedAt)}</span>
