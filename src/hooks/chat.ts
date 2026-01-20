@@ -36,7 +36,8 @@ export function useChatUpdates() {
       // payload: { uid }
       if (payload && (payload as any).uid) {
         const uid = (payload as any).uid
-        useChat.getState().removeChat(uid)
+        // 使用本地移除，避免在接收到服务端删除事件时再次发起删除请求导致循环
+        useChat.getState().removeChatLocal(uid)
       }
     })
 

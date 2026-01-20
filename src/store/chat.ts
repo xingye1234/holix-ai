@@ -23,6 +23,8 @@ interface ChatStore {
   updateChat: (chatUid: string, updates: Partial<Chat>) => void
   // 移除会话
   removeChat: (chatUid: string) => Promise<boolean>
+  // 本地移除会话（不触发后端请求），用于接收服务端事件时使用
+  removeChatLocal: (chatUid: string) => boolean
 }
 
 const useChat = create<ChatStore>((set, get) => {
@@ -124,6 +126,12 @@ const useChat = create<ChatStore>((set, get) => {
         logger.error('Failed to delete chat:', error)
         return false
       }
+    },
+    removeChatLocal: (chatUid: string) => {
+      set(state => ({
+        chats: state.chats.filter(c => c.uid !== chatUid),
+      }))
+      return true
     },
   }
 })
