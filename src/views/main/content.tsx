@@ -1,7 +1,6 @@
 import type { VListHandle } from 'virtua'
-import { memo, useCallback, useEffect, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useRef } from 'react'
 import { VList } from 'virtua'
-import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuShortcut, ContextMenuTrigger } from '@/components/ui/context-menu'
 import { useChatContext } from '@/context/chat'
 import { useChatMessages, useInitialMessageLoad, useLoadMoreMessages } from '@/hooks/message'
 import { useRafThrottle } from '@/hooks/throttle'
@@ -67,21 +66,19 @@ export const MainContent = memo(() => {
     logger.info('MainContent: Initial scroll to bottom')
   }, [messages.length, chat?.uid])
 
-  useUpdate('message.streaming', (payload) => {
+  const toButton = useCallback((payload: { chatUid: string }) => {
+    if (!chat) {
+      return
+    }
     if (payload.chatUid !== chat?.uid) {
       return
     }
-
     scrollButton()
-  })
+  }, [chat, scrollButton])
 
-  useUpdate('message.updated', (payload) => {
-    if (payload.chatUid !== chat?.uid) {
-      return
-    }
-
-    scrollButton()
-  })
+  useUpdate('message.streaming', toButton)
+  useUpdate('message.created', toButton)
+  useUpdate('message.updated', toButton)
 
   const deleteMessage = useMessageStore(state => state.deleteMessage)
 
