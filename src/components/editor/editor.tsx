@@ -1,5 +1,5 @@
 import type { EditorState, LexicalEditor } from 'lexical'
-import type { EditorProps } from './props'
+import type { EditorHandle, EditorProps } from './props'
 import { AutoFocusPlugin } from '@lexical/react/LexicalAutoFocusPlugin'
 import { LexicalComposer } from '@lexical/react/LexicalComposer'
 import { ContentEditable } from '@lexical/react/LexicalContentEditable'
@@ -8,12 +8,15 @@ import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin'
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin'
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin'
 import { $getRoot } from 'lexical'
-import { useMemo } from 'react'
+import { forwardRef, useImperativeHandle, useMemo, useRef } from 'react'
 import { cn } from '@/lib/utils'
-import { ControlledTextPlugin } from './plugins/ControlledTextPlugin'
+import { EditorBridgePlugin } from './plugins/BridgePlugin'
 import { KeyboardPlugin } from './plugins/KeyboardPlugin'
 
-export function Editor(props: EditorProps) {
+export const Editor = forwardRef<EditorHandle, EditorProps>((props: EditorProps, ref) => {
+  const apiRef = useRef<EditorHandle | null>(null)
+  useImperativeHandle(ref, () => apiRef.current!, [])
+
   const initialConfig = useMemo(
     () => ({
       namespace: props.namespace || 'holix-editor',
@@ -49,7 +52,7 @@ export function Editor(props: EditorProps) {
         const text = editorState.read(() => {
           return $getRoot().getTextContent()
         })
-        props.onTextChange(text?.trim(), editor)
+        props.onTextChange(text, editor)
       }
     }
   }, [props.onChange, props.onTextChange])
@@ -72,12 +75,10 @@ export function Editor(props: EditorProps) {
         />
         <HistoryPlugin delay={300} />
         <AutoFocusPlugin />
+        <EditorBridgePlugin apiRef={apiRef} />
         {onChange && <OnChangePlugin onChange={onChange} />}
-        {(props.textValue !== undefined || props.value !== undefined) && (
-          <ControlledTextPlugin textValue={props.value ?? props.textValue ?? ''} />
-        )}
         {props.keyboard && <KeyboardPlugin {...props.keyboard} />}
       </LexicalComposer>
     </div>
   )
-}
+})

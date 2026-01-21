@@ -36,3 +36,10 @@ export interface EditorProps {
   /** 键盘事件回调 */
   keyboard?: KeyboardPluginProps
 }
+
+export interface EditorHandle {
+  setText: (text: string, opts?: { focus?: boolean }) => void
+  clear: (opts?: { focus?: boolean }) => void
+  focus: () => void
+  getText: () => string
+}

@@ -1,3 +1,4 @@
+import type { EditorHandle } from '@/components/editor/props'
 import type { PendingMessage } from '@/node/database/schema/chat'
 import { Coins, Send, Settings } from 'lucide-react'
 import { nanoid } from 'nanoid'
@@ -14,6 +15,7 @@ import { estimateTokens, formatTokenCount } from '../../share/token'
 import DraftsView from './drafts'
 
 export default function MainFooter() {
+  const editorRef = useRef<EditorHandle>(null)
   const [value, setValue] = useState('')
   const { chat, pendingMessages } = useChatContext()
   const { toggle: toggleSettingsPanel } = useSettingsPanel()
@@ -73,7 +75,8 @@ export default function MainFooter() {
       content: value,
     })
 
-    setValue('')
+    // 清空输入框
+    editorRef.current?.clear({ focus: true })
   }, [chat, value])
 
   const onSaveDraft = useCallback(() => {
@@ -146,7 +149,7 @@ export default function MainFooter() {
   )
 
   const onDraftEdit = useCallback((draft: PendingMessage) => {
-    setValue(draft.content)
+    editorRef.current?.setText(draft.content, { focus: true })
     onDraftDelete(draft)
   }, [])
 
@@ -181,6 +184,7 @@ export default function MainFooter() {
       </div>
       <div className="h-(--app-chat-input-height) my-(--app-chat-input-gap) px-2">
         <Editor
+          ref={editorRef}
           placeholder="请输入问题"
           ariaPlaceholder="请输入问题"
           rootClassName="min-h-(--app-chat-input-height)"
@@ -189,7 +193,6 @@ export default function MainFooter() {
             console.error(`editor:`, err ? err.message : 'unknown error')
           }}
           onTextChange={onTextChange}
-          textValue={value}
           keyboard={{
             onEnter: () => {
               onSend()
