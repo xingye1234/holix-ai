@@ -49,7 +49,7 @@ export const MainContent = memo(() => {
       })
       logger.info('MainContent: Auto scroll to bottom on new message')
     }
-  })
+  }, [messages.length])
 
   useEffect(() => {
     if (!messages.length)

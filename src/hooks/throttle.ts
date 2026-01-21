@@ -1,6 +1,6 @@
 import { useCallback, useRef } from 'react'
 
-export function useRafThrottle<T extends (...args: any[]) => void>(fn: T): T {
+export function useRafThrottle<T extends (...args: any[]) => void>(fn: T, deps?: React.DependencyList): T {
   const rafId = useRef<number | null>(null)
   const lastArgs = useRef<any[]>([])
 
@@ -14,5 +14,5 @@ export function useRafThrottle<T extends (...args: any[]) => void>(fn: T): T {
       rafId.current = null
       fn(...lastArgs.current)
     })
-  }) as T, [fn])
+  }) as T, [fn, ...(deps || [])])
 }
