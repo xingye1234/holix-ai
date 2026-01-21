@@ -80,6 +80,22 @@ export const MainContent = memo(() => {
   useUpdate('message.created', toButton)
   useUpdate('message.updated', toButton)
 
+  // 新增：监听自定义事件，强制滚动到底部
+  useEffect(() => {
+    const handler = () => {
+      const list = vListRef.current
+      if (list && messages.length > 0) {
+        list.scrollToIndex(messages.length - 1, {
+          align: 'end',
+          smooth: true,
+        })
+        logger.info('MainContent: Forced scroll to bottom by user send')
+      }
+    }
+    window.addEventListener('chat.scrollToBottom', handler)
+    return () => window.removeEventListener('chat.scrollToBottom', handler)
+  }, [messages.length])
+
   const deleteMessage = useMessageStore(state => state.deleteMessage)
 
   const onDeleteMessage = useCallback(async (messageId: string) => {

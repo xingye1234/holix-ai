@@ -63,6 +63,11 @@ export default function MainFooter() {
     [chat],
   )
 
+  // 新增：发送消息后通知滚动
+  const notifyScrollToBottom = () => {
+    window.dispatchEvent(new CustomEvent('chat.scrollToBottom'))
+  }
+
   const onSend = useCallback(() => {
     if (!chat || value.trim().length === 0)
       return
@@ -74,6 +79,8 @@ export default function MainFooter() {
     })
 
     setValue('')
+    // 新增：发送消息后强制滚动到底部
+    notifyScrollToBottom()
   }, [chat, value])
 
   const onSaveDraft = useCallback(() => {
