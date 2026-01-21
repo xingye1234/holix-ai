@@ -1,4 +1,5 @@
 import type { VListHandle } from 'virtua'
+import type { Message } from '@/node/database/schema/chat'
 import { memo, useCallback, useEffect, useRef } from 'react'
 import { VList } from 'virtua'
 import { useChatContext } from '@/context/chat'
@@ -66,10 +67,15 @@ export const MainContent = memo(() => {
     logger.info('MainContent: Initial scroll to bottom')
   }, [messages.length, chat?.uid])
 
-  const toButton = useCallback((payload: { chatUid: string }) => {
+  const toButton = useCallback((payload: { chatUid: string, message?: Message }) => {
     if (!chat) {
       return
     }
+    // 忽略用户自己的消息
+    if (payload.message && payload.message.role === 'user') {
+      return
+    }
+
     if (payload.chatUid !== chat?.uid) {
       return
     }
@@ -79,22 +85,6 @@ export const MainContent = memo(() => {
   useUpdate('message.streaming', toButton)
   useUpdate('message.created', toButton)
   useUpdate('message.updated', toButton)
-
-  // 新增：监听自定义事件，强制滚动到底部
-  useEffect(() => {
-    const handler = () => {
-      const list = vListRef.current
-      if (list && messages.length > 0) {
-        list.scrollToIndex(messages.length - 1, {
-          align: 'end',
-          smooth: true,
-        })
-        logger.info('MainContent: Forced scroll to bottom by user send')
-      }
-    }
-    window.addEventListener('chat.scrollToBottom', handler)
-    return () => window.removeEventListener('chat.scrollToBottom', handler)
-  }, [messages.length])
 
   const deleteMessage = useMessageStore(state => state.deleteMessage)
 
