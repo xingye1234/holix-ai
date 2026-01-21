@@ -60,11 +60,13 @@ export const MainContent = memo(() => {
     if (!list)
       return
 
-    list.scrollToIndex(messages.length - 1, {
-      align: 'end',
-    })
-
-    logger.info('MainContent: Initial scroll to bottom')
+    // 等待渲染完成后再滚动到底部
+    setTimeout(() => {
+      list.scrollToIndex(messages.length - 1, {
+        align: 'end',
+      })
+      logger.info('MainContent: Initial scroll to bottom')
+    }, 0)
   }, [messages.length, chat?.uid])
 
   const toButton = useCallback((payload: { chatUid: string, message?: Message }) => {
