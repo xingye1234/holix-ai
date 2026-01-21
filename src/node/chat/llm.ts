@@ -5,6 +5,15 @@ import { ChatOllama } from '@langchain/ollama'
 import { ChatOpenAI } from '@langchain/openai'
 import { inferProvider } from '../../share/models'
 
+// import { createAgent } from 'langchain'
+// const agent =  createAgent({
+//   model: createLlm('gpt-4', { streaming: true }),
+//   tools: [],
+// })
+// agent.invoke({
+//   messages: []
+// })
+
 export interface LlmConfig {
   apiKey?: string
   baseURL?: string
