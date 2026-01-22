@@ -65,59 +65,51 @@ lifecycle.onPhase(LifecyclePhase.ERROR, () => {
   logger.error('[Lifecycle Hook] Application entered error state')
 })
 
-// ============================================
-// Electron 事件监听
-// ============================================
-app.on('second-instance', () => {
-  logger.info('Second instance detected. Bringing the main window to the front.')
-  if (window?.isMinimized()) {
-    window?.restore()
-  }
-  window?.focus()
-})
-
-app.on('window-all-closed', async () => {
-  if (process.platform !== 'darwin') {
-    await lifecycle.setPhase(LifecyclePhase.STOPPING)
-    app.quit()
-  }
-})
-
-app.on('activate', () => {
-  if (lifecycle.getPhase() === LifecyclePhase.RUNNING && AppWindow.getAllWindows().length === 0) {
-    window = new AppWindow()
-    window.use(router)
-  }
-})
-
-app.on('before-quit', async () => {
-  await lifecycle.setPhase(LifecyclePhase.STOPPING)
-  logger.info('[Main] Application is quitting...')
-  lifecycle.printPerformanceSummary()
-})
-
-app.on('will-quit', async () => {
-  await lifecycle.setPhase(LifecyclePhase.STOPPED)
-  logger.info('[Main] Application stopped')
-})
-
-if (import.meta.env.PROD) {
-  app.on('web-contents-created', (_, contents) => {
-    contents.setWindowOpenHandler(({ url }) => {
-      if (url.startsWith('http')) {
-        shell.openExternal(url)
-        return { action: 'deny' }
-      }
-      return { action: 'allow' }
-    })
-
-    contents.on('will-navigate', (event, url) => {
-      if (url.startsWith('http') || url.startsWith('https')) {
-        event.preventDefault()
-        shell.openExternal(url)
-      }
-    })
-  })
+async function starting() {
+  // ============================================
+  // 阶段 2: 启动应用
+  // ============================================
+  await lifecycle.setPhase(LifecyclePhase.STARTING)
+  await lifecycle.executeTasks([
+    {
+      name: 'Create application window',
+      execute: () => {
+        if (!window) {
+          window = new AppWindow()
+        }
+      },
+      critical: true,
+    },
+    {
+      name: 'Register protocol handler',
+      execute: () => {
+        if (window) {
+          router.register(window.webContents.session.protocol)
+        }
+      },
+      critical: true,
+    },
+    {
+      name: 'Register window router',
+      execute: () => {
+        if (window) {
+          window.use(router)
+        }
+      },
+      critical: true,
+    },
+    {
+      name: 'Show application window',
+      execute: async () => {
+        if (window) {
+          await window.showWhenReady()
+        }
+      },
+      critical: true,
+      timeout: 10000,
+    },
+  ])
+  await lifecycle.setPhase(LifecyclePhase.RUNNING)
 }
 
 // ============================================
@@ -169,58 +161,10 @@ async function bootstrap() {
         timeout: 5000,
       },
     ])
-
-    // ============================================
-    // 阶段 2: 启动应用
-    // ============================================
-    await lifecycle.setPhase(LifecyclePhase.STARTING)
-
-    await lifecycle.executeTasks([
-      {
-        name: 'Create application window',
-        execute: () => {
-          window = new AppWindow()
-        },
-        critical: true,
-      },
-      {
-        name: 'Register protocol handler',
-        execute: () => {
-          if (window) {
-            router.register(window.webContents.session.protocol)
-          }
-        },
-        critical: true,
-      },
-      {
-        name: 'Register window router',
-        execute: () => {
-          if (window) {
-            window.use(router)
-          }
-        },
-        critical: true,
-      },
-      {
-        name: 'Show application window',
-        execute: async () => {
-          if (window) {
-            await window.showWhenReady()
-          }
-        },
-        critical: true,
-        timeout: 10000,
-      },
-    ])
-
-    // ============================================
-    // 阶段 3: 运行中
-    // ============================================
-    await lifecycle.setPhase(LifecyclePhase.RUNNING)
-
+    await starting()
     // 初始化自动更新（生产环境）
     try {
-      await initAutoUpdater()
+      initAutoUpdater()
     }
     catch (e) {
       logger.warn('[Main] initAutoUpdater failed', e)
@@ -247,6 +191,63 @@ bootstrap().catch((err) => {
   logger.error('[Main] Bootstrap failed:', err)
   process.exit(1)
 })
+
+app.on('second-instance', () => {
+  logger.info('Second instance detected. Bringing the main window to the front.')
+  if (window?.isMinimized()) {
+    window?.restore()
+  }
+  window?.focus()
+})
+
+app.on('window-all-closed', async () => {
+  if (process.platform !== 'darwin') {
+    await lifecycle.setPhase(LifecyclePhase.STOPPING)
+    app.quit()
+  }
+})
+
+app.on('activate', () => {
+  if (lifecycle.getPhase() === LifecyclePhase.RUNNING && AppWindow.getAllWindows().length === 0) {
+    starting()
+      .then(() => {
+        logger.info('[Main] Application activated and window created.')
+      })
+      .catch((err) => {
+        logger.error('[Main] Failed to activate application:', err)
+      })
+  }
+})
+
+app.on('before-quit', async () => {
+  await lifecycle.setPhase(LifecyclePhase.STOPPING)
+  logger.info('[Main] Application is quitting...')
+  lifecycle.printPerformanceSummary()
+})
+
+app.on('will-quit', async () => {
+  await lifecycle.setPhase(LifecyclePhase.STOPPED)
+  logger.info('[Main] Application stopped')
+})
+
+if (import.meta.env.PROD) {
+  app.on('web-contents-created', (_, contents) => {
+    contents.setWindowOpenHandler(({ url }) => {
+      if (url.startsWith('http')) {
+        shell.openExternal(url)
+        return { action: 'deny' }
+      }
+      return { action: 'allow' }
+    })
+
+    contents.on('will-navigate', (event, url) => {
+      if (url.startsWith('http') || url.startsWith('https')) {
+        event.preventDefault()
+        shell.openExternal(url)
+      }
+    })
+  })
+}
 
 process.on('uncaughtException', (error) => {
   logger.error('[Main] Uncaught Exception:', error)
