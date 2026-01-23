@@ -12,6 +12,7 @@ import {
 } from '../database/message-operations'
 import { logger } from '../platform/logger'
 import { update } from '../platform/update'
+import { createAgent } from './agent'
 import builtinMessages from './builtin/messages'
 
 /**
@@ -147,11 +148,17 @@ class ChatManager {
       let segmentIndex = 0
 
       // const agent = createAgent(llm)
-      // const stream = await agent.stream({
+      // const streama = await agent.stream({
       //   messages,
       // }, {
       //   signal: abortController.signal,
       // })
+
+      // for await (const chunk of streama) {
+      //   if (chunk.output) {
+      //     console.log(chunk.output)
+      //   }
+      // }
 
       const stream = await llm.stream(messages, {
         signal: abortController.signal,
