@@ -7,6 +7,7 @@ import { onCommand } from '../platform/commands'
 import { logger } from '../platform/logger'
 import { providerStore } from '../platform/provider'
 import { update } from '../platform/update'
+import { createAgent } from './agent'
 import { createLlm } from './llm'
 import { chatManager } from './manager'
 

@@ -146,6 +146,13 @@ class ChatManager {
       let fullContent = ''
       let segmentIndex = 0
 
+      // const agent = createAgent(llm)
+      // const stream = await agent.stream({
+      //   messages,
+      // }, {
+      //   signal: abortController.signal,
+      // })
+
       const stream = await llm.stream(messages, {
         signal: abortController.signal,
       })
