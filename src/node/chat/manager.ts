@@ -2,8 +2,10 @@
 import type { BaseChatModel } from '@langchain/core/language_models/chat_models'
 import type { AIMessage } from '@langchain/core/messages'
 import type { DraftContent, Message } from '../database/schema/chat'
+import util from 'node:util'
 import { HumanMessage, SystemMessage } from '@langchain/core/messages'
 import { AsyncBatcher } from '@tanstack/pacer'
+import { createAgent } from 'langchain'
 import { nanoid } from 'nanoid'
 import {
   createMessage,
@@ -12,9 +14,7 @@ import {
 } from '../database/message-operations'
 import { logger } from '../platform/logger'
 import { update } from '../platform/update'
-import { createAgent } from './agent'
 import builtinMessages from './builtin/messages'
-
 /**
  * 单个聊天会话的状态
  */
@@ -140,64 +140,79 @@ class ChatManager {
       })
 
       // 构建消息历史
-      const messages = this.buildMessages(contextMessages, userMessageContent, session.systemMessages)
+      const messages = this.buildMessages(contextMessages, userMessageContent)
 
-      // 流式调用 LLM
+      // 创建 Agent
+      const agent = createAgent({
+        model: llm,
+        signal: abortController.signal,
+        systemPrompt: new SystemMessage({
+          content: [
+            {
+              type: 'text',
+              text: builtinMessages.globalSystem,
+            },
+            ...(session.systemMessages?.map(msg => ({ type: 'text', text: msg.content })) || []),
+          ],
+        }),
+      })
+
+      const stream = await agent.stream(
+        { messages },
+        {
+          signal: abortController.signal,
+          streamMode: ['messages', 'updates'],
+        },
+      )
+
       const draftSegments: DraftContent = []
       let fullContent = ''
       let segmentIndex = 0
 
-      // const agent = createAgent(llm)
-      // const streama = await agent.stream({
-      //   messages,
-      // }, {
-      //   signal: abortController.signal,
-      // })
-
-      // for await (const chunk of streama) {
-      //   if (chunk.output) {
-      //     console.log(chunk.output)
-      //   }
-      // }
-
-      const stream = await llm.stream(messages, {
-        signal: abortController.signal,
-      })
-
-      for await (const chunk of stream) {
+      for await (const [streamMode, chunk] of stream) {
+        logger.debug('[chat/manager] Stream chunk:', util.inspect({ streamMode, chunk }, { depth: null, colors: true }))
         // 检查是否已被中止
         if (session.status === 'aborted') {
           logger.info(`[ChatManager] Session ${requestId} was aborted`)
-          // 取消待处理的节流更新
           throttledDbUpdate.cancel()
           return
         }
 
-        const content = chunk.content as string
-        if (content) {
-          fullContent += content
-
-          // 创建新的 draft segment
-          const segment = {
-            id: `${requestId}-${segmentIndex++}`,
-            content,
-            phase: 'answer' as const,
-            source: 'model' as const,
-            delta: true,
-            createdAt: Date.now(),
+        if (streamMode === 'messages') {
+          // payload 可能是数组，也可能是单条 message
+          const msgs = Array.isArray(chunk) ? chunk : [chunk]
+          for (const msg of msgs) {
+            const content = (msg as any)?.content as string | undefined
+            if (!content)
+              continue
+            fullContent += content
+            const segment = {
+              id: `${requestId}-${segmentIndex++}`,
+              content,
+              phase: 'answer' as const,
+              source: 'model' as const,
+              delta: true,
+              createdAt: Date.now(),
+            }
+            draftSegments.push(segment)
+            // 节流更新数据库（保证消息完整性，即使中途出错也有部分数据）
+            throttledDbUpdate.addItem({ content: fullContent, segments: [...draftSegments] })
+            // 推送到渲染进程（由 streamingBatcher 自动批处理，~60fps）
+            update('message.streaming', {
+              chatUid,
+              messageUid: assistantMessageUid,
+              content: fullContent,
+              delta: content,
+            })
           }
-          draftSegments.push(segment)
-          // 节流更新数据库（保证消息完整性，即使中途出错也有部分数据）
-          throttledDbUpdate.addItem({ content: fullContent, segments: [...draftSegments] })
-          // 推送到渲染进程（由 streamingBatcher 自动批处理，~60fps）
-          update('message.streaming', {
-            chatUid,
-            messageUid: assistantMessageUid,
-            content: fullContent,
-            delta: content,
-          })
+        }
+        else if (streamMode === 'updates') {
+          // 目前不处理 updates
+          logger.debug('[chat/manager] Received update chunk:', chunk)
         }
       }
+
+      logger.info(`[ChatManager] Stream completed for session ${requestId}`)
 
       // 等待所有待处理的更新完成
       await throttledDbUpdate.flush()
@@ -225,9 +240,6 @@ class ChatManager {
       if (!abortController.signal.aborted) {
         abortController.abort()
       }
-
-      // 如果有 throttledDbUpdate，取消它
-      // (由于作用域限制，这里无法直接访问，但 abort 后会自然停止)
 
       // 检查是否是用户主动取消
       if (error.name === 'AbortError' || session.status === 'aborted') {
@@ -325,13 +337,9 @@ class ChatManager {
   private buildMessages(
     contextMessages: Message[],
     userMessageContent: string,
-    systemMessages?: SystemMessage[],
   ) {
     // 添加内置提示词
-    const messages: (HumanMessage | SystemMessage | AIMessage)[] = [
-      ...builtinMessages,
-      ...(systemMessages || []),
-    ]
+    const messages: (HumanMessage | SystemMessage | AIMessage)[] = []
 
     // 添加历史消息
     for (const msg of contextMessages) {

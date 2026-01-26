@@ -3,8 +3,9 @@ import type { MessageStructure, MessageToolSet } from '@langchain/core/messages'
 import type { AIMessageChunk } from 'langchain'
 import { createAgent as langchainCreateAgent } from 'langchain'
 
-export function createAgent(llm: BaseChatModel<BaseChatModelCallOptions, AIMessageChunk<MessageStructure<MessageToolSet>>>) {
+export function createAgent(llm: BaseChatModel<BaseChatModelCallOptions, AIMessageChunk<MessageStructure<MessageToolSet>>>, config?: any): ReturnType<typeof langchainCreateAgent> {
   return langchainCreateAgent({
     model: llm,
+    ...config,
   })
 }
