@@ -48,7 +48,6 @@ export const MainContent = memo(() => {
         align: 'end',
         smooth: true,
       })
-      logger.info('MainContent: Auto scroll to bottom on new message')
     }
   }, [messages.length])
 
