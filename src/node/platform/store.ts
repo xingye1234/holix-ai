@@ -89,4 +89,8 @@ export class Store<D> {
     this.saveStore()
     return this.getStore().data
   }
+
+  getData() {
+    return this.getStore().data
+  }
 }

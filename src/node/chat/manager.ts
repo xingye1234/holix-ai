@@ -2,6 +2,7 @@
 import type { BaseChatModel } from '@langchain/core/language_models/chat_models'
 import type { AIMessage } from '@langchain/core/messages'
 import type { DraftContent, Message } from '../database/schema/chat'
+import type { ChatContext } from './context'
 import util from 'node:util'
 import { HumanMessage, SystemMessage } from '@langchain/core/messages'
 import { AsyncBatcher } from '@tanstack/pacer'
@@ -16,7 +17,8 @@ import { configStore } from '../platform/config'
 import { logger } from '../platform/logger'
 import { update } from '../platform/update'
 import builtinMessages from './builtin/messages'
-import { createContext7Tool } from './tools/context7'
+import { contextSchema } from './context'
+import { context7Tool } from './tools/context7'
 import { systemEnvTool, systemPlatformTool, systemTimeTool, systemTimezoneTool } from './tools/system'
 /**
  * 单个聊天会话的状态
@@ -133,21 +135,6 @@ class ChatManager {
       },
     )
 
-    // Widen the type to accept any tool
-    const tools: any[] = [
-      systemPlatformTool,
-      systemEnvTool,
-      systemTimezoneTool,
-      systemTimeTool,
-    ]
-
-    const context7ApiKey = configStore.get('context7ApiKey')
-
-    if (context7ApiKey?.trim()) {
-      const context7Tool = createContext7Tool(context7ApiKey.trim())
-      tools.push(context7Tool)
-    }
-
     try {
       // 更新状态为 streaming
       await updateMessage(assistantMessageUid, { status: 'streaming' })
@@ -173,7 +160,8 @@ class ChatManager {
             ...(session.systemMessages?.map(msg => ({ type: 'text', text: msg.content })) || []),
           ],
         }),
-        tools,
+        tools: this.buildTools(),
+        contextSchema,
       })
 
       const stream = await agent.stream(
@@ -181,6 +169,7 @@ class ChatManager {
         {
           signal: abortController.signal,
           streamMode: ['messages', 'updates'],
+          context: this.buildConfig(),
         },
       )
 
@@ -385,6 +374,25 @@ class ChatManager {
   private async getNextSeq(chatUid: string): Promise<number> {
     const messages = await getLatestMessages(chatUid, 1)
     return messages.length > 0 ? messages[0].seq + 1 : 1
+  }
+
+  private buildConfig(): ChatContext {
+    return {
+      config: configStore.getData(),
+    }
+  }
+
+  private buildTools() {
+    const context7ApiKey = configStore.get('context7ApiKey')
+    const tools = [
+      systemPlatformTool,
+      systemEnvTool,
+      systemTimezoneTool,
+      systemTimeTool,
+      ...(context7ApiKey ? [context7Tool] : []),
+    ]
+
+    return tools
   }
 }
 
