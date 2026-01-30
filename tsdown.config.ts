@@ -47,6 +47,7 @@ export default defineConfig({
     'electron',
     /^@electron\//,
     /^node:/,
+    'better-sqlite3'
   ],
   noExternal: uniqueDeps,
   loader: {

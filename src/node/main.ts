@@ -2,8 +2,9 @@ import { resolve } from 'node:path'
 import process from 'node:process'
 import { createRouter } from '@holix/router'
 import { createStaticMiddleware } from '@holix/static'
-import { app, shell } from 'electron'
+import { app, protocol, shell } from 'electron'
 import { initChat } from './chat/init'
+import { SCHEME } from './constant'
 import { migrateDb } from './database/connect'
 import { initAutoUpdater } from './platform/auto-update'
 import { createChannel } from './platform/channel'
@@ -15,8 +16,8 @@ import { providerStore } from './platform/provider'
 import { onUpdateWaitResponse } from './platform/update'
 import { AppWindow } from './platform/window'
 import { trpcRouter } from './server/handler'
-import './platform/protocol'
 
+process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true'
 const gotSingleInstanceLock = app.requestSingleInstanceLock()
 
 if (!gotSingleInstanceLock) {
@@ -123,8 +124,25 @@ async function bootstrap() {
     // 阶段 1: 初始化系统
     // ============================================
     await lifecycle.setPhase(LifecyclePhase.INITIALIZING)
-
     await lifecycle.executeTasks([
+      {
+        name: 'Register custom protocol',
+        execute: async () => {
+          protocol.registerSchemesAsPrivileged([
+            {
+              scheme: SCHEME,
+              privileges: {
+                standard: true,
+                secure: true,
+                supportFetchAPI: true,
+                corsEnabled: true,
+                allowServiceWorkers: true,
+              },
+            },
+          ])
+          logger.info('[Main] Custom protocol registered successfully.')
+        },
+      },
       {
         name: 'Wait for Electron ready',
         execute: () => app.whenReady(),
