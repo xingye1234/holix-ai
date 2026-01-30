@@ -8,6 +8,7 @@
     "src/**/*",
     "src/types/**/*",
     "src/share/**/*",
+    "./auto-imports.d.ts",
     "vite.config.ts"
   ],
   "exclude": [
