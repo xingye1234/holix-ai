@@ -12,9 +12,12 @@ import {
   getLatestMessages,
   updateMessage,
 } from '../database/message-operations'
+import { configStore } from '../platform/config'
 import { logger } from '../platform/logger'
 import { update } from '../platform/update'
 import builtinMessages from './builtin/messages'
+import { createContext7Tool } from './tools/context7'
+import { systemEnvTool, systemPlatformTool, systemTimeTool, systemTimezoneTool } from './tools/system'
 /**
  * 单个聊天会话的状态
  */
@@ -130,6 +133,21 @@ class ChatManager {
       },
     )
 
+    // Widen the type to accept any tool
+    const tools: any[] = [
+      systemPlatformTool,
+      systemEnvTool,
+      systemTimezoneTool,
+      systemTimeTool,
+    ]
+
+    const context7ApiKey = configStore.get('context7ApiKey')
+
+    if (context7ApiKey?.trim()) {
+      const context7Tool = createContext7Tool(context7ApiKey.trim())
+      tools.push(context7Tool)
+    }
+
     try {
       // 更新状态为 streaming
       await updateMessage(assistantMessageUid, { status: 'streaming' })
@@ -155,6 +173,7 @@ class ChatManager {
             ...(session.systemMessages?.map(msg => ({ type: 'text', text: msg.content })) || []),
           ],
         }),
+        tools,
       })
 
       const stream = await agent.stream(
