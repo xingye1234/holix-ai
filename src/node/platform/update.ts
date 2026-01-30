@@ -55,7 +55,7 @@ export function update<N extends UpdateNames>(
     type: 'update',
     name,
     payload,
-  } as EventEnvelope
+  }
 
   // 流式消息使用专用的 batcher，其他使用通用 batcher
   if (name === 'message.streaming') {
@@ -64,4 +64,11 @@ export function update<N extends UpdateNames>(
   else {
     batcher.addItem(envelope)
   }
+}
+
+export async function updateAwait<T>(name: string, ...args: any[]) {
+  const promiser = Promise.withResolvers<T>()
+  const id = nanoid()
+
+  return await promiser.promise
 }

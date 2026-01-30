@@ -1,10 +1,10 @@
-export type EventEnvelope<
-	N = string | symbol,
-	T extends Record<string, unknown> = Record<string, unknown>,
-> = {
-	id: string;
-	timestamp: number;
-	type: "update";
-	name: N;
-	payload: T;
-};
+export interface EventEnvelope<
+  N = string | symbol,
+  T extends Record<string, unknown> = Record<string, unknown>,
+> {
+  id: string
+  timestamp: number
+  type: 'update' | 'callback' | 'notification'
+  name: N
+  payload: T
+}

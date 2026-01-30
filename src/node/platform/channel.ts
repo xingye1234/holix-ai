@@ -87,3 +87,32 @@ export function sendChannelMessage<T = unknown>(data: T) {
     connection.sendMessage(data)
   }
 }
+
+export interface ChannelCallbackPayload<T = unknown> {
+  id: string
+  args: T
+}
+
+const CALLBACK_ID_PREFIX = 'callback_'
+const waitCallbackResponses = new Map<string, PromiseWithResolvers<any>>()
+
+export function generateChannelCallbackId() {
+  return CALLBACK_ID_PREFIX + randomUUID()
+}
+
+export async function sendChannelCallback<T>(name: string, ...args: any[]) {
+  const promiser = Promise.withResolvers<T>()
+  const id = generateChannelCallbackId()
+
+  sendChannelMessage({
+    type: 'callback',
+    id,
+    name,
+    args,
+  })
+  waitCallbackResponses.set(id, promiser)
+  promiser.promise.finally(() => {
+    waitCallbackResponses.delete(id)
+  })
+  return await promiser.promise
+}
