@@ -7,7 +7,7 @@ import { initChat } from './chat/init'
 import { SCHEME } from './constant'
 import { migrateDb } from './database/connect'
 import { initAutoUpdater } from './platform/auto-update'
-import { createChannel } from './platform/channel'
+import { onChannelRouter } from './platform/channel'
 import { onCommandForClient } from './platform/commands'
 import { configStore } from './platform/config'
 import { AppLifecycle, LifecyclePhase } from './platform/lifecycle'
@@ -25,16 +25,14 @@ if (!gotSingleInstanceLock) {
   app.quit()
 }
 
-// ============================================
 // 路由器配置
-// ============================================
 const router = createRouter()
 configStore.use(router)
 providerStore.use(router)
 onCommandForClient(router)
 onUpdateWaitResponse(router)
+onChannelRouter(router)
 trpcRouter(router)
-router.get('/channel', createChannel())
 
 // 生产环境静态文件服务
 if (import.meta.env.PROD) {

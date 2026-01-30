@@ -1,4 +1,4 @@
-import type { RouteHandler } from '@holix/router'
+import type { HolixProtocolRouter, RouteHandler } from '@holix/router'
 import { randomUUID } from 'node:crypto'
 
 class ConnectionSender {
@@ -76,6 +76,10 @@ export function createChannel() {
   }
 
   return handle
+}
+
+export function onChannelRouter(router: HolixProtocolRouter) {
+  router.get('/channel', createChannel())
 }
 
 /**
