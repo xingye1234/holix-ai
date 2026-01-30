@@ -115,25 +115,7 @@ class ChatManager {
       = session
 
     // 创建节流的数据库更新方法（每300ms最多更新一次）
-    const throttledDbUpdate = new AsyncBatcher<{ content: string, segments: DraftContent }>(
-      async (items) => {
-        // 只取最后一次更新（节流效果）
-        const latest = items[items.length - 1]
-        try {
-          await updateMessage(assistantMessageUid, {
-            content: latest.content,
-            draftContent: latest.segments,
-          })
-        }
-        catch (error) {
-          logger.error(`[ChatManager] Failed to update message ${assistantMessageUid}:`, error)
-        }
-      },
-      {
-        maxSize: 100,
-        wait: 300,
-      },
-    )
+    const throttledDbUpdate = this.createThrottledDbUpdater(assistantMessageUid)
 
     try {
       // 更新状态为 streaming
@@ -203,15 +185,8 @@ class ChatManager {
               createdAt: Date.now(),
             }
             draftSegments.push(segment)
-            // 节流更新数据库（保证消息完整性，即使中途出错也有部分数据）
-            throttledDbUpdate.addItem({ content: fullContent, segments: [...draftSegments] })
-            // 推送到渲染进程（由 streamingBatcher 自动批处理，~60fps）
-            update('message.streaming', {
-              chatUid,
-              messageUid: assistantMessageUid,
-              content: fullContent,
-              delta: content,
-            })
+            // 节流更新数据库并推送到渲染进程
+            this.pushStreamingUpdate(chatUid, assistantMessageUid, fullContent, content, draftSegments, throttledDbUpdate)
           }
         }
         else if (streamMode === 'updates') {
@@ -225,12 +200,8 @@ class ChatManager {
       // 等待所有待处理的更新完成
       await throttledDbUpdate.flush()
 
-      // 流式完成，最终更新数据库（包含所有 segments）
-      await updateMessage(assistantMessageUid, {
-        content: fullContent,
-        status: 'done',
-        draftContent: draftSegments.map(s => ({ ...s, committed: true })),
-      })
+      // 流式完成，最终使用 helper 写回数据库（包含所有 segments）
+      await this.finalizeAssistantMessage(assistantMessageUid, fullContent, draftSegments)
       session.status = 'completed'
 
       update('message.updated', {
@@ -244,46 +215,7 @@ class ChatManager {
       )
     }
     catch (error: any) {
-      // 取消正在进行的流和待处理的节流更新
-      if (!abortController.signal.aborted) {
-        abortController.abort()
-      }
-
-      // 检查是否是用户主动取消
-      if (error.name === 'AbortError' || session.status === 'aborted') {
-        await updateMessage(assistantMessageUid, { status: 'aborted' })
-        session.status = 'aborted'
-
-        update('message.updated', {
-          chatUid,
-          messageUid: assistantMessageUid,
-          updates: { status: 'aborted' },
-        })
-
-        logger.info(`[ChatManager] Session ${requestId} was aborted by user`)
-      }
-      else {
-        // 真实错误
-        await updateMessage(assistantMessageUid, {
-          status: 'error',
-          error: error.message || 'Unknown error',
-        })
-        session.status = 'error'
-
-        update('message.updated', {
-          chatUid,
-          messageUid: assistantMessageUid,
-          updates: {
-            status: 'error',
-            error: error.message || 'Unknown error',
-          },
-        })
-
-        logger.error(
-          `[ChatManager] Session ${requestId} encountered error:`,
-          error,
-        )
-      }
+      await this.handleSessionError(session, assistantMessageUid, error, throttledDbUpdate)
     }
     finally {
       // 清理会话
@@ -393,6 +325,132 @@ class ChatManager {
     ]
 
     return tools
+  }
+
+  /**
+   * 创建节流的数据库更新器（返回 AsyncBatcher）
+   */
+  private createThrottledDbUpdater(assistantMessageUid: string) {
+    return new AsyncBatcher<{ content: string, segments: DraftContent }>(
+      async (items) => {
+        const latest = items[items.length - 1]
+        try {
+          await updateMessage(assistantMessageUid, {
+            content: latest.content,
+            draftContent: latest.segments,
+          })
+        }
+        catch (error) {
+          logger.error(`[ChatManager] Failed to update message ${assistantMessageUid}:`, error)
+        }
+      },
+      {
+        maxSize: 100,
+        wait: 300,
+      },
+    )
+  }
+
+  /**
+   * 将节流写入与流事件合并处理：写入 draft 并发出 streaming 更新
+   */
+  private pushStreamingUpdate(
+    chatUid: string,
+    assistantMessageUid: string,
+    fullContent: string,
+    delta: string,
+    draftSegments: DraftContent,
+    throttledDbUpdate: AsyncBatcher<{ content: string, segments: DraftContent }>,
+  ) {
+    throttledDbUpdate.addItem({ content: fullContent, segments: [...draftSegments] })
+    update('message.streaming', {
+      chatUid,
+      messageUid: assistantMessageUid,
+      content: fullContent,
+      delta,
+    })
+  }
+
+  /**
+   * 将流完成的最终结果写回数据库
+   */
+  private async finalizeAssistantMessage(
+    assistantMessageUid: string,
+    fullContent: string,
+    draftSegments: DraftContent,
+  ) {
+    await updateMessage(assistantMessageUid, {
+      content: fullContent,
+      status: 'done',
+      draftContent: draftSegments.map(s => ({ ...s, committed: true })),
+    })
+  }
+
+  /**
+   * 统一处理会话错误：取消节流、abort、更新消息状态并记录日志
+   */
+  private async handleSessionError(
+    session: ChatSession,
+    assistantMessageUid: string,
+    error: any,
+    throttledDbUpdate?: AsyncBatcher<{ content: string, segments: DraftContent }>,
+  ) {
+    const { chatUid, requestId, abortController } = session
+
+    // 取消节流队列以防止后续写入
+    try {
+      throttledDbUpdate?.cancel()
+    }
+    catch (e) {
+      logger.warn(`[ChatManager] Failed to cancel throttledDbUpdate for ${requestId}: ${String(e)}`)
+    }
+
+    // 确保流被中止
+    if (!abortController.signal.aborted) {
+      try {
+        abortController.abort()
+      }
+      catch {
+        /* ignore */
+      }
+    }
+
+    // 区分用户中止和实际错误
+    const isAbort = error?.name === 'AbortError' || session.status === 'aborted'
+
+    if (isAbort) {
+      try {
+        await updateMessage(assistantMessageUid, { status: 'aborted' })
+      }
+      catch (e) {
+        logger.error(`[ChatManager] Failed to mark message ${assistantMessageUid} as aborted:`, e)
+      }
+      session.status = 'aborted'
+      update('message.updated', {
+        chatUid,
+        messageUid: assistantMessageUid,
+        updates: { status: 'aborted' },
+      })
+      logger.info(`[ChatManager] Session ${requestId} was aborted by user`)
+      return
+    }
+
+    // 真实错误处理
+    const errMsg = error?.message ?? String(error ?? 'Unknown error')
+    try {
+      await updateMessage(assistantMessageUid, { status: 'error', error: errMsg })
+    }
+    catch (e) {
+      logger.error(`[ChatManager] Failed to mark message ${assistantMessageUid} as error:`, e)
+    }
+    session.status = 'error'
+    update('message.updated', {
+      chatUid,
+      messageUid: assistantMessageUid,
+      updates: { status: 'error', error: errMsg },
+    })
+
+    logger.error(`[ChatManager] Session ${requestId} encountered error:`, error)
   }
 }
 
