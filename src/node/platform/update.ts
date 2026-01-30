@@ -5,6 +5,8 @@ import { nanoid } from 'nanoid'
 import { sendChannelMessage } from './channel'
 import { logger } from './logger'
 
+const waitresses = new Map<string, PromiseWithResolvers<any>>()
+
 // 通用更新事件的批处理器
 const batcher = new AsyncBatcher<EventEnvelope>(
   async (items) => {
@@ -69,6 +71,20 @@ export function update<N extends UpdateNames>(
 export async function updateAwait<T>(name: string, ...args: any[]) {
   const promiser = Promise.withResolvers<T>()
   const id = nanoid()
+
+  waitresses.set(id, promiser)
+
+  batcher.addItem({
+    id,
+    timestamp: Date.now(),
+    type: 'callback',
+    name,
+    payload: { args },
+  })
+
+  promiser.promise.finally(() => {
+    waitresses.delete(id)
+  })
 
   return await promiser.promise
 }
