@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+    "types": ["vite/client"]
+  },
+  "include": [
+    "src/**/*",
+    "src/types/**/*",
+    "src/share/**/*",
+    "vite.config.ts"
+  ],
+  "exclude": [
+    "src/node/**/*"
+  ]
+}

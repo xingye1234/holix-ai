@@ -176,7 +176,6 @@ async function bootstrap() {
     await lifecycle.setPhase(LifecyclePhase.ERROR)
     logger.error('[Bootstrap] Fatal error during startup:', error)
     logger.error('[Bootstrap] Error stack:', (error as Error).stack)
-
     // 打印错误时的性能报告摘要
     lifecycle.printPerformanceSummary()
 

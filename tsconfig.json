@@ -21,8 +21,8 @@
     "skipLibCheck": true,
     "ignoreDeprecations": "6.0"
   },
-  "include": [
-    "src/**/*",
-    "./vite.config.ts"
+  "references": [
+    { "path": "./tsconfig.client.json" },
+    { "path": "./tsconfig.node.json" }
   ]
 }
