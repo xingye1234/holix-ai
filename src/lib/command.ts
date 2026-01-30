@@ -1,6 +1,7 @@
 import type { CommandNames } from '@/types/commands'
 import type { Command } from '@/types/commands/base'
 import type { Update, UpdateNames } from '@/types/updates'
+import type { EventEnvelope } from '@/types/updates/base'
 import { AsyncBatcher } from '@tanstack/pacer'
 import { nanoid } from 'nanoid'
 import { kyInstance } from './ky'
@@ -12,6 +13,7 @@ export type HandlerFor<N extends UpdateNames> = (
 ) => void
 
 const onUpdateMap = new Map<string, Set<HandlerFor<any>>>()
+const onHandlers = new Map<string, (...args: any[]) => Promise<any>>()
 
 const batcher = new AsyncBatcher<Command>(
   async (items) => {
@@ -54,21 +56,47 @@ const commandKeys = new Set<string>([
 
 holixSSE.on('message', (data: unknown) => {
   if (typeof data === 'object' && Array.isArray(data)) {
-    for (const command of data as Command[]) {
+    for (const command of data as EventEnvelope[]) {
       if (
         typeof command === 'object'
         && Object.keys(command).every(key => commandKeys.has(key))
       ) {
-        const handlers = onUpdateMap.get(command.name)
-        if (handlers) {
-          for (const h of handlers) {
-            try {
-              // first arg: payload, second arg: full command
-              h(command.payload, command as Update)
+        if (command.type === 'update') {
+          const handlers = onUpdateMap.get(command.name)
+          if (handlers) {
+            for (const h of handlers) {
+              try {
+                // first arg: payload, second arg: full command
+                h(command.payload, command as Update)
+              }
+              catch (err) {
+                console.error('onUpdate handler error:', err)
+              }
             }
-            catch (err) {
-              console.error('onUpdate handler error:', err)
-            }
+          }
+        }
+
+        if (command.type === 'callback') {
+          const handler = onHandlers.get(command.name)
+          if (handler) {
+            Promise.resolve(handler(command.payload))
+              .then((result) => {
+                kyInstance.post('command/response', {
+                  json: {
+                    id: command.id,
+                    result,
+                  },
+                })
+              })
+              .catch((err) => {
+                kyInstance.post('command/response', {
+                  json: {
+                    id: command.id,
+                    error: err?.message || String(err),
+                    result: null,
+                  },
+                })
+              })
           }
         }
       }

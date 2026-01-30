@@ -52,8 +52,6 @@ export async function dispatchCommands(commands: CommandBatch) {
     if (set) {
       for (const h of Array.from(set)) {
         try {
-          // typed call: payload and full command
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           await (h as any)(command.payload, command)
         }
         catch (err) {

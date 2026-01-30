@@ -1,5 +1,5 @@
 export interface EventEnvelope<
-  N = string | symbol,
+  N = string,
   T extends Record<string, unknown> = Record<string, unknown>,
 > {
   id: string

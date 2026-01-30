@@ -12,6 +12,7 @@ import { configStore } from './platform/config'
 import { AppLifecycle, LifecyclePhase } from './platform/lifecycle'
 import { logger } from './platform/logger'
 import { providerStore } from './platform/provider'
+import { onUpdateWaitResponse } from './platform/update'
 import { AppWindow } from './platform/window'
 import { trpcRouter } from './server/handler'
 import './platform/protocol'
@@ -30,6 +31,7 @@ const router = createRouter()
 configStore.use(router)
 providerStore.use(router)
 onCommandForClient(router)
+onUpdateWaitResponse(router)
 trpcRouter(router)
 router.get('/channel', createChannel())
 

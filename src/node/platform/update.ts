@@ -1,3 +1,4 @@
+import type { HolixProtocolRouter } from '@holix/router'
 import type { Update, UpdateNames } from '@/types/updates'
 import type { EventEnvelope } from '@/types/updates/base'
 import { AsyncBatcher } from '@tanstack/pacer'
@@ -66,6 +67,24 @@ export function update<N extends UpdateNames>(
   else {
     batcher.addItem(envelope)
   }
+}
+
+export function onUpdateWaitResponse(router: HolixProtocolRouter) {
+  router.post('/command/response', async (ctx, next) => {
+    const response = await ctx.req.json()
+    if (response.id) {
+      const promiser = waitresses.get(response.id)
+      if (promiser) {
+        if (response.result) {
+          promiser.resolve(response.result)
+        }
+        if (response.error) {
+          promiser.reject(new Error(response.error))
+        }
+      }
+    }
+    next()
+  })
 }
 
 export async function updateAwait<T>(name: string, ...args: any[]) {
