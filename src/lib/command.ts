@@ -46,6 +46,13 @@ export function command<
   })
 }
 
+export function registerCommandHandler(name: string, fn: (...args: any[]) => Promise<any>) {
+  onHandlers.set(name, fn)
+  return () => {
+    onHandlers.delete(name)
+  }
+}
+
 const commandKeys = new Set<string>([
   'id',
   'timestamp',
