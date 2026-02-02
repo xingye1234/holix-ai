@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import {
@@ -10,12 +10,19 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
+import { getConfig, updateConfig } from '@/lib/config'
 
 export const Route = createFileRoute('/setting/general')({
   component: RouteComponent,
+  loader: async () => {
+    const config = await getConfig()
+
+    return { config }
+  },
 })
 
 function RouteComponent() {
+  const { config } = Route.useLoaderData()
   const [autoStart, setAutoStart] = useState(false)
   const [minimizeToTray, setMinimizeToTray] = useState(true)
   const [closeToTray, setCloseToTray] = useState(true)
@@ -23,6 +30,11 @@ function RouteComponent() {
   const [showNotifications, setShowNotifications] = useState(true)
   const [language, setLanguage] = useState('zh-CN')
   const [theme, setTheme] = useState('system')
+  const [apiKey, setApiKey] = useState(config.context7ApiKey ?? '')
+
+  const handleSaveApiKey = useCallback(async () => {
+    updateConfig('context7ApiKey', apiKey ?? '')
+  }, [apiKey])
 
   return (
     <div className="p-6">
@@ -114,6 +126,31 @@ function RouteComponent() {
                 </p>
               </div>
               <Switch checked={closeToTray} onCheckedChange={setCloseToTray} />
+            </div>
+          </div>
+        </div>
+
+        {/* context7 apikey 设置 */}
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold">Context7 设置</h2>
+          <div className="rounded-lg border p-4 space-y-4">
+            <div className="flex flex-col gap-2">
+              <Label className="text-base">Context7 API Key</Label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  className="border rounded px-3 py-2 text-sm flex-1"
+                  placeholder="请输入 Context7 API Key"
+                  value={apiKey}
+                  onChange={e => setApiKey(e.target.value)}
+                />
+                <Button variant="outline" size="sm" onClick={handleSaveApiKey}>
+                  保存
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                用于访问 Context7 服务的 API Key，仅本地保存。
+              </p>
             </div>
           </div>
         </div>

@@ -10,8 +10,5 @@
     "src/share/**/*",
     "./auto-imports.d.ts",
     "vite.config.ts"
-  ],
-  "exclude": [
-    "src/node/**/*"
   ]
 }
