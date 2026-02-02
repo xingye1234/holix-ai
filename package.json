@@ -22,7 +22,9 @@
     "lint": "eslint . --fix",
     "package": "electron-builder build -c ./electron-builder.json --publish never",
     "release": "pnpm build && pnpm package",
-    "postinstall": "electron-builder install-app-deps"
+    "postinstall": "electron-builder install-app-deps",
+    "rebuild:windows": "electron-rebuild -f -w better-sqlite3 --version=39.2.7 --arch=x64",
+    "rebuild:mac": "electron-rebuild -f -w better-sqlite3 --version=39.2.7 --arch=arm64"
   },
   "dependencies": {
     "@holix/router": "^0.0.3",
