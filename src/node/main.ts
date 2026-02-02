@@ -84,7 +84,7 @@ async function starting() {
     {
       name: 'Register protocol handler',
       execute: () => {
-        if (window) {
+        if (window && !protocol.isProtocolHandled(SCHEME)) {
           router.register(window.webContents.session.protocol)
         }
       },
@@ -225,6 +225,8 @@ app.on('window-all-closed', async () => {
 })
 
 app.on('activate', () => {
+  logger.info('[Main] Application activated', lifecycle.getPhase(), AppWindow.getAllWindows().length)
+
   if (lifecycle.getPhase() === LifecyclePhase.RUNNING && AppWindow.getAllWindows().length === 0) {
     starting()
       .then(() => {
