@@ -1,6 +1,5 @@
 import type { VListHandle } from 'virtua'
 import type { Message } from '@/node/database/schema/chat'
-import { memo, useCallback, useEffect, useRef } from 'react'
 import { VList } from 'virtua'
 import { useChatContext } from '@/context/chat'
 import { useChatMessages, useInitialMessageLoad, useLoadMoreMessages } from '@/hooks/message'
@@ -51,7 +50,7 @@ export const MainContent = memo(() => {
     }
   }, [messages.length])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!messages.length)
       return
 
