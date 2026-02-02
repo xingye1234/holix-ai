@@ -1,7 +1,7 @@
 import type { InferInsertModel, InferSelectModel } from 'drizzle-orm'
 import { sql } from 'drizzle-orm'
 import * as t from 'drizzle-orm/sqlite-core'
-import { index, sqliteTableCreator } from 'drizzle-orm/sqlite-core'
+import { blob, index, integer, numeric, sqliteTableCreator, uniqueIndex } from 'drizzle-orm/sqlite-core'
 
 export const sqliteTable = sqliteTableCreator(name => name)
 
@@ -200,26 +200,53 @@ export const message = sqliteTable(
     chatIdx: index('idx_messages_chat').on(table.chatUid),
     chatSeqIdx: index('idx_messages_chat_seq').on(table.chatUid, table.seq),
     timeIdx: index('idx_messages_time').on(table.createdAt),
+    uidUnique: uniqueIndex('message_uid_unique').on(table.uid),
   }),
 )
 
-export const message_fts = sqliteTable(
-  'message_fts',
-  {
-    rowid: t.integer('rowid'),
-    content: t.text('content'), // 搜索内容
-    chatUid: t.text('chat_uid'), // 会话 UID，用于过滤
-    uid: t.text('uid'), // message UID，用于关联 message 表
-  },
-  {
-    // 声明为 FTS5 表
-    withoutRowid: false, // 可选
-    virtual: 'fts5', // 关键：告诉 Drizzle 这是 FTS5 虚拟表
-    ftsOptions: {
-      tokenize: 'porter', // 可以选择 'simple', 'porter', 'unicode61'
-    },
-  },
-)
+export const messageFts = sqliteTable('message_fts', {
+  content: numeric('content'),
+  uid: numeric('uid'),
+  chatUid: numeric('chat_uid'),
+  messageFts: numeric('message_fts'),
+  rank: numeric('rank'),
+})
+
+export const messageFtsData = sqliteTable('message_fts_data', {
+  id: integer('id').primaryKey(),
+  block: blob('block'),
+})
+
+export const messageFtsIdx = sqliteTable('message_fts_idx', {
+  segid: numeric('segid').primaryKey().notNull(),
+  term: numeric('term').primaryKey().notNull(),
+  pgno: numeric('pgno'),
+}, (table) => {
+  return {
+    sqliteAutoindexMessageFtsIdx_1: uniqueIndex('sqlite_autoindex_message_fts_idx_1').on(table.segid, table.term),
+  }
+})
+
+export const messageFtsContent = sqliteTable('message_fts_content', {
+  id: integer('id').primaryKey(),
+  c0: numeric('c0'),
+  c1: numeric('c1'),
+  c2: numeric('c2'),
+})
+
+export const messageFtsDocsize = sqliteTable('message_fts_docsize', {
+  id: integer('id').primaryKey(),
+  sz: blob('sz'),
+})
+
+export const messageFtsConfig = sqliteTable('message_fts_config', {
+  k: numeric('k').primaryKey().notNull(),
+  v: numeric('v'),
+}, (table) => {
+  return {
+    sqliteAutoindexMessageFtsConfig_1: uniqueIndex('sqlite_autoindex_message_fts_config_1').on(table.k),
+  }
+})
 
 export type Chat = InferSelectModel<typeof chats>
 export type Message = InferSelectModel<typeof message>
