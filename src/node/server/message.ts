@@ -8,6 +8,7 @@ import {
   getMessagesByChatUid,
   getNextSeq,
   searchMessages,
+  searchMessagesBM25,
   setMessageError,
   updateMessage,
   updateMessageContent,
@@ -204,6 +205,21 @@ export const messageRouter = router({
     )
     .query(async ({ input }) => {
       return await searchMessages(input.keyword, {
+        chatUid: input.chatUid,
+        limit: input.limit,
+      })
+    }),
+
+  searchBm25: procedure()
+    .input(
+      z.object({
+        keyword: z.string(),
+        chatUid: z.string().optional(),
+        limit: z.number().optional().default(10),
+      }),
+    )
+    .query(async ({ input }) => {
+      return await searchMessagesBM25(input.keyword, {
         chatUid: input.chatUid,
         limit: input.limit,
       })

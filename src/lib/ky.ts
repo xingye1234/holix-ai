@@ -1,8 +1,7 @@
 import ky from 'ky'
 
-
 const kyInstance = ky.extend({
-	prefixUrl: 'holix://app',
+  prefixUrl: 'holix://app',
 })
 
 export { kyInstance }

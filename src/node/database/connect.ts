@@ -10,7 +10,7 @@ import { databaseUrl } from '../constant'
 import { logger } from '../platform/logger'
 
 // eslint-disable-next-line perfectionist/sort-imports
-const Database = require('better-sqlite3')
+const Database: typeof import('better-sqlite3') = require('better-sqlite3')
 
 const promiser = Promise.withResolvers<void>()
 

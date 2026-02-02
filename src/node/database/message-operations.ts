@@ -1,6 +1,7 @@
 import type { DraftContent, Message, MessageInsert } from './schema/chat'
 import { and, desc, eq, sql } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
+import { logger } from '../platform/logger'
 import { updateChatLastSeq } from './chat-operations'
 import { getDatabase } from './connect'
 import {
@@ -450,4 +451,29 @@ export async function searchMessages(
   // 简单的内容过滤（可以后续优化为 FTS）
   const filtered = messages.filter(msg => msg.content && msg.content.includes(keyword))
   return filtered.map(deserializeMessage)
+}
+
+/**
+ * 使用 BM25 搜索消息
+ */
+export async function searchMessagesBM25(
+  keyword: string,
+  options?: { chatUid?: string, limit?: number },
+): Promise<Message[]> {
+  const db = await getDatabase()
+  // 使用 drizzle-orm 的 sql 方法构造 SQL 查询
+  let sqlQuery = sql`SELECT m.* FROM message m JOIN message_fts fts ON m.uid = fts.rowid WHERE fts MATCH ${keyword}`
+  if (options?.chatUid) {
+    sqlQuery = sql`${sqlQuery} AND m.chatUid = ${options.chatUid}`
+  }
+  sqlQuery = sql`${sqlQuery} ORDER BY bm25(fts) ASC`
+  if (options?.limit) {
+    sqlQuery = sql`${sqlQuery} LIMIT ${options.limit}`
+  }
+  // 执行 SQL 查询
+  const rows: any[] = db.all(sqlQuery)
+
+  logger.info(`searchMessagesBM25: Found ${rows.length} messages for keyword "${keyword}"`)
+
+  return rows.map(deserializeMessage)
 }
