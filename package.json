@@ -3,7 +3,7 @@
   "type": "module",
   "version": "0.0.1",
   "packageManager": "pnpm@10.19.0",
-  "description": "",
+  "description": "Holix AI - An AI-powered chat application",
   "author": "",
   "license": "ISC",
   "keywords": [],
@@ -22,9 +22,7 @@
     "lint": "eslint . --fix",
     "package": "electron-builder build -c ./electron-builder.json --publish never",
     "release": "pnpm build && pnpm package",
-    "postinstall": "electron-builder install-app-deps",
-    "test": "vitest --run",
-    "rebuild": "electron-rebuild"
+    "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
     "@holix/router": "^0.0.3",

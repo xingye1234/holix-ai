@@ -4,10 +4,6 @@
     "public/**/*",
     "package.json",
     ".holix/**/*",
-    "node_modules/@libsql/**/*",
-    "node_modules/better-sqlite3/**/*",
-    "node_modules/drizzle-orm/lib/sqlite3.js",
-    "node_modules/better-sqlite3/build/Release/better_sqlite3.node",
     "!**/node_modules/react*/**",
     "!**/node_modules/lucide-react/**",
     "!**/node_modules/@radix-ui/**",
@@ -33,7 +29,8 @@
     "buildResources": "./public"
   },
   "asarUnpack": [
-    "node_modules/better-sqlite3/**/*"
+    "node_modules/better-sqlite3/**/*",
+    "node_modules/better-sqlite3/build/Release/better_sqlite3.node"
   ],
   "extraFiles": [
     {
@@ -76,6 +73,7 @@
     "shortcutName": "Holix AI"
   },
   "npmRebuild": true,
+  "buildDependenciesFromSource": true,
   "publish": [
     {
       "provider": "github",

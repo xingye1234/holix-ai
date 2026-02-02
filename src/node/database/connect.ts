@@ -1,14 +1,17 @@
+/* eslint-disable ts/no-require-imports */
+import { existsSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import process from 'node:process'
-import { logger } from '../platform/logger'
+import { fileURLToPath } from 'node:url'
 import { drizzle } from 'drizzle-orm/better-sqlite3'
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator'
 import { app } from 'electron'
 import { databaseUrl } from '../constant'
-import { existsSync } from 'fs'
-import { fileURLToPath } from 'node:url'
+import { logger } from '../platform/logger'
 
+// eslint-disable-next-line perfectionist/sort-imports
 const Database = require('better-sqlite3')
+
 const promiser = Promise.withResolvers<void>()
 
 let unpacked = null
@@ -18,7 +21,7 @@ if (import.meta.env.PROD) {
     'app.asar.unpacked',
     'node_modules',
     'better-sqlite3',
-    'build/Release/better_sqlite3.node'
+    'build/Release/better_sqlite3.node',
   )
   process.env.BETTER_SQLITE3_NODE_BINARY = unpacked
 
@@ -34,9 +37,11 @@ const dbPath = databaseUrl // 确保 databaseUrl 是本地 sqlite 文件路径
 
 logger.info(`[Database] Using database file at path: ${dbPath}`)
 
-const sqlite = new Database(fileURLToPath(dbPath), unpacked ? {
-  nativeBinding: unpacked || undefined,
-} : undefined)
+const sqlite = new Database(fileURLToPath(dbPath), unpacked
+  ? {
+      nativeBinding: unpacked || undefined,
+    }
+  : undefined)
 
 export const db = drizzle(sqlite)
 
