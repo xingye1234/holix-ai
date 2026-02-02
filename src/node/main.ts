@@ -50,7 +50,8 @@ if (import.meta.env.PROD) {
 // ============================================
 const lifecycle = new AppLifecycle()
 let window: AppWindow | null = null
-
+let protocolRegistered = false
+let creatingWindow = false
 // ============================================
 // 生命周期钩子
 // ============================================
@@ -67,6 +68,9 @@ lifecycle.onPhase(LifecyclePhase.ERROR, () => {
 })
 
 async function starting() {
+  if (creatingWindow)
+    return
+  creatingWindow = true
   // ============================================
   // 阶段 2: 启动应用
   // ============================================
@@ -77,6 +81,9 @@ async function starting() {
       execute: () => {
         if (!window) {
           window = new AppWindow()
+          window.on('closed', () => {
+            window = null
+          })
         }
       },
       critical: true,
@@ -84,8 +91,9 @@ async function starting() {
     {
       name: 'Register protocol handler',
       execute: () => {
-        if (window && !protocol.isProtocolHandled(SCHEME)) {
+        if (window && !protocolRegistered) {
           router.register(window.webContents.session.protocol)
+          protocolRegistered = true
         }
       },
       critical: true,
@@ -218,25 +226,23 @@ app.on('second-instance', () => {
 })
 
 app.on('window-all-closed', async () => {
-  if (process.platform !== 'darwin') {
-    await lifecycle.setPhase(LifecyclePhase.STOPPING)
-    app.quit()
-  }
+  await lifecycle.setPhase(LifecyclePhase.STOPPING)
+  app.quit()
 })
 
-app.on('activate', () => {
-  logger.info('[Main] Application activated', lifecycle.getPhase(), AppWindow.getAllWindows().length)
+// app.on('activate', () => {
+//   logger.info('[Main] Application activated', lifecycle.getPhase(), AppWindow.getAllWindows().length)
 
-  if (lifecycle.getPhase() === LifecyclePhase.RUNNING && AppWindow.getAllWindows().length === 0) {
-    starting()
-      .then(() => {
-        logger.info('[Main] Application activated and window created.')
-      })
-      .catch((err) => {
-        logger.error('[Main] Failed to activate application:', err)
-      })
-  }
-})
+//   if (lifecycle.getPhase() === LifecyclePhase.RUNNING && AppWindow.getAllWindows().length === 0) {
+//     starting()
+//       .then(() => {
+//         logger.info('[Main] Application activated and window created.')
+//       })
+//       .catch((err) => {
+//         logger.error('[Main] Failed to activate application:', err)
+//       })
+//   }
+// })
 
 app.on('before-quit', async () => {
   await lifecycle.setPhase(LifecyclePhase.STOPPING)
