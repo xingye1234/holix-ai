@@ -2,9 +2,11 @@ import os from 'node:os'
 import process from 'node:process'
 import { tool } from 'langchain'
 import z from 'zod'
+import { logger } from '../../platform/logger'
 
 export const systemPlatformTool = tool(
   async () => {
+    logger.info('Fetching system platform information...')
     return {
       platform: os.platform(),
       arch: os.arch(),
@@ -21,6 +23,7 @@ export const systemPlatformTool = tool(
 
 export const systemEnvTool = tool(
   async () => {
+    logger.info('Fetching system environment information...')
     return {
       nodeVersion: process.version,
       env: process.env.NODE_ENV ?? 'unknown',
@@ -38,6 +41,8 @@ export const systemTimezoneTool = tool(
     const timezone
       = Intl.DateTimeFormat().resolvedOptions().timeZone
 
+    logger.info('Fetching system timezone information...', { timezone })
+
     return {
       timezone,
       offsetMinutes: new Date().getTimezoneOffset(),
@@ -53,6 +58,8 @@ export const systemTimezoneTool = tool(
 export const systemTimeTool = tool(
   async () => {
     const now = new Date()
+
+    logger.info('Fetching current system time...', { now: now.toISOString() })
 
     return {
       timestamp: now.getTime(),

@@ -2,6 +2,7 @@ import type { ChatContext } from '../context'
 import { net } from 'electron'
 import { tool } from 'langchain'
 import * as z from 'zod'
+import { logger } from '../../platform/logger'
 
 const CONTEXT7_BASE = 'https://context7.com/api/v2'
 
@@ -9,7 +10,10 @@ export const context7Tool = tool(
   async ({ query, libraryName, limit = 5 }, config: { context: ChatContext }) => {
     const API_KEY = config.context.config.context7ApiKey
 
+    logger.info('Using Context7 tool', { query, libraryName, limit })
+
     if (!API_KEY) {
+      logger.error('Context7 API key is not configured.')
       throw new Error('Context7 API key is not configured.')
     }
 
@@ -53,11 +57,14 @@ export const context7Tool = tool(
     })
 
     if (!ctxResp.ok) {
+      logger.error('Context7 context fetch failed', { status: ctxResp.status, statusText: ctxResp.statusText })
       throw new Error(`Context7 context fetch failed: ${await ctxResp.text()}`)
     }
 
     const ctxJson = await ctxResp.json()
     const context = Array.isArray(ctxJson.results) ? ctxJson.results : (Array.isArray(ctxJson) ? ctxJson : [])
+
+    logger.info('Context7 tool fetched context snippets', { count: context.length })
 
     return {
       query,
