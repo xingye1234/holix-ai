@@ -203,6 +203,24 @@ export const message = sqliteTable(
   }),
 )
 
+export const message_fts = sqliteTable(
+  'message_fts',
+  {
+    rowid: t.integer('rowid'),
+    content: t.text('content'), // 搜索内容
+    chatUid: t.text('chat_uid'), // 会话 UID，用于过滤
+    uid: t.text('uid'), // message UID，用于关联 message 表
+  },
+  {
+    // 声明为 FTS5 表
+    withoutRowid: false, // 可选
+    virtual: 'fts5', // 关键：告诉 Drizzle 这是 FTS5 虚拟表
+    ftsOptions: {
+      tokenize: 'porter', // 可以选择 'simple', 'porter', 'unicode61'
+    },
+  },
+)
+
 export type Chat = InferSelectModel<typeof chats>
 export type Message = InferSelectModel<typeof message>
 export type ChatInsert = InferInsertModel<typeof chats>
