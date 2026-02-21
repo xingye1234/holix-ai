@@ -52,7 +52,10 @@ export default function AppSearch() {
     try {
       const results = await trpcClient.message.searchBm25({ keyword: query, limit: 10 })
 
-      logger.info('Search results:', results)
+      logger.info('Search results:', {
+        query,
+        results,
+      })
 
       setSearchResults(results as Array<{ rank: number, message: Message }>)
     }
