@@ -7,7 +7,7 @@ import type { Chat, ChatInsert, PendingMessage } from './schema/chat'
 
 import { eq, sql } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
-import { getDatabase } from './connect'
+import { getDatabase, sqlite } from './connect'
 import { chats, message } from './schema/chat'
 
 /**
@@ -195,6 +195,8 @@ export async function updateChatPinned(
  */
 export async function deleteChat(chatUid: string): Promise<void> {
   const db = await getDatabase()
+  // 先清理 FTS 虚拟表（不受外键 CASCADE 影响，需手动删除）
+  sqlite.prepare(`DELETE FROM message_fts WHERE chat_uid = ?`).run(chatUid)
   await db.transaction(async (ctx) => {
     await ctx.delete(message).where(eq(message.chatUid, chatUid))
     await ctx.delete(chats).where(eq(chats.uid, chatUid))

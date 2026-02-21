@@ -31,8 +31,14 @@ export async function searchMessagesBM25(options: SearchMessageOptions): Promise
     return []
   }
 
-  // FTS5 查询转义：将双引号转义，并包裹整个词，支持精确匹配
-  const sanitizedQuery = `"${query.replace(/"/g, '""')}"`
+  // FTS5 查询构造：对每个词添加 * 前缀匹配，提升搜索体验
+  // 例如输入 "hel wor" => "hel* wor*" 可匹配 hello / world
+  const sanitizedQuery = query
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(word => `"${word.replace(/"/g, '""')}"*`)
+    .join(' ')
 
   let sqlStr: string
   let params: any[]

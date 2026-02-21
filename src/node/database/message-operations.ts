@@ -3,10 +3,47 @@ import { and, desc, eq, sql } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import { logger } from '../platform/logger'
 import { updateChatLastSeq } from './chat-operations'
-import { getDatabase } from './connect'
+import { getDatabase, sqlite } from './connect'
 import {
   message,
 } from './schema/chat'
+
+// FTS 同步辅助函数（使用 raw sqlite，因为 message_fts 是 FTS5 虚拟表，Drizzle 无法操作）
+function ftsSyncInsert(uid: string, chatUid: string, content: string) {
+  try {
+    sqlite.prepare(`INSERT OR REPLACE INTO message_fts (uid, chat_uid, content) VALUES (?, ?, ?)`).run(uid, chatUid, content)
+  }
+  catch (e) {
+    logger.warn('[FTS] insert failed:', e)
+  }
+}
+
+function ftsSyncUpdate(uid: string, content: string) {
+  try {
+    sqlite.prepare(`UPDATE message_fts SET content = ? WHERE uid = ?`).run(content, uid)
+  }
+  catch (e) {
+    logger.warn('[FTS] update failed:', e)
+  }
+}
+
+function ftsSyncDelete(uid: string) {
+  try {
+    sqlite.prepare(`DELETE FROM message_fts WHERE uid = ?`).run(uid)
+  }
+  catch (e) {
+    logger.warn('[FTS] delete failed:', e)
+  }
+}
+
+function ftsSyncDeleteByChatUid(chatUid: string) {
+  try {
+    sqlite.prepare(`DELETE FROM message_fts WHERE chat_uid = ?`).run(chatUid)
+  }
+  catch (e) {
+    logger.warn('[FTS] deleteByChat failed:', e)
+  }
+}
 
 /**
  * 反序列化消息中的 JSON 字段
@@ -95,6 +132,11 @@ export async function createMessage(params: {
   }
 
   await db.insert(message).values(insert)
+
+  // 同步写入 FTS 索引
+  if (insert.content && insert.searchable) {
+    ftsSyncInsert(insert.uid, insert.chatUid, insert.content)
+  }
 
   // 更新会话的最后序号
   await updateChatLastSeq(params.chatUid, params.seq)
@@ -222,6 +264,8 @@ export async function updateMessageContent(
       updatedAt: Date.now(),
     })
     .where(eq(message.uid, messageUid))
+
+  ftsSyncUpdate(messageUid, content)
 }
 
 /**
@@ -289,6 +333,7 @@ export async function setMessageError(
 export async function deleteMessage(messageUid: string): Promise<void> {
   const db = await getDatabase()
   await db.delete(message).where(eq(message.uid, messageUid))
+  ftsSyncDelete(messageUid)
 }
 
 /**
@@ -298,6 +343,7 @@ export async function deleteMessage(messageUid: string): Promise<void> {
 export async function deleteMessagesByChatUid(chatUid: string): Promise<void> {
   const db = await getDatabase()
   await db.delete(message).where(eq(message.chatUid, chatUid))
+  ftsSyncDeleteByChatUid(chatUid)
 }
 
 /**
@@ -327,6 +373,16 @@ export async function updateMessage(
       updatedAt: Date.now(),
     })
     .where(eq(message.uid, messageUid))
+
+  // 若更新了 content，同步 FTS 索引
+  if ('content' in updates) {
+    if (updates.content) {
+      ftsSyncUpdate(messageUid, updates.content)
+    }
+    else {
+      ftsSyncDelete(messageUid)
+    }
+  }
 }
 
 /**
@@ -378,6 +434,10 @@ export async function commitDraftContent(messageUid: string): Promise<void> {
       updatedAt: Date.now(),
     })
     .where(eq(message.uid, messageUid))
+
+  if (content && deserializedMsg.searchable) {
+    ftsSyncUpdate(messageUid, content)
+  }
 }
 
 /**

@@ -74,10 +74,29 @@ function ensureMessageFtsVirtualTable() {
       )
     `)
     logger.info('[Database] message_fts FTS5 virtual table created successfully.')
+    // 从 message 表中重建 FTS 索引（存量数据迁移）
+    rebuildMessageFtsIndex()
   }
   else {
     logger.info('[Database] message_fts is already a FTS5 virtual table.')
   }
+}
+
+/**
+ * 从 message 表全量重建 FTS 索引
+ * 在 FTS 表首次创建或需要重新索引时调用
+ */
+function rebuildMessageFtsIndex() {
+  logger.info('[Database] Rebuilding message_fts index from existing messages...')
+  sqlite.exec(`DELETE FROM message_fts`)
+  sqlite.exec(`
+    INSERT INTO message_fts (uid, chat_uid, content)
+    SELECT uid, chat_uid, content
+    FROM message
+    WHERE searchable = 1 AND content IS NOT NULL AND content != ''
+  `)
+  const count = (sqlite.prepare(`SELECT count(*) AS cnt FROM message_fts`).get() as any).cnt
+  logger.info(`[Database] message_fts index rebuilt, total ${count} rows.`)
 }
 
 export async function migrateDb() {
