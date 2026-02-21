@@ -12,6 +12,7 @@ import { onCommandForClient } from './platform/commands'
 import { configStore } from './platform/config'
 import { AppLifecycle, LifecyclePhase } from './platform/lifecycle'
 import { logger } from './platform/logger'
+import { setupAppMenu } from './platform/menu'
 import { providerStore } from './platform/provider'
 import { onUpdateWaitResponse } from './platform/update'
 import { AppWindow } from './platform/window'
@@ -151,7 +152,10 @@ async function bootstrap() {
       },
       {
         name: 'Wait for Electron ready',
-        execute: () => app.whenReady(),
+        execute: async () => {
+          await app.whenReady()
+          setupAppMenu()
+        },
         critical: true,
         timeout: 10000,
       },
