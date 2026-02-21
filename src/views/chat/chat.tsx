@@ -1,3 +1,4 @@
+import { matchSorter } from 'match-sorter'
 import { useMemo } from 'react'
 import useChat from '@/store/chat'
 import { ChatPanel } from './panel'
@@ -9,11 +10,11 @@ export function AsideChatSidebar() {
   const filteredChats = useMemo(() => {
     if (!searchQuery.trim())
       return chats
-    const query = searchQuery.toLowerCase()
-    return chats.filter(chat =>
-      chat.title.toLowerCase().includes(query)
-      || (chat.lastMessagePreview && chat.lastMessagePreview.toLowerCase().includes(query)),
-    )
+
+    return matchSorter(chats, searchQuery, {
+      keys: ['title', 'lastMessagePreview'],
+      threshold: matchSorter.rankings.CONTAINS,
+    })
   }, [chats, searchQuery])
 
   return (
