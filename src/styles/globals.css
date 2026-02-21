@@ -176,3 +176,8 @@ html {
   text-decoration: var(--shiki-dark-text-decoration) !important;
 }
 
+.no-drag {
+  -webkit-user-drag: none;
+  user-drag: none;
+  user-select: none;
+}
