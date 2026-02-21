@@ -70,61 +70,63 @@ export function ChatPanel(props: Chat) {
           {props.lastMessagePreview || 'No messages yet'}
         </span>
       </div>
-      <Popover>
-        <PopoverTrigger className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-pointer">
-          <Ellipsis size={16} />
-        </PopoverTrigger>
-        <PopoverContent className="w-50 p-2 flex flex-col gap-1" align="start" side="bottom" onClick={e => e.stopPropagation()}>
-          <Dialog open={isRenameOpen} onOpenChange={setIsRenameOpen}>
-            <DialogTrigger className="w-full flex justify-between items-center cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md p-2 text-sm">
-              <span>重命名</span>
-              <Pencil size={14} className="mr-2" />
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>重命名会话</DialogTitle>
-              </DialogHeader>
-              <div className="py-4">
-                <Input
-                  value={newTitle}
-                  onChange={e => setNewTitle(e.target.value)}
-                  placeholder="输入新的会话名称"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault()
-                      onRename()
-                    }
-                  }}
-                  autoFocus
-                />
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsRenameOpen(false)}>取消</Button>
-                <Button onClick={onRename}>保存</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+      <div onClick={e => e.preventDefault()}>
+        <Popover>
+          <PopoverTrigger className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-pointer">
+            <Ellipsis size={16} />
+          </PopoverTrigger>
+          <PopoverContent className="w-50 p-2 flex flex-col gap-1" align="start" side="bottom" onClick={e => e.stopPropagation()}>
+            <Dialog open={isRenameOpen} onOpenChange={setIsRenameOpen}>
+              <DialogTrigger className="w-full flex justify-between items-center cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md p-2 text-sm">
+                <span>重命名</span>
+                <Pencil size={14} className="mr-2" />
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>重命名会话</DialogTitle>
+                </DialogHeader>
+                <div className="py-4">
+                  <Input
+                    value={newTitle}
+                    onChange={e => setNewTitle(e.target.value)}
+                    placeholder="输入新的会话名称"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        onRename()
+                      }
+                    }}
+                    autoFocus
+                  />
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setIsRenameOpen(false)}>取消</Button>
+                  <Button onClick={onRename}>保存</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
 
-          <AlertDialog>
-            <AlertDialogTrigger className="w-full flex justify-between items-center cursor-pointer text-destructive hover:text-destructive/80 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md p-2 text-sm">
-              <span>删除会话</span>
-              <Delete size={14} className="mr-2" />
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>删除会话</AlertDialogTitle>
-                <AlertDialogDescription>
-                  确认要删除该会话及其所有消息吗？此操作无法撤销。
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>取消</AlertDialogCancel>
-                <AlertDialogAction onClick={onDelete}>Continue</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </PopoverContent>
-      </Popover>
+            <AlertDialog>
+              <AlertDialogTrigger className="w-full flex justify-between items-center cursor-pointer text-destructive hover:text-destructive/80 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md p-2 text-sm">
+                <span>删除会话</span>
+                <Delete size={14} className="mr-2" />
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>删除会话</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    确认要删除该会话及其所有消息吗？此操作无法撤销。
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>取消</AlertDialogCancel>
+                  <AlertDialogAction onClick={onDelete}>Continue</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </PopoverContent>
+        </Popover>
+      </div>
     </Link>
   )
 }
