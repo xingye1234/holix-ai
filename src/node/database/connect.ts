@@ -61,24 +61,31 @@ function ensureMessageFtsVirtualTable() {
   ).get() as { type: string, sql: string } | undefined
 
   const isVirtual = row?.sql?.toUpperCase().includes('VIRTUAL')
+  // 检查是否已使用 trigram 分词器（支持中文子串匹配）
+  const isTrigram = row?.sql?.toLowerCase().includes('trigram')
 
-  if (!isVirtual) {
-    logger.info('[Database] message_fts is not a FTS5 virtual table, recreating...')
+  if (!isVirtual || !isTrigram) {
+    if (!isVirtual) {
+      logger.info('[Database] message_fts is not a FTS5 virtual table, recreating...')
+    }
+    else {
+      logger.info('[Database] message_fts tokenizer is not trigram, recreating for CJK support...')
+    }
     sqlite.exec(`DROP TABLE IF EXISTS message_fts`)
     sqlite.exec(`
       CREATE VIRTUAL TABLE message_fts USING fts5(
         uid UNINDEXED,
         chat_uid UNINDEXED,
         content,
-        tokenize = 'unicode61'
+        tokenize = 'trigram'
       )
     `)
-    logger.info('[Database] message_fts FTS5 virtual table created successfully.')
+    logger.info('[Database] message_fts FTS5 virtual table (trigram tokenizer) created successfully.')
     // 从 message 表中重建 FTS 索引（存量数据迁移）
     rebuildMessageFtsIndex()
   }
   else {
-    logger.info('[Database] message_fts is already a FTS5 virtual table.')
+    logger.info('[Database] message_fts is already a FTS5 virtual table with trigram tokenizer.')
   }
 }
 
