@@ -14,6 +14,7 @@ import { AppLifecycle, LifecyclePhase } from './platform/lifecycle'
 import { logger } from './platform/logger'
 import { setupAppMenu } from './platform/menu'
 import { providerStore } from './platform/provider'
+import { setupAppTray } from './platform/tray'
 import { onUpdateWaitResponse } from './platform/update'
 import { AppWindow } from './platform/window'
 import { trpcRouter } from './server/handler'
@@ -107,6 +108,13 @@ async function starting() {
         }
       },
       critical: true,
+    },
+    {
+      name: 'Setup application tray',
+      execute: () => {
+        setupAppTray(window)
+      },
+      critical: false,
     },
     {
       name: 'Show application window',
