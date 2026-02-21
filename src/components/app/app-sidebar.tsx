@@ -1,9 +1,5 @@
-import { useNavigate } from "@tanstack/react-router";
-import { Button } from "../ui/button";
-import { Plus } from "lucide-react";
-
 export interface AppSideBarProps {
-  children: React.ReactNode;
+  children: React.ReactNode
 }
 
 export default function AppSideBar(props: AppSideBarProps) {
@@ -11,5 +7,5 @@ export default function AppSideBar(props: AppSideBarProps) {
     <aside className="w-(--app-sidebar-width) border-r flex flex-col">
       <div className="h-[calc(100vh-var(--app-header-height)-10px)]">{props.children}</div>
     </aside>
-  );
+  )
 }
