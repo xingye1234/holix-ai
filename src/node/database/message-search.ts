@@ -40,14 +40,14 @@ export async function searchMessagesBM25(options: SearchMessageOptions) {
   const results = await db
     .select({
       // 获取 BM25 相关性得分
-      rank: sql<number>`rank`,
+      rank: sql<number>`message_fts.rank`,
       // 关联获取原始消息的完整信息
       message,
     })
     .from(messageFts)
     .innerJoin(message, eq(messageFts.uid, message.uid))
     .where(and(...conditions))
-    .orderBy(sql`rank`)
+    .orderBy(sql`message_fts.rank`)
     .limit(limit)
     .offset(offset)
 

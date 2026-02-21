@@ -1,7 +1,9 @@
+import type { Message } from '@/node/database/schema/chat'
 import { useNavigate } from '@tanstack/react-router'
-import { Monitor, Moon, Plus, SearchIcon, Settings, Sun } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { MessageSquare, Monitor, Moon, Plus, SearchIcon, Settings, Sun } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { usePlatform } from '@/hooks/platform'
+import { trpcClient } from '@/lib/trpc-client'
 import { useTheme } from '../theme-provider'
 import {
   CommandDialog,
@@ -20,6 +22,12 @@ export default function AppSearch() {
   const { setTheme } = useTheme()
   const navigate = useNavigate()
 
+  const [searchQuery, setSearchQuery] = useState('')
+  const [isComposing, setIsComposing] = useState(false)
+  const [searchResults, setSearchResults] = useState<Array<{ rank: number, message: Message }>>([])
+  const [isSearching, setIsSearching] = useState(false)
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null)
+
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
@@ -32,10 +40,74 @@ export default function AppSearch() {
     return () => document.removeEventListener('keydown', down)
   }, [])
 
+  const performSearch = useCallback(async (query: string) => {
+    if (!query.trim()) {
+      setSearchResults([])
+      setIsSearching(false)
+      return
+    }
+
+    setIsSearching(true)
+    try {
+      const results = await trpcClient.message.searchBm25({ keyword: query, limit: 10 })
+      setSearchResults(results as Array<{ rank: number, message: Message }>)
+    }
+    catch (error) {
+      console.error('Search failed:', error)
+      setSearchResults([])
+    }
+    finally {
+      setIsSearching(false)
+    }
+  }, [])
+
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value)
+  }
+
+  const handleCompositionStart = () => {
+    setIsComposing(true)
+  }
+
+  const handleCompositionEnd = () => {
+    setIsComposing(false)
+  }
+
+  useEffect(() => {
+    if (isComposing)
+      return
+
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current)
+    }
+
+    debounceTimerRef.current = setTimeout(() => {
+      performSearch(searchQuery)
+    }, 300)
+
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current)
+      }
+    }
+  }, [searchQuery, isComposing, performSearch])
+
   const runCommand = (command: () => void) => {
     setOpen(false)
     command()
   }
+
+  const handleSelectMessage = (chatUid: string) => {
+    runCommand(() => navigate({ to: `/chat/$id`, params: { id: chatUid } }))
+  }
+
+  // Reset search when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setSearchQuery('')
+      setSearchResults([])
+    }
+  }, [open])
 
   return (
     <>
@@ -51,39 +123,65 @@ export default function AppSearch() {
         </kbd>
       </button>
 
-      <CommandDialog open={open} onOpenChange={setOpen}>
-        <CommandInput placeholder="Type a command or search..." />
+      <CommandDialog open={open} onOpenChange={setOpen} commandProps={{ shouldFilter: false }}>
+        <CommandInput
+          placeholder="Type a command or search messages..."
+          value={searchQuery}
+          onValueChange={handleSearchChange}
+          onCompositionStart={handleCompositionStart}
+          onCompositionEnd={handleCompositionEnd}
+        />
         <CommandList>
-          <CommandEmpty>No results found.</CommandEmpty>
-          <CommandGroup heading="Actions">
-            <CommandItem onSelect={() => runCommand(() => navigate({ to: '/' }))}>
-              <Plus className="mr-2 size-4" />
-              <span>New Chat</span>
-            </CommandItem>
-            <CommandItem onSelect={() => runCommand(() => navigate({ to: '/setting' }))}>
-              <Settings className="mr-2 size-4" />
-              <span>Settings</span>
-              <CommandShortcut>
-                {isMacOS ? '⌘' : 'Ctrl'}
-                ,
-              </CommandShortcut>
-            </CommandItem>
-          </CommandGroup>
-          <CommandSeparator />
-          <CommandGroup heading="Theme">
-            <CommandItem onSelect={() => runCommand(() => setTheme('light'))}>
-              <Sun className="mr-2 size-4" />
-              <span>Light Theme</span>
-            </CommandItem>
-            <CommandItem onSelect={() => runCommand(() => setTheme('dark'))}>
-              <Moon className="mr-2 size-4" />
-              <span>Dark Theme</span>
-            </CommandItem>
-            <CommandItem onSelect={() => runCommand(() => setTheme('system'))}>
-              <Monitor className="mr-2 size-4" />
-              <span>System Theme</span>
-            </CommandItem>
-          </CommandGroup>
+          <CommandEmpty>{isSearching ? 'Searching...' : 'No results found.'}</CommandEmpty>
+
+          {searchResults.length > 0 && (
+            <CommandGroup heading="Messages">
+              {searchResults.map(({ message: msg }) => (
+                <CommandItem
+                  key={msg.uid}
+                  value={`msg-${msg.uid}-${msg.content}`}
+                  onSelect={() => handleSelectMessage(msg.chatUid)}
+                >
+                  <MessageSquare className="mr-2 size-4 shrink-0" />
+                  <span className="truncate">{msg.content}</span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          )}
+
+          {searchQuery.trim() === '' && (
+            <>
+              <CommandGroup heading="Actions">
+                <CommandItem onSelect={() => runCommand(() => navigate({ to: '/' }))}>
+                  <Plus className="mr-2 size-4" />
+                  <span>New Chat</span>
+                </CommandItem>
+                <CommandItem onSelect={() => runCommand(() => navigate({ to: '/setting' }))}>
+                  <Settings className="mr-2 size-4" />
+                  <span>Settings</span>
+                  <CommandShortcut>
+                    {isMacOS ? '⌘' : 'Ctrl'}
+                    ,
+                  </CommandShortcut>
+                </CommandItem>
+              </CommandGroup>
+              <CommandSeparator />
+              <CommandGroup heading="Theme">
+                <CommandItem onSelect={() => runCommand(() => setTheme('light'))}>
+                  <Sun className="mr-2 size-4" />
+                  <span>Light Theme</span>
+                </CommandItem>
+                <CommandItem onSelect={() => runCommand(() => setTheme('dark'))}>
+                  <Moon className="mr-2 size-4" />
+                  <span>Dark Theme</span>
+                </CommandItem>
+                <CommandItem onSelect={() => runCommand(() => setTheme('system'))}>
+                  <Monitor className="mr-2 size-4" />
+                  <span>System Theme</span>
+                </CommandItem>
+              </CommandGroup>
+            </>
+          )}
         </CommandList>
       </CommandDialog>
     </>
