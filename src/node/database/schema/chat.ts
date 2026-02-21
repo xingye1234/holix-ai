@@ -204,23 +204,6 @@ export const message = sqliteTable(
   }),
 )
 
-/**
- * FTS5 虚拟表，用于消息全文搜索
- *
- * 缺陷修复说明：
- * 1. 移除了 message_fts_data, message_fts_idx 等影子表(shadow tables)。这些是 SQLite FTS5 内部自动维护的表，
- *    在 ORM 中定义会导致意外的修改或迁移冲突（通常是 drizzle-kit introspect 误生成的）。
- * 2. 修正了字段类型：之前生成的 numeric 类型是错误的，FTS5 的内容和关联 ID 应该是 text 类型。
- * 3. 显式声明了 rowid，方便在 ORM 中进行关联和查询。
- * 4. 移除了 rank 字段，rank 是 FTS5 的隐藏列，建议在查询时通过 sql`rank` 动态获取，而不是定义在 schema 中。
- */
-export const messageFts = sqliteTable('message_fts', {
-  rowid: t.integer('rowid').primaryKey(),
-  uid: t.text('uid').notNull(),
-  chatUid: t.text('chat_uid').notNull(),
-  content: t.text('content').notNull(),
-})
-
 export type Chat = InferSelectModel<typeof chats>
 export type Message = InferSelectModel<typeof message>
 export type ChatInsert = InferInsertModel<typeof chats>

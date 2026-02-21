@@ -37,7 +37,7 @@ const dbPath = databaseUrl // 确保 databaseUrl 是本地 sqlite 文件路径
 
 logger.info(`[Database] Using database file at path: ${dbPath}`)
 
-const sqlite = new Database(fileURLToPath(dbPath), unpacked
+export const sqlite: ReturnType<typeof Database> = new Database(fileURLToPath(dbPath), unpacked
   ? {
       nativeBinding: unpacked || undefined,
     }
@@ -48,6 +48,38 @@ export const db = drizzle(sqlite)
 logger.info(`Connected to SQLite database at ${dbPath}`)
 
 let hasMigrated = false
+
+/**
+ * 确保 message_fts 是 FTS5 虚拟表
+ * Drizzle ORM 不支持 CREATE VIRTUAL TABLE，迁移文件只能生成普通表。
+ * 此函数在迁移后检查，若 message_fts 不是虚拟表则重建为 FTS5 虚拟表。
+ */
+function ensureMessageFtsVirtualTable() {
+  // 查询 sqlite_master 判断 message_fts 是否已是虚拟表
+  const row = sqlite.prepare(
+    `SELECT type, sql FROM sqlite_master WHERE name = 'message_fts'`,
+  ).get() as { type: string, sql: string } | undefined
+
+  const isVirtual = row?.sql?.toUpperCase().includes('VIRTUAL')
+
+  if (!isVirtual) {
+    logger.info('[Database] message_fts is not a FTS5 virtual table, recreating...')
+    sqlite.exec(`DROP TABLE IF EXISTS message_fts`)
+    sqlite.exec(`
+      CREATE VIRTUAL TABLE message_fts USING fts5(
+        uid UNINDEXED,
+        chat_uid UNINDEXED,
+        content,
+        tokenize = 'unicode61'
+      )
+    `)
+    logger.info('[Database] message_fts FTS5 virtual table created successfully.')
+  }
+  else {
+    logger.info('[Database] message_fts is already a FTS5 virtual table.')
+  }
+}
+
 export async function migrateDb() {
   logger.info('Starting database migration process...')
   if (hasMigrated) {
@@ -59,6 +91,11 @@ export async function migrateDb() {
     logger.info('Applying database migrations...')
     migrate(db, { migrationsFolder: dir })
     logger.info('Database migrations applied successfully.')
+
+    // Drizzle ORM 不支持通过 schema 声明 FTS5 虚拟表
+    // 在迁移完成后手动确保 message_fts 是真正的 FTS5 虚拟表
+    ensureMessageFtsVirtualTable()
+
     hasMigrated = true
     promiser.resolve()
   }

@@ -3,6 +3,7 @@ import { useNavigate } from '@tanstack/react-router'
 import { MessageSquare, Monitor, Moon, Plus, SearchIcon, Settings, Sun } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { usePlatform } from '@/hooks/platform'
+import logger from '@/lib/logger'
 import { trpcClient } from '@/lib/trpc-client'
 import { useTheme } from '../theme-provider'
 import {
@@ -50,6 +51,9 @@ export default function AppSearch() {
     setIsSearching(true)
     try {
       const results = await trpcClient.message.searchBm25({ keyword: query, limit: 10 })
+
+      logger.info('Search results:', results)
+
       setSearchResults(results as Array<{ rank: number, message: Message }>)
     }
     catch (error) {
