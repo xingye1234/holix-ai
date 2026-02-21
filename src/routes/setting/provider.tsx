@@ -1,15 +1,15 @@
 import type { AIProvider } from '@/types/provider'
 import { createFileRoute } from '@tanstack/react-router'
-import { Plus } from 'lucide-react'
+import { Plus, Star } from 'lucide-react'
 import { useCallback, useState } from 'react'
 import { toast } from 'sonner'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Switch } from '@/components/ui/switch'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   addProvider,
   getDefaultProvider,
@@ -30,7 +30,7 @@ export const Route = createFileRoute('/setting/provider')({
 function RouteComponent() {
   const { providers: initialProviders, defaultProvider: initialDefaultProvider } = Route.useLoaderData()
   const [providers, setProviders] = useState<AIProvider[]>(initialProviders)
-  const [activeTab, setActiveTab] = useState(initialDefaultProvider || providers[0]?.name || '')
+  const [defaultProviderState, setDefaultProviderState] = useState(initialDefaultProvider || providers[0]?.name || '')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [newProvider, setNewProvider] = useState<AIProvider>({
     name: '',
@@ -61,13 +61,15 @@ function RouteComponent() {
     }
   }, [])
 
-  const handleTabChange = useCallback(async (value: string) => {
-    setActiveTab(value)
+  const handleSetDefault = useCallback(async (name: string) => {
     try {
-      await setDefaultProvider(value)
+      await setDefaultProvider(name)
+      setDefaultProviderState(name)
+      toast.success('已设为默认供应商')
     }
     catch (error) {
       console.error('Failed to set default provider:', error)
+      toast.error('设置默认供应商失败')
     }
   }, [])
 
@@ -76,7 +78,7 @@ function RouteComponent() {
       const created = await addProvider(newProvider)
       setProviders(prev => [...prev, created])
       setIsDialogOpen(false)
-      setActiveTab(created.name)
+      setDefaultProviderState(created.name)
       await setDefaultProvider(created.name)
       setNewProvider({
         name: '',
@@ -115,60 +117,68 @@ function RouteComponent() {
           新增
         </Button>
       </div>
-      <Tabs value={activeTab} onValueChange={handleTabChange}>
-        <TabsList className="mb-4 h-12! max-w-full overflow-x-auto [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/50">
-          {providers.map(provider => (
-            <TabsTrigger key={provider.name} value={provider.name} className="h-8">
-              <span className="mr-1.5">{provider.avatar}</span>
-              {provider.name}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
         {providers.map(provider => (
-          <TabsContent key={provider.name} value={provider.name}>
-            <div className="max-w-2xl space-y-6">
-              {/* 启用开关 */}
-              <div className="flex items-center justify-between rounded-lg border p-4">
-                <div>
-                  <Label className="text-base">启用供应商</Label>
-                  <p className="text-sm text-muted-foreground mt-1">启用后可以使用此供应商的模型</p>
+          <div key={provider.name} className="flex flex-col rounded-xl border bg-card text-card-foreground shadow-sm">
+            <div className="flex flex-row items-center justify-between p-6 pb-4">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">{provider.avatar}</span>
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold leading-none tracking-tight">{provider.name}</h3>
+                    {defaultProviderState === provider.name && (
+                      <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">默认</Badge>
+                    )}
+                  </div>
                 </div>
+              </div>
+              <div className="flex items-center gap-3">
+                {defaultProviderState !== provider.name && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                    onClick={() => handleSetDefault(provider.name)}
+                    title="设为默认"
+                  >
+                    <Star size={16} />
+                  </Button>
+                )}
                 <Switch
                   checked={provider.enabled}
                   onCheckedChange={checked => handleToggle(provider.name, checked)}
                 />
               </div>
-
-              {/* API 配置 */}
+            </div>
+            <div className="p-6 pt-0 space-y-4 flex-1">
               <div className="space-y-4">
-                <div>
-                  <Label htmlFor="baseUrl">Base URL</Label>
+                <div className="space-y-2">
+                  <Label htmlFor={`baseUrl-${provider.name}`}>Base URL</Label>
                   <Input
-                    id="baseUrl"
+                    id={`baseUrl-${provider.name}`}
                     type="url"
                     value={provider.baseUrl}
                     onChange={e => handleUpdateProvider(provider.name, 'baseUrl', e.target.value)}
                     placeholder="https://api.example.com/v1"
-                    className="mt-1.5"
                   />
                 </div>
 
-                <div>
-                  <Label htmlFor="apiKey">API Key</Label>
+                <div className="space-y-2">
+                  <Label htmlFor={`apiKey-${provider.name}`}>API Key</Label>
                   <Input
-                    id="apiKey"
+                    id={`apiKey-${provider.name}`}
                     type="password"
                     value={provider.apiKey}
                     onChange={e => handleUpdateProvider(provider.name, 'apiKey', e.target.value)}
                     placeholder="输入您的 API Key"
-                    className="mt-1.5"
                   />
                 </div>
 
-                <div>
-                  <Label htmlFor="models">支持的模型</Label>
+                <div className="space-y-2">
+                  <Label htmlFor={`models-${provider.name}`}>支持的模型</Label>
                   <Input
-                    id="models"
+                    id={`models-${provider.name}`}
                     value={provider.models.join(', ')}
                     onChange={e =>
                       handleUpdateProvider(
@@ -180,53 +190,52 @@ function RouteComponent() {
                           .filter(Boolean),
                       )}
                     placeholder="model-1, model-2, model-3"
-                    className="mt-1.5"
                   />
-                  <p className="text-xs text-muted-foreground mt-1.5">多个模型可用逗号、空格、/、| 等分隔</p>
+                  <p className="text-xs text-muted-foreground">多个模型可用逗号、空格、/、| 等分隔</p>
                 </div>
               </div>
-              <div className="pt-4">
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="destructive">删除供应商</Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-80">
-                    <div className="space-y-4">
-                      <p>您确定要删除此供应商吗？此操作无法撤销。</p>
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="destructive"
-                          onClick={async () => {
-                            removeProvider(provider.name)
-                              .then(async () => {
-                                const remaining = providers.filter(p => p.name !== provider.name)
-                                setProviders(remaining)
-
-                                // 如果删除的是当前激活的供应商，切换到剩余的第一个
-                                if (activeTab === provider.name && remaining.length > 0) {
-                                  setActiveTab(remaining[0].name)
-                                  await setDefaultProvider(remaining[0].name)
-                                }
-
-                                toast.success('供应商删除成功')
-                              })
-                              .catch((error) => {
-                                console.error('Failed to delete provider:', error)
-                                toast.error(`删除失败：${(error as Error).message}`)
-                              })
-                          }}
-                        >
-                          确认删除
-                        </Button>
-                      </div>
-                    </div>
-                  </PopoverContent>
-                </Popover>
-              </div>
             </div>
-          </TabsContent>
+            <div className="flex items-center p-6 pt-0 mt-auto">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="destructive" size="sm" className="w-full">删除供应商</Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80">
+                  <div className="space-y-4">
+                    <p className="text-sm">您确定要删除此供应商吗？此操作无法撤销。</p>
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={async () => {
+                          removeProvider(provider.name)
+                            .then(async () => {
+                              const remaining = providers.filter(p => p.name !== provider.name)
+                              setProviders(remaining)
+
+                              if (defaultProviderState === provider.name && remaining.length > 0) {
+                                setDefaultProviderState(remaining[0].name)
+                                await setDefaultProvider(remaining[0].name)
+                              }
+
+                              toast.success('供应商删除成功')
+                            })
+                            .catch((error) => {
+                              console.error('Failed to delete provider:', error)
+                              toast.error(`删除失败：${(error as Error).message}`)
+                            })
+                        }}
+                      >
+                        确认删除
+                      </Button>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
         ))}
-      </Tabs>
+      </div>
 
       {/* 新增供应商弹窗 */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
