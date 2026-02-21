@@ -4,9 +4,10 @@ import { nanoid } from 'nanoid'
 import { logger } from '../platform/logger'
 import { updateChatLastSeq } from './chat-operations'
 import { getDatabase } from './connect'
+import { searchMessagesBM25 as searchMessagesBM25Impl } from './message-search'
 import {
-
   message,
+  messageFts,
 } from './schema/chat'
 
 /**
@@ -96,6 +97,15 @@ export async function createMessage(params: {
   }
 
   await db.insert(message).values(insert)
+
+  // 如果消息有内容且可搜索，则同步插入到 FTS 表中
+  if (insert.content && insert.searchable) {
+    await db.insert(messageFts).values({
+      uid: insert.uid,
+      chatUid: insert.chatUid,
+      content: insert.content,
+    })
+  }
 
   // 更新会话的最后序号
   await updateChatLastSeq(params.chatUid, params.seq)
@@ -223,6 +233,23 @@ export async function updateMessageContent(
       updatedAt: Date.now(),
     })
     .where(eq(message.uid, messageUid))
+
+  // 同步更新 FTS 表
+  const [msg] = await db.select({ chatUid: message.chatUid, searchable: message.searchable }).from(message).where(eq(message.uid, messageUid))
+  if (msg && msg.searchable) {
+    // 尝试更新，如果不存在则插入
+    const existingFts = await db.select().from(messageFts).where(eq(messageFts.uid, messageUid))
+    if (existingFts.length > 0) {
+      await db.update(messageFts).set({ content }).where(eq(messageFts.uid, messageUid))
+    }
+    else {
+      await db.insert(messageFts).values({
+        uid: messageUid,
+        chatUid: msg.chatUid,
+        content,
+      })
+    }
+  }
 }
 
 /**
@@ -290,6 +317,7 @@ export async function setMessageError(
 export async function deleteMessage(messageUid: string): Promise<void> {
   const db = await getDatabase()
   await db.delete(message).where(eq(message.uid, messageUid))
+  await db.delete(messageFts).where(eq(messageFts.uid, messageUid))
 }
 
 /**
@@ -299,6 +327,7 @@ export async function deleteMessage(messageUid: string): Promise<void> {
 export async function deleteMessagesByChatUid(chatUid: string): Promise<void> {
   const db = await getDatabase()
   await db.delete(message).where(eq(message.chatUid, chatUid))
+  await db.delete(messageFts).where(eq(messageFts.chatUid, chatUid))
 }
 
 /**
@@ -328,6 +357,29 @@ export async function updateMessage(
       updatedAt: Date.now(),
     })
     .where(eq(message.uid, messageUid))
+
+  // 如果更新了 content，同步更新 FTS 表
+  if (updates.content !== undefined) {
+    const [msg] = await db.select({ chatUid: message.chatUid, searchable: message.searchable }).from(message).where(eq(message.uid, messageUid))
+    if (msg && msg.searchable) {
+      const existingFts = await db.select().from(messageFts).where(eq(messageFts.uid, messageUid))
+      if (existingFts.length > 0) {
+        if (updates.content === null) {
+          await db.delete(messageFts).where(eq(messageFts.uid, messageUid))
+        }
+        else {
+          await db.update(messageFts).set({ content: updates.content }).where(eq(messageFts.uid, messageUid))
+        }
+      }
+      else if (updates.content !== null) {
+        await db.insert(messageFts).values({
+          uid: messageUid,
+          chatUid: msg.chatUid,
+          content: updates.content,
+        })
+      }
+    }
+  }
 }
 
 /**
@@ -379,6 +431,21 @@ export async function commitDraftContent(messageUid: string): Promise<void> {
       updatedAt: Date.now(),
     })
     .where(eq(message.uid, messageUid))
+
+  // 同步更新 FTS 表
+  if (deserializedMsg.searchable) {
+    const existingFts = await db.select().from(messageFts).where(eq(messageFts.uid, messageUid))
+    if (existingFts.length > 0) {
+      await db.update(messageFts).set({ content }).where(eq(messageFts.uid, messageUid))
+    }
+    else {
+      await db.insert(messageFts).values({
+        uid: messageUid,
+        chatUid: deserializedMsg.chatUid,
+        content,
+      })
+    }
+  }
 }
 
 /**

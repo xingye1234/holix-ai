@@ -204,48 +204,21 @@ export const message = sqliteTable(
   }),
 )
 
+/**
+ * FTS5 虚拟表，用于消息全文搜索
+ *
+ * 缺陷修复说明：
+ * 1. 移除了 message_fts_data, message_fts_idx 等影子表(shadow tables)。这些是 SQLite FTS5 内部自动维护的表，
+ *    在 ORM 中定义会导致意外的修改或迁移冲突（通常是 drizzle-kit introspect 误生成的）。
+ * 2. 修正了字段类型：之前生成的 numeric 类型是错误的，FTS5 的内容和关联 ID 应该是 text 类型。
+ * 3. 显式声明了 rowid，方便在 ORM 中进行关联和查询。
+ * 4. 移除了 rank 字段，rank 是 FTS5 的隐藏列，建议在查询时通过 sql`rank` 动态获取，而不是定义在 schema 中。
+ */
 export const messageFts = sqliteTable('message_fts', {
-  content: numeric('content'),
-  uid: numeric('uid'),
-  chatUid: numeric('chat_uid'),
-  messageFts: numeric('message_fts'),
-  rank: numeric('rank'),
-})
-
-export const messageFtsData = sqliteTable('message_fts_data', {
-  id: integer('id').primaryKey(),
-  block: blob('block'),
-})
-
-export const messageFtsIdx = sqliteTable('message_fts_idx', {
-  segid: numeric('segid').primaryKey().notNull(),
-  term: numeric('term').primaryKey().notNull(),
-  pgno: numeric('pgno'),
-}, (table) => {
-  return {
-    sqliteAutoindexMessageFtsIdx_1: uniqueIndex('sqlite_autoindex_message_fts_idx_1').on(table.segid, table.term),
-  }
-})
-
-export const messageFtsContent = sqliteTable('message_fts_content', {
-  id: integer('id').primaryKey(),
-  c0: numeric('c0'),
-  c1: numeric('c1'),
-  c2: numeric('c2'),
-})
-
-export const messageFtsDocsize = sqliteTable('message_fts_docsize', {
-  id: integer('id').primaryKey(),
-  sz: blob('sz'),
-})
-
-export const messageFtsConfig = sqliteTable('message_fts_config', {
-  k: numeric('k').primaryKey().notNull(),
-  v: numeric('v'),
-}, (table) => {
-  return {
-    sqliteAutoindexMessageFtsConfig_1: uniqueIndex('sqlite_autoindex_message_fts_config_1').on(table.k),
-  }
+  rowid: t.integer('rowid').primaryKey(),
+  uid: t.text('uid').notNull(),
+  chatUid: t.text('chat_uid').notNull(),
+  content: t.text('content').notNull(),
 })
 
 export type Chat = InferSelectModel<typeof chats>
