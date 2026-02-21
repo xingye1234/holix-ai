@@ -20,7 +20,15 @@ function ftsSyncInsert(uid: string, chatUid: string, content: string) {
 
 function ftsSyncUpdate(uid: string, content: string) {
   try {
-    sqlite.prepare(`UPDATE message_fts SET content = ? WHERE uid = ?`).run(content, uid)
+    // 先尝试 UPDATE；若影响 0 行说明 FTS 中没有该记录（消息创建时 content 为空被跳过），
+    // 则查询 chat_uid 后执行 INSERT，保证最终 AI 回复内容能被搜索到
+    const affected = sqlite.prepare(`UPDATE message_fts SET content = ? WHERE uid = ?`).run(content, uid).changes
+    if (affected === 0) {
+      const row = sqlite.prepare(`SELECT chat_uid FROM message WHERE uid = ?`).get(uid) as { chat_uid: string } | undefined
+      if (row?.chat_uid) {
+        sqlite.prepare(`INSERT OR REPLACE INTO message_fts (uid, chat_uid, content) VALUES (?, ?, ?)`).run(uid, row.chat_uid, content)
+      }
+    }
   }
   catch (e) {
     logger.warn('[FTS] update failed:', e)
