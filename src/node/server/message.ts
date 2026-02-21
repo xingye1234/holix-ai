@@ -7,14 +7,13 @@ import {
   getMessageByUid,
   getMessagesByChatUid,
   getNextSeq,
-  searchMessages,
-  searchMessagesBM25,
   setMessageError,
   updateMessage,
   updateMessageContent,
   updateMessageDraftContent,
   updateMessageStatus,
 } from '../database/message-operations'
+import { searchMessagesBM25 } from '../database/message-search'
 import { procedure, router } from './trpc'
 
 // 草稿片段 Schema
@@ -204,7 +203,8 @@ export const messageRouter = router({
       }),
     )
     .query(async ({ input }) => {
-      return await searchMessages(input.keyword, {
+      return await searchMessagesBM25({
+        query: input.keyword,
         chatUid: input.chatUid,
         limit: input.limit,
       })
@@ -219,7 +219,8 @@ export const messageRouter = router({
       }),
     )
     .query(async ({ input }) => {
-      return await searchMessagesBM25(input.keyword, {
+      return await searchMessagesBM25({
+        query: input.keyword,
         chatUid: input.chatUid,
         limit: input.limit,
       })
