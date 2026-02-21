@@ -7,6 +7,8 @@ interface ChatStore {
   chats: Chat[]
   isLoading: boolean
   initialized: boolean
+  searchQuery: string
+  setSearchQuery: (query: string) => void
   // 初始化
   init: () => Promise<void>
   // 加载所有会话
@@ -32,6 +34,9 @@ const useChat = create<ChatStore>((set, get) => {
     chats: [],
     isLoading: false,
     initialized: false,
+    searchQuery: '',
+
+    setSearchQuery: (query: string) => set({ searchQuery: query }),
 
     init: async () => {
       if (get().initialized)
