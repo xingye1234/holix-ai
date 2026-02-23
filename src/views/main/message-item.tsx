@@ -59,23 +59,35 @@ export const MessageItem = memo(({ id, index, onDelete }: MessageItemProps) => {
   const generating = useMemo(() => !isUser && (isStreaming || isPending), [isStreaming, isPending, isUser])
 
   const content = useMemo(() => {
-    if (message.error) {
+    if (message.error)
       return message.content || ''
-    }
-
-    if (message.content) {
+    if (message.content)
       return message.content
-    }
-
     if (message.draftContent) {
       return message.draftContent
+        .filter(s => s.phase === 'answer')
         .sort((a, b) => a.createdAt - b.createdAt)
-        .map(segment => segment.content)
+        .map(s => s.content)
         .join('')
     }
-
-    return message.content || ''
+    return ''
   }, [message.content, message.error, message.draftContent])
+
+  // 最新一条待完成的工具调用（source:'model' = AI 正在调用，source:'tool' = 结果已返回）
+  const activeToolCall = useMemo(() => {
+    if (!generating || !message.draftContent)
+      return null
+    const toolSegs = message.draftContent.filter(s => s.phase === 'tool')
+    if (!toolSegs.length)
+      return null
+    return toolSegs[toolSegs.length - 1]
+  }, [generating, message.draftContent])
+
+  const toolCallCount = useMemo(() => {
+    if (!message.draftContent)
+      return 0
+    return message.draftContent.filter(s => s.phase === 'tool' && s.source === 'tool').length
+  }, [message.draftContent])
 
   const deleteHandler = useCallback(() => {
     onDelete?.(id)
@@ -95,7 +107,7 @@ export const MessageItem = memo(({ id, index, onDelete }: MessageItemProps) => {
 
   return (
     <div
-      className={cn('flex w-full gap-3 p-4 group', isUser ? 'flex-row-reverse' : 'flex-row', generating && 'mb-8')}
+      className={cn('flex w-full gap-3 p-4 group', isUser ? 'flex-row-reverse' : 'flex-row')}
       data-message-index={index}
     >
       {/* Avatar */}
@@ -130,27 +142,58 @@ export const MessageItem = memo(({ id, index, onDelete }: MessageItemProps) => {
               isPending && 'opacity-90',
             )}
           >
-            {/* Status Indicator for AI */}
+            {/* Status Indicator for AI — inline inside bubble */}
             {generating && (
-              <div className="absolute -bottom-8 left-0 flex items-center gap-1.5 text-xs text-muted-foreground bg-background/80 backdrop-blur-sm px-2 py-0.5 rounded-full border shadow-sm">
-                {isStreaming ? (
+              <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-border/20 text-xs text-muted-foreground">
+                {isPending && (
                   <>
-                    <Loader2 className="w-3 h-3 animate-spin text-primary" />
-                    <span className="font-medium">Generating...</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-5 w-5 p-0 ml-1 hover:bg-destructive/20 hover:text-destructive rounded-full"
-                      onClick={handleCancelGeneration}
-                    >
-                      <X className="w-3 h-3" />
-                    </Button>
+                    <Brain className="w-3 h-3 animate-pulse text-primary shrink-0" />
+                    <span>Thinking...</span>
                   </>
-                ) : (
+                )}
+                {isStreaming && activeToolCall && activeToolCall.source === 'model' && (
                   <>
-                    <Brain className="w-3 h-3 animate-pulse text-primary" />
-                    <span className="font-medium">Thinking...</span>
+                    <Loader2 className="w-3 h-3 animate-spin text-primary shrink-0" />
+                    <span className="truncate max-w-50">
+                      Calling
+                      {' '}
+                      <span className="font-mono font-medium text-foreground/70">
+                        {(() => {
+                          try {
+                            return JSON.parse(activeToolCall.content)?.name ?? 'tool'
+                          }
+                          catch {
+                            return 'tool'
+                          }
+                        })()}
+                      </span>
+                      {toolCallCount > 0 && (
+                        <span className="ml-1 opacity-60">
+                          ·
+                          {' '}
+                          {toolCallCount}
+                          {' '}
+                          done
+                        </span>
+                      )}
+                    </span>
                   </>
+                )}
+                {isStreaming && !activeToolCall && (
+                  <>
+                    <Loader2 className="w-3 h-3 animate-spin text-primary shrink-0" />
+                    <span>Generating...</span>
+                  </>
+                )}
+                {isStreaming && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="ml-auto h-5 w-5 p-0 hover:bg-destructive/20 hover:text-destructive rounded-full shrink-0"
+                    onClick={handleCancelGeneration}
+                  >
+                    <X className="w-3 h-3" />
+                  </Button>
                 )}
               </div>
             )}
