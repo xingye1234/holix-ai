@@ -1,5 +1,6 @@
 import type { VirtuosoHandle } from 'react-virtuoso'
 import type { Message } from '@/node/database/schema/chat'
+import { AnimatePresence, motion } from 'framer-motion'
 import { Virtuoso } from 'react-virtuoso'
 import { useChatContext } from '@/context/chat'
 import { useChatMessages, useInitialMessageLoad, useLoadMoreMessages } from '@/hooks/message'
@@ -80,18 +81,29 @@ export const MainContent = memo(() => {
 
   return (
     <main className="h-(--app-chat-content-height)">
-      <Virtuoso
-        ref={virtuosoRef}
-        style={{ height: 'var(--app-chat-content-height)' }}
-        data={messages}
-        initialTopMostItemIndex={messages.length > 0 ? messages.length - 1 : 0}
-        followOutput={followOutput}
-        startReached={handleStartReached}
-        atBottomStateChange={atBottom => (isAtBottomRef.current = atBottom)}
-        itemContent={(index, msgId) => (
-          <MessageItem id={msgId} index={index} onDelete={onDeleteMessage} />
-        )}
-      />
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.div
+          key={chat?.uid ?? '__empty'}
+          className="size-full"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.25, ease: 'easeInOut' }}
+        >
+          <Virtuoso
+            ref={virtuosoRef}
+            style={{ height: 'var(--app-chat-content-height)' }}
+            data={messages}
+            initialTopMostItemIndex={messages.length > 0 ? messages.length - 1 : 0}
+            followOutput={followOutput}
+            startReached={handleStartReached}
+            atBottomStateChange={atBottom => (isAtBottomRef.current = atBottom)}
+            itemContent={(index, msgId) => (
+              <MessageItem id={msgId} index={index} onDelete={onDeleteMessage} />
+            )}
+          />
+        </motion.div>
+      </AnimatePresence>
     </main>
   )
 })
