@@ -20,6 +20,7 @@ import builtinMessages from './builtin/messages'
 import { contextSchema } from './context'
 import { chatKeywordSearchTool, chatTimeSearchTool } from './tools/chat'
 import { context7Tool } from './tools/context7'
+import { loadSkillTool } from './tools/skills'
 import { systemEnvTool, systemPlatformTool, systemTimeTool, systemTimezoneTool } from './tools/system'
 /** 流处理时传递给各 handler 的只读会话上下文 */
 interface StreamSessionCtx {
@@ -465,6 +466,7 @@ class ChatManager {
       systemTimeTool,
       chatTimeSearchTool,
       chatKeywordSearchTool,
+      loadSkillTool,
       ...(context7ApiKey ? [context7Tool] : []),
     ]
 
