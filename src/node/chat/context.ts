@@ -3,6 +3,7 @@ import z from 'zod'
 
 export const contextSchema = z.object({
   config: z.custom<ConfigData>(),
+  chatUid: z.string().optional(),
 })
 
 export type ChatContext = z.infer<typeof contextSchema>

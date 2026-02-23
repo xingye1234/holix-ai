@@ -1,5 +1,7 @@
 import type { Message } from './schema/chat'
-import { sqlite } from './connect'
+import { and, asc, desc, eq, gt, isNotNull, lt, sql } from 'drizzle-orm'
+import { db, sqlite } from './connect'
+import { message } from './schema/chat'
 
 export interface SearchMessageOptions {
   /** 搜索关键词 */
@@ -15,6 +17,81 @@ export interface SearchMessageOptions {
 export interface SearchMessageResult {
   rank: number
   message: Message
+}
+
+/**
+ * 简单的 LIKE 全文搜索（基于 Drizzle ORM + schema）
+ *
+ * 适用于任意长度关键词，大小写不敏感，支持会话过滤和分页。
+ */
+export function searchMessages(options: SearchMessageOptions): SearchMessageResult[] {
+  const { query, chatUid, limit = 20, offset = 0 } = options
+
+  if (!query || !query.trim()) {
+    return []
+  }
+
+  const likePattern = `%${query.trim()}%`
+
+  const conditions = [
+    eq(message.searchable, true),
+    isNotNull(message.content),
+    sql`LOWER(${message.content}) LIKE LOWER(${likePattern})`,
+    ...(chatUid ? [eq(message.chatUid, chatUid)] : []),
+  ]
+
+  const rows = db
+    .select()
+    .from(message)
+    .where(and(...conditions))
+    .orderBy(desc(message.seq))
+    .limit(limit)
+    .offset(offset)
+    .all()
+
+  return rows.map(row => ({ rank: 0, message: row }))
+}
+
+export interface FindMessagesByTimeOptions {
+  /** 基准时间戳（毫秒） */
+  time: number
+  /** 查找方向：'before' 查询该时间之前，'after' 查询该时间之后 */
+  direction: 'before' | 'after'
+  /** 可选：限制在某个会话内 */
+  chatUid?: string
+  /** 返回条数，默认 1 */
+  limit?: number
+}
+
+/**
+ * 根据时间查找消息
+ *
+ * direction='before'：返回 createdAt < time 的最新几条（距基准时间最近）
+ * direction='after' ：返回 createdAt > time 的最早几条（距基准时间最近）
+ */
+export function findMessagesByTime(options: FindMessagesByTimeOptions): Message[] {
+  const { time, direction, chatUid, limit = 1 } = options
+
+  const timeCondition = direction === 'before'
+    ? lt(message.createdAt, time)
+    : gt(message.createdAt, time)
+
+  const conditions = [
+    timeCondition,
+    ...(chatUid ? [eq(message.chatUid, chatUid)] : []),
+  ]
+
+  // before：离基准时间最近 → 降序取前 N 条
+  // after ：离基准时间最近 → 升序取前 N 条
+  const order = direction === 'before' ? desc(message.createdAt) : asc(message.createdAt)
+
+  return db
+    .select()
+    .from(message)
+    .where(and(...conditions))
+    .orderBy(order)
+    .limit(limit)
+    .all()
 }
 
 /**

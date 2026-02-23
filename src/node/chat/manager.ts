@@ -18,6 +18,7 @@ import { logger } from '../platform/logger'
 import { update } from '../platform/update'
 import builtinMessages from './builtin/messages'
 import { contextSchema } from './context'
+import { chatKeywordSearchTool, chatTimeSearchTool } from './tools/chat'
 import { context7Tool } from './tools/context7'
 import { systemEnvTool, systemPlatformTool, systemTimeTool, systemTimezoneTool } from './tools/system'
 /** 流处理时传递给各 handler 的只读会话上下文 */
@@ -165,7 +166,7 @@ class ChatManager {
         {
           signal: abortController.signal,
           streamMode: ['messages', 'updates'],
-          context: this.buildConfig(),
+          context: this.buildConfig(session),
         },
       )
 
@@ -448,9 +449,10 @@ class ChatManager {
     return messages.length > 0 ? messages[0].seq + 1 : 1
   }
 
-  private buildConfig(): ChatContext {
+  private buildConfig(session: ChatSession): ChatContext {
     return {
       config: configStore.getData(),
+      chatUid: session.chatUid,
     }
   }
 
@@ -461,6 +463,8 @@ class ChatManager {
       systemEnvTool,
       systemTimezoneTool,
       systemTimeTool,
+      chatTimeSearchTool,
+      chatKeywordSearchTool,
       ...(context7ApiKey ? [context7Tool] : []),
     ]
 
