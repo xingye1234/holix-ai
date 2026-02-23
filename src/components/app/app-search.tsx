@@ -163,7 +163,7 @@ export default function AppSearch() {
                   <Plus className="mr-2 size-4" />
                   <span>New Chat</span>
                 </CommandItem>
-                <CommandItem onSelect={() => runCommand(() => navigate({ to: '/setting' }))}>
+                <CommandItem onSelect={() => runCommand(() => navigate({ to: '/setting/general' }))}>
                   <Settings className="mr-2 size-4" />
                   <span>Settings</span>
                   <CommandShortcut>
