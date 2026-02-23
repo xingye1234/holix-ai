@@ -1,6 +1,6 @@
-import type { VListHandle } from 'virtua'
+import type { VirtuosoHandle } from 'react-virtuoso'
 import type { Message } from '@/node/database/schema/chat'
-import { VList } from 'virtua'
+import { Virtuoso } from 'react-virtuoso'
 import { useChatContext } from '@/context/chat'
 import { useChatMessages, useInitialMessageLoad, useLoadMoreMessages } from '@/hooks/message'
 import { useRafThrottle } from '@/hooks/throttle'
@@ -10,7 +10,7 @@ import { useMessageStore } from '@/store/message'
 import { MessageItem } from './message-item'
 
 export const MainContent = memo(() => {
-  const vListRef = useRef<VListHandle>(null)
+  const virtuosoRef = useRef<VirtuosoHandle>(null)
   const { chat } = useChatContext()
   // 订阅 store 消息
   const messages = useChatMessages(chat?.uid ?? '')
@@ -19,68 +19,48 @@ export const MainContent = memo(() => {
   // 滚动加载更多历史
   const loadMore = useLoadMoreMessages(chat?.uid ?? '')
 
-  const handleScroll = useCallback((offset: number) => {
-    if (offset === 0) {
-      logger.info('MainContent: Scroll to top, loading more messages...')
-      loadMore()
-    }
+  // 追踪列表是否处于底部，用于决定是否跟随滚动
+  const isAtBottomRef = useRef(true)
+
+  // 滚动到顶部时加载更多历史消息
+  const handleStartReached = useCallback(async () => {
+    logger.info('MainContent: Scroll to top, loading more messages...')
+    await loadMore()
+  }, [loadMore])
+
+  // followOutput：仅当用户已在底部时才自动跟随新消息滚动到底部
+  const followOutput = useCallback((_isAtBottom: boolean) => {
+    return isAtBottomRef.current ? ('smooth' as const) : false
   }, [])
 
-  const scrollButton = useRafThrottle(() => {
-    const list = vListRef.current
-    if (!list)
-      return
-
+  // streaming / 消息更新事件：若当前在底部则平滑滚动到最新消息
+  const scrollToBottom = useRafThrottle(() => {
     const lastIndex = messages.length - 1
-
-    if (lastIndex < 0)
+    if (lastIndex < 0 || !isAtBottomRef.current)
       return
-
-    const { scrollOffset, viewportSize, scrollSize } = list
-
-    const THRESHOLD = Math.max(100, viewportSize * 0.25)
-
-    const isAtBottom = scrollOffset + viewportSize >= scrollSize - THRESHOLD
-
-    if (isAtBottom) {
-      list.scrollToIndex(messages.length - 1, {
-        align: 'end',
-        smooth: true,
-      })
-    }
+    virtuosoRef.current?.scrollToIndex({ index: lastIndex, align: 'end', behavior: 'smooth' })
   }, [messages.length])
 
+  // 切换会话时立即跳转到最新消息
   useLayoutEffect(() => {
     if (!messages.length)
       return
-
-    const list = vListRef.current
-    if (!list)
-      return
-
-    // 等待渲染完成后再滚动到底部
     setTimeout(() => {
-      list.scrollToIndex(messages.length - 1, {
-        align: 'end',
-      })
+      virtuosoRef.current?.scrollToIndex({ index: messages.length - 1, align: 'end' })
       logger.info('MainContent: Initial scroll to bottom')
     }, 0)
-  }, [messages.length, chat?.uid])
+  }, [chat?.uid])
 
   const toButton = useCallback((payload: { chatUid: string, message?: Message }) => {
-    if (!chat) {
+    if (!chat)
       return
-    }
     // 忽略用户自己的消息
-    if (payload.message && payload.message.role === 'user') {
+    if (payload.message && payload.message.role === 'user')
       return
-    }
-
-    if (payload.chatUid !== chat?.uid) {
+    if (payload.chatUid !== chat?.uid)
       return
-    }
-    scrollButton()
-  }, [chat, scrollButton])
+    scrollToBottom()
+  }, [chat, scrollToBottom])
 
   useUpdate('message.streaming', toButton)
   useUpdate('message.created', toButton)
@@ -100,11 +80,18 @@ export const MainContent = memo(() => {
 
   return (
     <main className="h-(--app-chat-content-height)">
-      <VList ref={vListRef} style={{ height: 'var(--app-chat-content-height)' }} onScroll={handleScroll}>
-        {messages.map((msg, index) => (
-          <MessageItem key={msg} id={msg} index={index} onDelete={onDeleteMessage} />
-        ))}
-      </VList>
+      <Virtuoso
+        ref={virtuosoRef}
+        style={{ height: 'var(--app-chat-content-height)' }}
+        data={messages}
+        initialTopMostItemIndex={messages.length > 0 ? messages.length - 1 : 0}
+        followOutput={followOutput}
+        startReached={handleStartReached}
+        atBottomStateChange={atBottom => (isAtBottomRef.current = atBottom)}
+        itemContent={(index, msgId) => (
+          <MessageItem id={msgId} index={index} onDelete={onDeleteMessage} />
+        )}
+      />
     </main>
   )
 })

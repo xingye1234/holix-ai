@@ -1,16 +1,28 @@
 import type { VirtuosoHandle } from 'react-virtuoso'
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useCallback, useRef } from 'react'
 import { Virtuoso } from 'react-virtuoso'
 
 interface ChatVirtuosoProps {
+  /** 消息 ID 数组 */
   data: string[]
+  /** 渲染单条消息的函数 */
   renderMessage: (msg: string, index: number) => React.ReactNode
+  /** 滚动到顶部时加载更多历史消息 */
   loadMoreTop?: () => Promise<void>
+  /** 滚动到底部时加载更多新消息 */
   loadMoreBottom?: () => Promise<void>
-  initialIndex?: number // 首次显示索引，默认显示最后一条
+  /** 首次显示的条目索引，默认显示最后一条 */
+  initialIndex?: number
+  /** 预渲染条目数（默认 10） */
   overscan?: number
 }
 
+/**
+ * 基于 react-virtuoso 的聊天消息虚拟列表组件。
+ * - 动态高度由 Virtuoso 自动测量，无需手动缓存
+ * - 加载历史消息时通过 scroller DOM 保持视口稳定
+ * - followOutput / startReached / endReached 覆盖全部滚动场景
+ */
 export const ChatVirtuoso: React.FC<ChatVirtuosoProps> = ({
   data,
   renderMessage,
@@ -20,52 +32,20 @@ export const ChatVirtuoso: React.FC<ChatVirtuosoProps> = ({
   overscan = 10,
 }) => {
   const virtuosoRef = useRef<VirtuosoHandle>(null)
-  const heightMap = useRef(new Map<string, number>()) // 缓存每条消息高度
-  const [items, setItems] = useState<string[]>(data)
+  // 通过 scroller ref 获取 DOM 节点以在加载历史消息时锚定滚动位置
+  const scrollerRef = useRef<HTMLElement | Window | null>(null)
 
-  // 同步 data 到内部 state
-  useEffect(() => {
-    setItems(data)
-  }, [data])
-
-  // 渲染单条消息并测量高度
-  const Row = useCallback(
-    ({ index }: { index: number }) => {
-      const msg = items[index]
-      const ref = useRef<HTMLDivElement>(null)
-
-      useEffect(() => {
-        if (!ref.current)
-          return
-        const h = ref.current.offsetHeight
-        const prev = heightMap.current.get(msg)
-        if (prev !== h) {
-          heightMap.current.set(msg, h)
-          // 新版 Virtuoso 会自动处理高度变化，无需 resetAfterIndex
-        }
-      }, [msg, index])
-
-      return (
-        <div ref={ref} style={{ width: '100%' }}>
-          {renderMessage(msg, index)}
-        </div>
-      )
-    },
-    [items, renderMessage],
-  )
-
-  // 向上加载历史消息
+  // 向上加载历史消息，加载前保存 scrollTop 并在加载完成后还原，避免视口跳动
   const handleReachStart = useCallback(async () => {
-    if (!loadMoreTop || !virtuosoRef.current)
+    if (!loadMoreTop)
       return
-
-    virtuosoRef.current.getState(async (state) => {
-      const anchorOffset = state.scrollTop
-      await loadMoreTop()
-      // 保持 scrollTop
-      requestAnimationFrame(() => {
-        virtuosoRef.current?.scrollTo({ top: anchorOffset })
-      })
+    const scroller = scrollerRef.current
+    const prevScrollTop = scroller instanceof HTMLElement ? scroller.scrollTop : 0
+    await loadMoreTop()
+    requestAnimationFrame(() => {
+      if (scroller instanceof HTMLElement) {
+        scroller.scrollTop = prevScrollTop
+      }
     })
   }, [loadMoreTop])
 
@@ -79,12 +59,14 @@ export const ChatVirtuoso: React.FC<ChatVirtuosoProps> = ({
   return (
     <Virtuoso
       ref={virtuosoRef}
-      totalCount={items.length}
+      scrollerRef={ref => (scrollerRef.current = ref)}
+      data={data}
       overscan={overscan}
-      initialTopMostItemIndex={initialIndex ?? items.length - 1}
-      itemContent={index => <Row index={index} />}
+      initialTopMostItemIndex={initialIndex ?? Math.max(0, data.length - 1)}
+      followOutput={isAtBottom => (isAtBottom ? 'smooth' : false)}
       startReached={handleReachStart}
       endReached={handleReachEnd}
+      itemContent={(index, msg) => renderMessage(msg, index)}
       style={{ height: '100%', width: '100%' }}
     />
   )
