@@ -51,22 +51,22 @@ export function ChatPanel(props: Chat) {
       to="/chat/$id"
       params={{ id: props.uid }}
       className={cn(
-        'flex items-center gap-2 rounded-lg border p-3 text-left text-sm transition-all select-none',
-        'bg-card/30 border-border/40 hover:bg-card hover:border-border/80 hover:shadow-xs',
+        'flex items-center gap-2 rounded-lg border p-3 text-left text-sm transition-all select-none cursor-pointer',
+        'bg-transparent border-transparent hover:bg-accent/60 hover:border-border/60',
         'no-drag',
       )}
       activeProps={{
-        className: 'bg-accent text-accent-foreground border-border shadow-sm ring-1 ring-border/50',
+        className: 'bg-accent border-border/80 text-accent-foreground shadow-sm',
       }}
       aria-label={`Open chat: ${props.title}`}
     >
       <div className="flex w-full flex-col gap-1 max-w-[90%]">
         <div className="flex items-center justify-between">
           <span className="font-semibold truncate max-w-[70%]">{props.title}</span>
-          <span className="ml-auto text-[10px] text-muted-foreground/80">{timeAgo(props.updatedAt)}</span>
+          <span className="ml-auto text-[10px] text-muted-foreground">{timeAgo(props.updatedAt)}</span>
         </div>
 
-        <span className="line-clamp-2 text-xs text-muted-foreground w-full wrap-break-word opacity-90">
+        <span className="line-clamp-2 text-xs text-muted-foreground w-full wrap-break-word">
           {props.lastMessagePreview || 'No messages yet'}
         </span>
       </div>

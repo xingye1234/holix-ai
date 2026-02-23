@@ -97,6 +97,10 @@ export const chats = sqliteTable(
 
     /** 最近更新时间（左侧列表排序核心） */
     updatedAt: t.integer('updated_at').notNull().default(sql`(strftime('%s','now') * 1000)`),
+
+    /** 过期时间（毫秒时间戳，null 表示永不过期） */
+    expiresAt: t.integer('expires_at'),
+
     /** 当前会话最后一条消息序号（增量同步用） */
     lastSeq: t.integer('last_seq').notNull().default(0),
     /** 待发送消息列表（本地缓存） */
