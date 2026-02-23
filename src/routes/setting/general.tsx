@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useCallback, useState } from 'react'
+import { useTheme } from '@/components/theme-provider'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import {
@@ -26,10 +27,9 @@ function RouteComponent() {
   const [autoStart, setAutoStart] = useState(false)
   const [minimizeToTray, setMinimizeToTray] = useState(true)
   const [closeToTray, setCloseToTray] = useState(true)
-  const [autoUpdate, setAutoUpdate] = useState(true)
   const [showNotifications, setShowNotifications] = useState(true)
   const [language, setLanguage] = useState('zh-CN')
-  const [theme, setTheme] = useState('system')
+  const { theme, setTheme } = useTheme()
   const [apiKey, setApiKey] = useState(config.context7ApiKey ?? '')
 
   const handleSaveApiKey = useCallback(async () => {
@@ -56,7 +56,7 @@ function RouteComponent() {
                   选择应用的外观主题
                 </p>
               </div>
-              <Select value={theme} onValueChange={setTheme}>
+              <Select value={theme} onValueChange={v => setTheme(v as 'light' | 'dark' | 'system')}>
                 <SelectTrigger className="w-32">
                   <SelectValue />
                 </SelectTrigger>
@@ -171,32 +171,6 @@ function RouteComponent() {
                 checked={showNotifications}
                 onCheckedChange={setShowNotifications}
               />
-            </div>
-          </div>
-        </div>
-
-        {/* 更新设置 */}
-        <div className="space-y-4">
-          <h2 className="text-lg font-semibold">更新</h2>
-
-          <div className="rounded-lg border p-4 space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="text-base">自动检查更新</Label>
-                <p className="text-sm text-muted-foreground mt-1">
-                  定期检查并提示可用的新版本
-                </p>
-              </div>
-              <Switch checked={autoUpdate} onCheckedChange={setAutoUpdate} />
-            </div>
-
-            <div className="flex items-center gap-3 pt-2">
-              <Button variant="outline" size="sm">
-                检查更新
-              </Button>
-              <span className="text-sm text-muted-foreground">
-                当前版本: v1.0.0
-              </span>
             </div>
           </div>
         </div>

@@ -119,7 +119,15 @@ function RouteComponent() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        {providers.map(provider => (
+        {[...providers].sort((a, b) => {
+          if (a.enabled !== b.enabled)
+            return a.enabled ? -1 : 1
+          if (a.name === defaultProviderState)
+            return -1
+          if (b.name === defaultProviderState)
+            return 1
+          return 0
+        }).map(provider => (
           <div key={provider.name} className="flex flex-col rounded-xl border bg-card text-card-foreground shadow-sm">
             <div className="flex flex-row items-center justify-between p-6 pb-4">
               <div className="flex items-center gap-3">
