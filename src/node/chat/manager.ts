@@ -1,6 +1,6 @@
 // biome-ignore assist/source/organizeImports: <explanation>
 import type { BaseChatModel } from '@langchain/core/language_models/chat_models'
-import type { AIMessage } from '@langchain/core/messages'
+import type { AIMessage, AIMessageChunk, ToolMessage } from '@langchain/core/messages'
 import type { DraftContent, Message } from '../database/schema/chat'
 import type { ChatContext } from './context'
 import util from 'node:util'
@@ -20,6 +20,21 @@ import builtinMessages from './builtin/messages'
 import { contextSchema } from './context'
 import { context7Tool } from './tools/context7'
 import { systemEnvTool, systemPlatformTool, systemTimeTool, systemTimezoneTool } from './tools/system'
+/** 流处理时传递给各 handler 的只读会话上下文 */
+interface StreamSessionCtx {
+  chatUid: string
+  requestId: string
+  assistantMessageUid: string
+  throttledDbUpdate: AsyncBatcher<{ content: string, segments: DraftContent }>
+}
+
+/** 流处理时共享的可变状态——以对象传递，各 handler 可直接修改 */
+interface StreamState {
+  fullContent: string
+  segmentIndex: number
+  draftSegments: DraftContent
+}
+
 /**
  * 单个聊天会话的状态
  */
@@ -43,7 +58,6 @@ class ChatManager {
 
   /**
    * 启动一个新的聊天会话
-   * @param params - 会话参数
    */
   async startSession(params: {
     chatUid: string
@@ -155,13 +169,10 @@ class ChatManager {
         },
       )
 
-      const draftSegments: DraftContent = []
-      let fullContent = ''
-      let segmentIndex = 0
+      const state: StreamState = { fullContent: '', segmentIndex: 0, draftSegments: [] }
+      const ctx: StreamSessionCtx = { chatUid, requestId, assistantMessageUid, throttledDbUpdate }
 
       for await (const [streamMode, chunk] of stream) {
-        logger.debug('[chat/manager] Stream chunk:', util.inspect({ streamMode, chunk }, { depth: null, colors: true }))
-        // 检查是否已被中止
         if (session.status === 'aborted') {
           logger.info(`[ChatManager] Session ${requestId} was aborted`)
           throttledDbUpdate.cancel()
@@ -169,31 +180,14 @@ class ChatManager {
         }
 
         if (streamMode === 'messages') {
-          // payload 可能是数组，也可能是单条 message
-          const msgs = Array.isArray(chunk) ? chunk : [chunk]
-          for (const msg of msgs) {
-            const content = (msg as any)?.content as string | undefined
-            if (!content)
-              continue
-            fullContent += content
-            const segment = {
-              id: `${requestId}-${segmentIndex++}`,
-              content,
-              phase: 'answer' as const,
-              source: 'model' as const,
-              delta: true,
-              createdAt: Date.now(),
-            }
-            draftSegments.push(segment)
-            // 节流更新数据库并推送到渲染进程
-            this.pushStreamingUpdate(chatUid, assistantMessageUid, fullContent, content, draftSegments, throttledDbUpdate)
-          }
+          this.handleMessagesMode(chunk, state, ctx)
         }
         else if (streamMode === 'updates') {
-          // 目前不处理 updates
-          logger.debug('[chat/manager] Received update chunk:', chunk)
+          this.handleUpdatesMode(chunk, state, ctx)
         }
       }
+
+      const { fullContent, draftSegments } = state
 
       logger.info(`[ChatManager] Stream completed for session ${requestId}`)
 
@@ -222,6 +216,152 @@ class ChatManager {
       this.sessions.delete(requestId)
     }
   }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Stream 处理（私有方法）
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /**
+   * 处理 LangChain Agent stream 的 "messages" 模式。
+   *
+   * 每个 chunk 格式为 [BaseMessageChunk, metadata]，metadata.langgraph_node 标识产出节点。
+   * - msgType='ai', content       → AI 文本增量，累积并推送流式更新
+   * - msgType='ai', tool_call_chunks → 工具调用参数增量 token，仅日志跟踪
+   * - msgType='tool'              → 工具结果（流式），仅日志跟踪
+   */
+  private handleMessagesMode(chunk: unknown, state: StreamState, ctx: StreamSessionCtx): void {
+    const [msg, metadata] = (Array.isArray(chunk) ? chunk : [chunk, {}]) as [any, Record<string, any>]
+    const nodeId: string = metadata?.langgraph_node ?? 'unknown'
+    const msgType: string = msg?.getType?.() ?? ''
+
+    logger.debug(
+      `[chat/manager] messages | node=${nodeId} type=${msgType}`,
+      util.inspect(msg, { depth: 3, colors: true }),
+    )
+
+    if (msgType === 'ai') {
+      const aiChunk = msg as AIMessageChunk
+      if (aiChunk.tool_call_chunks?.length) {
+        // 工具调用参数的增量 token，完整 tool_calls 由 updates 模式落库
+        for (const tc of aiChunk.tool_call_chunks) {
+          logger.debug(`[chat/manager] tool_call_chunk | name=${tc.name ?? '?'} id=${tc.id ?? '?'} args_delta=${tc.args}`)
+        }
+      }
+      else if (aiChunk.content) {
+        const textDelta = this.extractTextDelta(aiChunk.content)
+        if (textDelta)
+          this.applyTextDelta(textDelta, state, ctx)
+      }
+    }
+    else if (msgType === 'tool') {
+      const toolMsg = msg as ToolMessage
+      const len = typeof toolMsg.content === 'string' ? toolMsg.content.length : JSON.stringify(toolMsg.content).length
+      logger.debug(`[chat/manager] ToolMessage via messages | tool_call_id=${toolMsg.tool_call_id} content_len=${len}`)
+    }
+    else {
+      logger.debug(`[chat/manager] Unexpected message type in stream: ${msgType}`)
+    }
+  }
+
+  /**
+   * 处理 LangChain Agent stream 的 "updates" 模式。
+   *
+   * 每个 chunk 格式为 { [nodeName]: stateUpdate }，表示节点执行完毕后的完整状态。
+   * - 'agent' 节点 → AI 决策完毕，含完整 tool_calls
+   * - 'tools' 节点 → 工具执行完毕，含 ToolMessage[]
+   */
+  private handleUpdatesMode(chunk: unknown, state: StreamState, ctx: StreamSessionCtx): void {
+    const updates = chunk as Record<string, any>
+    for (const [nodeName, nodeUpdate] of Object.entries(updates)) {
+      logger.debug(
+        `[chat/manager] updates | node=${nodeName}`,
+        util.inspect(nodeUpdate, { depth: 3, colors: true }),
+      )
+
+      if (nodeName === 'agent') {
+        this.handleAgentNodeUpdate(nodeUpdate, state, ctx)
+      }
+      else if (nodeName === 'tools') {
+        this.handleToolsNodeUpdate(nodeUpdate, state, ctx)
+      }
+      else {
+        logger.debug(`[chat/manager] Unknown update node: ${nodeName}`)
+      }
+    }
+  }
+
+  /** AI 文本增量：更新 state 并推送流式事件 */
+  private applyTextDelta(textDelta: string, state: StreamState, ctx: StreamSessionCtx): void {
+    state.fullContent += textDelta
+    state.draftSegments.push({
+      id: `${ctx.requestId}-${state.segmentIndex++}`,
+      content: textDelta,
+      phase: 'answer',
+      source: 'model',
+      delta: true,
+      createdAt: Date.now(),
+    })
+    this.pushStreamingUpdate(ctx.chatUid, ctx.assistantMessageUid, state.fullContent, textDelta, state.draftSegments, ctx.throttledDbUpdate)
+  }
+
+  /** agent 节点更新：AI 决定调用工具，记录 tool_call DraftSegment */
+  private handleAgentNodeUpdate(nodeUpdate: any, state: StreamState, ctx: StreamSessionCtx): void {
+    const agentMessages: AIMessage[] = nodeUpdate?.messages ?? []
+    for (const agentMsg of agentMessages) {
+      const calls = agentMsg.tool_calls ?? []
+      if (!calls.length)
+        continue
+      for (const call of calls) {
+        state.draftSegments.push({
+          id: `${ctx.requestId}-tc-${call.id ?? state.segmentIndex++}`,
+          content: JSON.stringify({ name: call.name, args: call.args }),
+          phase: 'tool',
+          source: 'model',
+          delta: false,
+          createdAt: Date.now(),
+        })
+        logger.info(`[chat/manager] Tool call dispatched | name=${call.name} id=${call.id} args=${JSON.stringify(call.args)}`)
+      }
+      ctx.throttledDbUpdate.addItem({ content: state.fullContent, segments: [...state.draftSegments] })
+    }
+  }
+
+  /** tools 节点更新：工具执行完毕，记录 tool_result DraftSegment */
+  private handleToolsNodeUpdate(nodeUpdate: any, state: StreamState, ctx: StreamSessionCtx): void {
+    const toolMessages: ToolMessage[] = nodeUpdate?.messages ?? []
+    for (const toolMsg of toolMessages) {
+      const content = typeof toolMsg.content === 'string' ? toolMsg.content : JSON.stringify(toolMsg.content)
+      state.draftSegments.push({
+        id: `${ctx.requestId}-tr-${toolMsg.tool_call_id ?? state.segmentIndex++}`,
+        content,
+        phase: 'tool',
+        source: 'tool',
+        delta: false,
+        createdAt: Date.now(),
+      })
+      logger.info(`[chat/manager] Tool result received | tool_call_id=${toolMsg.tool_call_id} content_len=${content.length}`)
+    }
+    if (toolMessages.length)
+      ctx.throttledDbUpdate.addItem({ content: state.fullContent, segments: [...state.draftSegments] })
+  }
+
+  /**
+   * 从 AIMessageChunk.content 中提取纯文本增量，兼容两种格式：
+   * - 纯字符串（OpenAI / Ollama）
+   * - 多模态数组 `{ type:'text', text:string }[]`（Anthropic / Gemini）
+   */
+  private extractTextDelta(content: AIMessageChunk['content']): string {
+    if (typeof content === 'string')
+      return content
+    return (content as any[])
+      .filter((c: any) => c?.type === 'text')
+      .map((c: any) => c.text as string)
+      .join('')
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // 会话控制
+  // ─────────────────────────────────────────────────────────────────────────
 
   /**
    * 中止指定会话
