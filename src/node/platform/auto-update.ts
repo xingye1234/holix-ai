@@ -19,6 +19,7 @@ export function initAutoUpdater() {
       error: (msg: any) => logger.error(`[autoUpdater] ${String(msg)}`),
     }
 
+    autoUpdater.forceDevUpdateConfig = true
     autoUpdater.autoDownload = true
 
     autoUpdater.on('checking-for-update', () => {

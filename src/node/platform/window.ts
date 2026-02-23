@@ -1,7 +1,8 @@
 import type { HolixProtocolRouter } from '@holix/router'
 import { join } from 'node:path'
 import process from 'node:process'
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, shell } from 'electron'
+import { checkForUpdates, installUpdateAndQuit } from './auto-update'
 import { configStore } from './config'
 import { logger } from './logger'
 import { update } from './update'
@@ -79,6 +80,21 @@ export class AppWindow extends BrowserWindow {
         }
         else {
           this.webContents.openDevTools()
+        }
+      }
+
+      if (action === 'check-update') {
+        checkForUpdates()
+      }
+
+      if (action === 'install-update') {
+        installUpdateAndQuit()
+      }
+
+      if (action === 'open-external') {
+        const body = await ctx.req.json().catch(() => null)
+        if (body?.url) {
+          shell.openExternal(body.url)
         }
       }
 

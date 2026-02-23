@@ -1,19 +1,26 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { ExternalLink, HelpCircle, RefreshCw, Terminal } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
+import { Progress } from '@/components/ui/progress'
 import { Separator } from '@/components/ui/separator'
-import { getAppVersion, openExternal, toggleDevTools } from '@/lib/system'
+import useUpdate from '@/hooks/update'
+import { checkForUpdates, getAppVersion, installUpdateAndQuit, openExternal, toggleDevTools } from '@/lib/system'
 
 export const Route = createFileRoute('/setting/help')({
   component: RouteComponent,
 })
 
+type UpdateStatus = 'idle' | 'checking' | 'available' | 'not-available' | 'downloading' | 'downloaded' | 'error'
+
 function RouteComponent() {
   const [version, setVersion] = useState('加载中...')
-  const [isCheckingUpdate, setIsCheckingUpdate] = useState(false)
+  const [updateStatus, setUpdateStatus] = useState<UpdateStatus>('idle')
+  const [downloadProgress, setDownloadProgress] = useState(0)
+  const [updateVersion, setUpdateVersion] = useState<string | null>(null)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   useEffect(() => {
     getAppVersion()
@@ -23,6 +30,50 @@ function RouteComponent() {
       .catch(() => {
         setVersion('获取失败')
       })
+  }, [])
+
+  useUpdate('update.checking-for-update', useCallback(() => {
+    setUpdateStatus('checking')
+  }, []))
+
+  useUpdate('update.available', useCallback((payload) => {
+    setUpdateStatus('available')
+    setUpdateVersion(payload.info?.version ?? null)
+    toast.info(`发现新版本 ${payload.info?.version ?? ''}，开始下载...`)
+  }, []))
+
+  useUpdate('update.not-available', useCallback(() => {
+    setUpdateStatus('not-available')
+    toast.success('当前已是最新版本！')
+  }, []))
+
+  useUpdate('update.error', useCallback((payload) => {
+    setUpdateStatus('error')
+    setErrorMessage(payload.message)
+    toast.error(`更新出错：${payload.message}`)
+  }, []))
+
+  useUpdate('download.progress', useCallback((payload) => {
+    setUpdateStatus('downloading')
+    setDownloadProgress(Math.round(payload.info.percent))
+  }, []))
+
+  useUpdate('update.downloaded', useCallback(() => {
+    setUpdateStatus('downloaded')
+    setDownloadProgress(100)
+    toast.success('更新已下载完成，可以立即安装。')
+  }, []))
+
+  const handleCheckUpdate = useCallback(() => {
+    setUpdateStatus('checking')
+    setDownloadProgress(0)
+    setUpdateVersion(null)
+    setErrorMessage(null)
+    checkForUpdates()
+  }, [])
+
+  const handleInstallUpdate = useCallback(() => {
+    installUpdateAndQuit()
   }, [])
 
   const handleOpenDevTools = () => {
@@ -35,15 +86,6 @@ function RouteComponent() {
       })
   }
 
-  const handleCheckUpdate = () => {
-    setIsCheckingUpdate(true)
-    // TODO: 实现实际的更新检查逻辑
-    setTimeout(() => {
-      setIsCheckingUpdate(false)
-      toast.success('当前已是最新版本！')
-    }, 1500)
-  }
-
   const handleOpenLink = (url: string) => {
     openExternal(url)
       .catch((error) => {
@@ -51,6 +93,11 @@ function RouteComponent() {
         toast.error('打开链接失败')
       })
   }
+
+  const isChecking = updateStatus === 'checking'
+  const isDownloading = updateStatus === 'downloading'
+  const isDownloaded = updateStatus === 'downloaded'
+  const isBusy = isChecking || updateStatus === 'available' || isDownloading
 
   return (
     <div className="p-6">
@@ -72,22 +119,62 @@ function RouteComponent() {
               </p>
             </div>
 
-            <div className="flex items-center gap-3">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleCheckUpdate}
-                disabled={isCheckingUpdate}
-              >
-                <RefreshCw className={`mr-1.5 ${isCheckingUpdate ? 'animate-spin' : ''}`} size={16} />
-                {isCheckingUpdate ? '检查中...' : '检查更新'}
-              </Button>
+            <div className="flex items-center gap-3 flex-wrap">
+              {!isDownloaded && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleCheckUpdate}
+                  disabled={isBusy}
+                >
+                  <RefreshCw className={`mr-1.5 ${isChecking ? 'animate-spin' : ''}`} size={16} />
+                  {isChecking ? '检查中...' : '检查更新'}
+                </Button>
+              )}
+              {isDownloaded && (
+                <Button
+                  size="sm"
+                  variant="default"
+                  onClick={handleInstallUpdate}
+                >
+                  安装并重启
+                </Button>
+              )}
               <span className="text-sm text-muted-foreground">
                 当前版本:
                 {' '}
                 {version}
               </span>
+              {updateVersion && (
+                <span className="text-sm text-primary font-medium">
+                  → 新版本:
+                  {' '}
+                  v
+                  {updateVersion}
+                </span>
+              )}
             </div>
+
+            {(isDownloading || isDownloaded) && (
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                  <span>{isDownloaded ? '下载完成' : '正在下载...'}</span>
+                  <span>
+                    {downloadProgress}
+                    %
+                  </span>
+                </div>
+                <Progress value={downloadProgress} className="h-2" />
+              </div>
+            )}
+
+            {updateStatus === 'not-available' && (
+              <p className="text-sm text-muted-foreground">当前已是最新版本。</p>
+            )}
+
+            {updateStatus === 'error' && errorMessage && (
+              <p className="text-sm text-destructive">{errorMessage}</p>
+            )}
           </div>
         </div>
 
