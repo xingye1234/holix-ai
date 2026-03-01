@@ -466,7 +466,6 @@ class ChatManager {
       systemTimeTool,
       chatTimeSearchTool,
       chatKeywordSearchTool,
-      loadSkillTool,
       ...(context7ApiKey ? [context7Tool] : []),
     ]
 
