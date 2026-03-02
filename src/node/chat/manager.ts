@@ -18,11 +18,11 @@ import { logger } from '../platform/logger'
 import { update } from '../platform/update'
 import builtinMessages from './builtin/messages'
 import { contextSchema } from './context'
+import { skillManager } from './skills'
 import { chatKeywordSearchTool, chatTimeSearchTool } from './tools/chat'
 import { context7Tool } from './tools/context7'
 import { buildLoadSkillTool, reloadSkillsTool } from './tools/skills'
 import { systemEnvTool, systemPlatformTool, systemTimeTool, systemTimezoneTool } from './tools/system'
-import { skillManager } from './skills'
 /** 流处理时传递给各 handler 的只读会话上下文 */
 interface StreamSessionCtx {
   chatUid: string
