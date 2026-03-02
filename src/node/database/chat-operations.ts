@@ -197,9 +197,11 @@ export async function deleteChat(chatUid: string): Promise<void> {
   const db = await getDatabase()
   // 先清理 FTS 虚拟表（不受外键 CASCADE 影响，需手动删除）
   sqlite.prepare(`DELETE FROM message_fts WHERE chat_uid = ?`).run(chatUid)
-  await db.transaction(async (ctx) => {
-    await ctx.delete(message).where(eq(message.chatUid, chatUid))
-    await ctx.delete(chats).where(eq(chats.uid, chatUid))
+  // better-sqlite3 是同步驱动，transaction 回调不可为 async（不能返回 Promise）
+  // 需显式调用 .run() 触发执行，否则查询构建器不会真正发出 SQL
+  db.transaction((ctx) => {
+    ctx.delete(message).where(eq(message.chatUid, chatUid)).run()
+    ctx.delete(chats).where(eq(chats.uid, chatUid)).run()
   })
 }
 
