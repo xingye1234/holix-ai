@@ -1,9 +1,21 @@
+/**
+ * JS Adapter 沙箱版测试
+ *
+ * 测试覆盖：
+ * 1. 文件不存在 → 返回空数组
+ * 2. 元数据解析阶段（vm，主进程）：name/description/schema 提取
+ * 3. 执行阶段（Worker + vm）：正常返回、对象序列化、异常处理
+ * 4. 数组导出、具名导出
+ * 5. schema 构建（无 schema、简写、完整）
+ * 6. 安全沙箱：require('electron')、相对路径 require、无权限模块 → 错误
+ * 7. 没有 execute 函数 → 加载成功但 invoke 返回错误
+ */
+
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-// langchain 的 tool() 在 Node 环境可正常运行，无需 mock
 import { loadJsTools } from '../js'
 
 // ─── Mock 依赖 ────────────────────────────────────────────────────────────────
@@ -17,45 +29,41 @@ vi.mock('../../../../platform/logger', () => ({
   },
 }))
 
-// ─── 工具函数 ──────────────────────────────────────────────────────────────────
+// ─── 辅助 ──────────────────────────────────────────────────────────────────────
 
 let testDir: string
 
-function writeJsFile(filename: string, content: string): string {
-  const filePath = join(testDir, filename)
-  writeFileSync(filePath, content, 'utf-8')
-  return filePath
+function writeJsFile(filename: string, content: string): void {
+  writeFileSync(join(testDir, filename), content, 'utf-8')
 }
 
-// ─── Tests ────────────────────────────────────────────────────────────────────
-
-describe('loadJsTools - 文件不存在', () => {
+function setup() {
   beforeEach(() => {
-    testDir = join(tmpdir(), `holix-js-adapter-test-${Date.now()}`)
+    testDir = join(tmpdir(), `holix-js-adapter-test-${Date.now()}-${Math.random().toString(36).slice(2)}`)
     mkdirSync(testDir, { recursive: true })
   })
-
   afterEach(() => {
     rmSync(testDir, { recursive: true, force: true })
   })
+}
 
-  it('jS 文件不存在时返回空数组', () => {
+// ─── 文件不存在 ───────────────────────────────────────────────────────────────
+
+describe('loadJsTools - 文件不存在', () => {
+  setup()
+
+  it('JS 文件不存在时返回空数组', () => {
     const tools = loadJsTools({ type: 'js', file: 'nonexistent.js' }, testDir)
     expect(tools).toEqual([])
   })
 })
 
+// ─── 元数据解析（默认导出）──────────────────────────────────────────────────────
+
 describe('loadJsTools - 默认导出（单个 tool）', () => {
-  beforeEach(() => {
-    testDir = join(tmpdir(), `holix-js-adapter-test-${Date.now()}`)
-    mkdirSync(testDir, { recursive: true })
-  })
+  setup()
 
-  afterEach(() => {
-    rmSync(testDir, { recursive: true, force: true })
-  })
-
-  it('加载单个 tool 的默认导出', () => {
+  it('加载单个 tool 的默认导出：名称和描述正确', () => {
     writeJsFile('single.js', `
       module.exports = {
         name: 'echo_tool',
@@ -72,7 +80,7 @@ describe('loadJsTools - 默认导出（单个 tool）', () => {
     expect(tools[0].description).toBe('Echoes the input')
   })
 
-  it('tool.invoke() 执行并返回结果', async () => {
+  it('invoke() 在沙箱中执行并返回字符串结果', async () => {
     writeJsFile('invoke.js', `
       module.exports = {
         name: 'greet',
@@ -86,9 +94,9 @@ describe('loadJsTools - 默认导出（单个 tool）', () => {
     const result = await tools[0].invoke({ name: 'World' })
 
     expect(result).toBe('Hello, World!')
-  })
+  }, 15_000)
 
-  it('execute 返回对象时序列化为 JSON', async () => {
+  it('execute 返回对象时序列化为 JSON 字符串', async () => {
     writeJsFile('json-result.js', `
       module.exports = {
         name: 'json_tool',
@@ -101,9 +109,9 @@ describe('loadJsTools - 默认导出（单个 tool）', () => {
     const result = await tools[0].invoke({})
 
     expect(result).toBe('{"status":"ok","count":42}')
-  })
+  }, 15_000)
 
-  it('execute 抛出异常时返回错误消息字符串', async () => {
+  it('execute 抛出异常时返回包含 tool 名的错误消息', async () => {
     writeJsFile('throws.js', `
       module.exports = {
         name: 'fail_tool',
@@ -117,37 +125,20 @@ describe('loadJsTools - 默认导出（单个 tool）', () => {
 
     expect(result).toContain('something went wrong')
     expect(result).toContain('fail_tool')
-  })
+  }, 15_000)
 })
 
-describe('loadJsTools - 数组导出（多个 tools）', () => {
-  beforeEach(() => {
-    testDir = join(tmpdir(), `holix-js-adapter-test-${Date.now()}`)
-    mkdirSync(testDir, { recursive: true })
-  })
+// ─── 数组导出（多个 tools）────────────────────────────────────────────────────
 
-  afterEach(() => {
-    rmSync(testDir, { recursive: true, force: true })
-  })
+describe('loadJsTools - 数组导出（多个 tools）', () => {
+  setup()
 
   it('加载数组导出的多个 tools', () => {
     writeJsFile('multi.js', `
       module.exports = [
-        {
-          name: 'tool_one',
-          description: 'Tool one',
-          execute: async () => 'one'
-        },
-        {
-          name: 'tool_two',
-          description: 'Tool two',
-          execute: async () => 'two'
-        },
-        {
-          name: 'tool_three',
-          description: 'Tool three',
-          execute: async () => 'three'
-        }
+        { name: 'tool_one',   description: 'Tool one',   execute: async () => 'one'   },
+        { name: 'tool_two',   description: 'Tool two',   execute: async () => 'two'   },
+        { name: 'tool_three', description: 'Tool three', execute: async () => 'three' }
       ]
     `)
 
@@ -157,31 +148,47 @@ describe('loadJsTools - 数组导出（多个 tools）', () => {
     expect(tools.map(t => t.name)).toEqual(['tool_one', 'tool_two', 'tool_three'])
   })
 
-  it('数组中过滤掉缺少 name 或 execute 的 tool', () => {
+  it('数组中过滤掉缺少 name 或 description 的条目', () => {
     writeJsFile('partial.js', `
       module.exports = [
-        { name: 'valid_tool', description: 'Valid', execute: async () => 'ok' },
-        { description: 'No name', execute: async () => 'missing name' },
-        { name: 'no_execute', description: 'No execute' }
+        { name: 'valid_tool',    description: 'Valid',      execute: async () => 'ok'  },
+        {                        description: 'No name',    execute: async () => 'x'   },
+        { name: 'no_desc',                                  execute: async () => 'x'   }
       ]
     `)
 
     const tools = loadJsTools({ type: 'js', file: 'partial.js' }, testDir)
 
+    // 只有同时具备 name 和 description 的条目才会被加载
     expect(tools).toHaveLength(1)
     expect(tools[0].name).toBe('valid_tool')
   })
+
+  it('没有 execute 函数的 tool 可加载，但 invoke 时返回错误', async () => {
+    writeJsFile('no-exec.js', `
+      module.exports = {
+        name: 'no_execute',
+        description: 'No execute function'
+      }
+    `)
+
+    const tools = loadJsTools({ type: 'js', file: 'no-exec.js' }, testDir)
+
+    // 元数据阶段不过滤缺少 execute 的 tool
+    expect(tools).toHaveLength(1)
+    expect(tools[0].name).toBe('no_execute')
+
+    // 执行阶段报错
+    const result = await tools[0].invoke({})
+    expect(result).toContain('no_execute')
+    expect(typeof result).toBe('string')
+  }, 15_000)
 })
 
-describe('loadJsTools - schema 构建', () => {
-  beforeEach(() => {
-    testDir = join(tmpdir(), `holix-js-adapter-test-${Date.now()}`)
-    mkdirSync(testDir, { recursive: true })
-  })
+// ─── schema 构建 ──────────────────────────────────────────────────────────────
 
-  afterEach(() => {
-    rmSync(testDir, { recursive: true, force: true })
-  })
+describe('loadJsTools - schema 构建', () => {
+  setup()
 
   it('schema 为空时 tool 仍可 invoke', async () => {
     writeJsFile('no-schema.js', `
@@ -195,9 +202,9 @@ describe('loadJsTools - schema 构建', () => {
     const tools = loadJsTools({ type: 'js', file: 'no-schema.js' }, testDir)
     const result = await tools[0].invoke({})
     expect(result).toBe('result')
-  })
+  }, 15_000)
 
-  it('简写 schema（字符串类型）正常工作', async () => {
+  it('简写 schema（字符串类型）数据正常传入 execute', async () => {
     writeJsFile('shorthand-schema.js', `
       module.exports = {
         name: 'shorthand',
@@ -215,9 +222,9 @@ describe('loadJsTools - schema 构建', () => {
     const tools = loadJsTools({ type: 'js', file: 'shorthand-schema.js' }, testDir)
     const result = await tools[0].invoke({ text: 'hello', count: 3, flag: true })
     expect(result).toBe('hello:3:true')
-  })
+  }, 15_000)
 
-  it('完整 schema（含 description 和 optional）', async () => {
+  it('完整 schema（含 description 和 optional）数据正常传入 execute', async () => {
     writeJsFile('full-schema.js', `
       module.exports = {
         name: 'full_schema',
@@ -234,20 +241,15 @@ describe('loadJsTools - schema 构建', () => {
     const tools = loadJsTools({ type: 'js', file: 'full-schema.js' }, testDir)
     const result = await tools[0].invoke({ required_field: 'hello' })
     expect(result).toBe('hello')
-  })
+  }, 15_000)
 })
 
+// ─── 具名导出 ─────────────────────────────────────────────────────────────────
+
 describe('loadJsTools - 具名导出', () => {
-  beforeEach(() => {
-    testDir = join(tmpdir(), `holix-js-adapter-test-${Date.now()}`)
-    mkdirSync(testDir, { recursive: true })
-  })
+  setup()
 
-  afterEach(() => {
-    rmSync(testDir, { recursive: true, force: true })
-  })
-
-  it('通过 export 字段加载具名导出', () => {
+  it('通过 export 字段加载具名导出的元数据', () => {
     writeJsFile('named-export.js', `
       exports.myTool = {
         name: 'named_tool',
@@ -262,6 +264,20 @@ describe('loadJsTools - 具名导出', () => {
     expect(tools[0].name).toBe('named_tool')
   })
 
+  it('具名导出执行结果正确', async () => {
+    writeJsFile('named-invoke.js', `
+      exports.myTool = {
+        name: 'named_tool',
+        description: 'Named export tool',
+        execute: async () => 'from named export'
+      }
+    `)
+
+    const tools = loadJsTools({ type: 'js', file: 'named-invoke.js', export: 'myTool' }, testDir)
+    const result = await tools[0].invoke({})
+    expect(result).toBe('from named export')
+  }, 15_000)
+
   it('具名导出不存在时返回空数组', () => {
     writeJsFile('no-named.js', `
       exports.other = { name: 'other', description: 'Other', execute: async () => 'ok' }
@@ -272,20 +288,13 @@ describe('loadJsTools - 具名导出', () => {
   })
 })
 
+// ─── 错误处理 ─────────────────────────────────────────────────────────────────
+
 describe('loadJsTools - 错误处理', () => {
-  beforeEach(() => {
-    testDir = join(tmpdir(), `holix-js-adapter-test-${Date.now()}`)
-    mkdirSync(testDir, { recursive: true })
-  })
+  setup()
 
-  afterEach(() => {
-    rmSync(testDir, { recursive: true, force: true })
-  })
-
-  it('jS 文件语法错误时返回空数组、不抛异常', () => {
-    writeJsFile('syntax-error.js', `
-      module.exports = { invalid syntax !!!
-    `)
+  it('JS 文件语法错误时返回空数组、不抛异常', () => {
+    writeJsFile('syntax-error.js', `module.exports = { invalid syntax !!!`)
 
     expect(() => loadJsTools({ type: 'js', file: 'syntax-error.js' }, testDir)).not.toThrow()
     const tools = loadJsTools({ type: 'js', file: 'syntax-error.js' }, testDir)
@@ -298,4 +307,95 @@ describe('loadJsTools - 错误处理', () => {
     const tools = loadJsTools({ type: 'js', file: 'null-export.js' }, testDir)
     expect(tools).toEqual([])
   })
+})
+
+// ─── 安全沙箱 ─────────────────────────────────────────────────────────────────
+
+describe('loadJsTools - 安全沙箱（执行阶段）', () => {
+  setup()
+
+  it('require("electron") 在执行阶段被永久拦截', async () => {
+    writeJsFile('use-electron.js', `
+      module.exports = {
+        name: 'electron_tool',
+        description: 'Tries to use electron',
+        execute: async () => {
+          const { app } = require('electron');
+          return app.getVersion();
+        }
+      }
+    `)
+
+    const tools = loadJsTools({ type: 'js', file: 'use-electron.js' }, testDir)
+    expect(tools).toHaveLength(1)
+
+    const result = await tools[0].invoke({})
+    // 应返回包含 sandbox 阻止信息的错误字符串，而非抛出
+    expect(typeof result).toBe('string')
+    expect(result.toLowerCase()).toMatch(/block|electron|sandbox|error/i)
+  }, 15_000)
+
+  it('require("./local-file") 相对路径 require 被拦截', async () => {
+    writeJsFile('use-relative.js', `
+      module.exports = {
+        name: 'relative_tool',
+        description: 'Tries relative require',
+        execute: async () => {
+          const x = require('./some-local-module');
+          return x.value;
+        }
+      }
+    `)
+
+    const tools = loadJsTools({ type: 'js', file: 'use-relative.js' }, testDir)
+    const result = await tools[0].invoke({})
+
+    expect(typeof result).toBe('string')
+    expect(result.toLowerCase()).toMatch(/block|path|sandbox|error/i)
+  }, 15_000)
+
+  it('无权限时 require("fs") 被拦截', async () => {
+    writeJsFile('use-fs.js', `
+      module.exports = {
+        name: 'fs_tool',
+        description: 'Tries to use fs without permission',
+        execute: async () => {
+          const fs = require('fs');
+          return fs.readdirSync('/tmp').join(',');
+        }
+      }
+    `)
+
+    // permissions 中没有给 fs 权限
+    const tools = loadJsTools(
+      { type: 'js', file: 'use-fs.js', permissions: { allowedBuiltins: [] } },
+      testDir,
+    )
+    const result = await tools[0].invoke({})
+
+    expect(typeof result).toBe('string')
+    expect(result.toLowerCase()).toMatch(/not allowed|block|permission|sandbox|error/i)
+  }, 15_000)
+
+  it('有权限时 require("path") 可正常使用', async () => {
+    writeJsFile('use-path.js', `
+      module.exports = {
+        name: 'path_tool',
+        description: 'Uses path module with permission',
+        schema: { input: 'string' },
+        execute: async ({ input }) => {
+          const path = require('path');
+          return path.basename(input);
+        }
+      }
+    `)
+
+    const tools = loadJsTools(
+      { type: 'js', file: 'use-path.js', permissions: { allowedBuiltins: ['path'] } },
+      testDir,
+    )
+    const result = await tools[0].invoke({ input: '/foo/bar/baz.txt' })
+
+    expect(result).toBe('baz.txt')
+  }, 15_000)
 })

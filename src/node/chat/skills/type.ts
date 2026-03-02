@@ -1,4 +1,5 @@
 import type { DynamicStructuredTool } from '@langchain/core/tools'
+import type { SandboxPermissions } from './sandbox/types'
 
 // ─── Skill Manifest (skill.json) ──────────────────────────────────────────────
 
@@ -9,6 +10,15 @@ export interface JsToolDeclaration {
   file: string
   /** 导出名称，默认 'default'，支持具名导出或默认导出 */
   export?: string
+  /**
+   * 沙箱权限配置。
+   *
+   * 不配置则使用最严格的默认权限：
+   * - 不允许任何 require()
+   * - 不暴露任何 process.env
+   * - 10 秒超时，64MB 内存上限
+   */
+  permissions?: SandboxPermissions
 }
 
 /** Shell 命令工具声明：将命令包装为 LangChain tool */
