@@ -7,6 +7,12 @@ import { configStore } from './config'
 import { logger } from './logger'
 import { update } from './update'
 
+// 标记是否正在退出（用于区分关闭到托盘和真正退出）
+export let isQuitting = false
+export function setIsQuitting(val: boolean) {
+  isQuitting = val
+}
+
 const minWidth = 800
 const minHeight = 540
 
@@ -38,6 +44,10 @@ export class AppWindow extends BrowserWindow {
 
     // Window state change events -> send updates to renderer via orchestrator.update
     this.on('minimize', () => {
+      if (configStore.get('minimizeToTray')) {
+        this.hide()
+        return
+      }
       update('window.minimize', {})
     })
 
@@ -49,7 +59,12 @@ export class AppWindow extends BrowserWindow {
       update('window.maximize', { maximized: false })
     })
 
-    this.on('close', () => {
+    this.on('close', (event) => {
+      if (!isQuitting && configStore.get('closeToTray')) {
+        event.preventDefault()
+        this.hide()
+        return
+      }
       update('window.close', {})
     })
   }

@@ -24,9 +24,9 @@ export const Route = createFileRoute('/setting/general')({
 
 function RouteComponent() {
   const { config } = Route.useLoaderData()
-  const [autoStart, setAutoStart] = useState(false)
-  const [minimizeToTray, setMinimizeToTray] = useState(true)
-  const [closeToTray, setCloseToTray] = useState(true)
+  const [autoStart, setAutoStart] = useState(config.autoStart ?? false)
+  const [minimizeToTray, setMinimizeToTray] = useState(config.minimizeToTray ?? true)
+  const [closeToTray, setCloseToTray] = useState(config.closeToTray ?? true)
   const [showNotifications, setShowNotifications] = useState(true)
   const [language, setLanguage] = useState('zh-CN')
   const { theme, setTheme } = useTheme()
@@ -35,6 +35,21 @@ function RouteComponent() {
   const handleSaveApiKey = useCallback(async () => {
     updateConfig('context7ApiKey', apiKey ?? '')
   }, [apiKey])
+
+  const handleAutoStartChange = useCallback(async (checked: boolean) => {
+    setAutoStart(checked)
+    await updateConfig('autoStart', checked)
+  }, [])
+
+  const handleMinimizeToTrayChange = useCallback(async (checked: boolean) => {
+    setMinimizeToTray(checked)
+    await updateConfig('minimizeToTray', checked)
+  }, [])
+
+  const handleCloseToTrayChange = useCallback(async (checked: boolean) => {
+    setCloseToTray(checked)
+    await updateConfig('closeToTray', checked)
+  }, [])
 
   return (
     <div className="p-6">
@@ -102,7 +117,7 @@ function RouteComponent() {
                   系统启动时自动打开应用
                 </p>
               </div>
-              <Switch checked={autoStart} onCheckedChange={setAutoStart} />
+              <Switch checked={autoStart} onCheckedChange={handleAutoStartChange} />
             </div>
 
             <div className="flex items-center justify-between">
@@ -114,7 +129,7 @@ function RouteComponent() {
               </div>
               <Switch
                 checked={minimizeToTray}
-                onCheckedChange={setMinimizeToTray}
+                onCheckedChange={handleMinimizeToTrayChange}
               />
             </div>
 
@@ -125,7 +140,7 @@ function RouteComponent() {
                   点击关闭按钮时隐藏到系统托盘而不是退出
                 </p>
               </div>
-              <Switch checked={closeToTray} onCheckedChange={setCloseToTray} />
+              <Switch checked={closeToTray} onCheckedChange={handleCloseToTrayChange} />
             </div>
           </div>
         </div>

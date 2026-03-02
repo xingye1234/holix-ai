@@ -16,7 +16,7 @@ import { setupAppMenu } from './platform/menu'
 import { providerStore } from './platform/provider'
 import { setupAppTray } from './platform/tray'
 import { onUpdateWaitResponse } from './platform/update'
-import { AppWindow } from './platform/window'
+import { AppWindow, setIsQuitting } from './platform/window'
 import { trpcRouter } from './server/handler'
 
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true'
@@ -180,7 +180,11 @@ async function bootstrap() {
       },
       {
         name: 'Initialize config store',
-        execute: () => configStore.init(),
+        execute: async () => {
+          await configStore.init()
+          // 应用开机自启动设置
+          app.setLoginItemSettings({ openAtLogin: configStore.get('autoStart') })
+        },
         critical: true,
         timeout: 3000,
       },
@@ -257,6 +261,7 @@ app.on('window-all-closed', async () => {
 // })
 
 app.on('before-quit', async () => {
+  setIsQuitting(true)
   await lifecycle.setPhase(LifecyclePhase.STOPPING)
   logger.info('[Main] Application is quitting...')
   lifecycle.printPerformanceSummary()

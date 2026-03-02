@@ -1,3 +1,4 @@
+import { app } from 'electron'
 import { Store } from './store'
 
 export interface ConfigData {
@@ -8,6 +9,9 @@ export interface ConfigData {
   theme: string
   currentChatId?: string
   context7ApiKey?: string
+  autoStart: boolean
+  minimizeToTray: boolean
+  closeToTray: boolean
 }
 
 export class Config extends Store<ConfigData> {
@@ -22,8 +26,19 @@ export class Config extends Store<ConfigData> {
         theme: 'system',
         currentChatId: undefined,
         context7ApiKey: '',
+        autoStart: false,
+        minimizeToTray: true,
+        closeToTray: true,
       },
     })
+  }
+
+  mutate<K extends keyof ConfigData>(key: K, value: ConfigData[K]) {
+    const result = super.mutate(key, value)
+    if (key === 'autoStart') {
+      app.setLoginItemSettings({ openAtLogin: value as boolean })
+    }
+    return result
   }
 }
 
