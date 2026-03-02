@@ -32,6 +32,7 @@ import type { DynamicStructuredTool } from '@langchain/core/tools'
 import type { JsToolDeclaration, SchemaField } from '../type'
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import process from 'node:process'
 import vm from 'node:vm'
 import { tool } from 'langchain'
 import z from 'zod'
@@ -121,10 +122,10 @@ function parseToolMeta(filePath: string, exportName: string): ToolMeta[] {
     Map,
     Set,
     Symbol,
-    parseInt,
-    parseFloat,
-    isNaN,
-    isFinite,
+    parseInt: Number.parseInt,
+    parseFloat: Number.parseFloat,
+    isNaN: Number.isNaN,
+    isFinite: Number.isFinite,
     console: { log: () => {}, info: () => {}, warn: () => {}, error: () => {} },
     // 明确屏蔽危险全局
     eval: undefined,
@@ -260,4 +261,3 @@ export function loadJsTools(declaration: JsToolDeclaration, skillDir: string): D
 
   return metas.map(meta => metaToSandboxedTool(meta, declaration, skillDir))
 }
-

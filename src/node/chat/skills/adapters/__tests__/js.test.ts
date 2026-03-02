@@ -52,7 +52,7 @@ function setup() {
 describe('loadJsTools - 文件不存在', () => {
   setup()
 
-  it('JS 文件不存在时返回空数组', () => {
+  it('jS 文件不存在时返回空数组', () => {
     const tools = loadJsTools({ type: 'js', file: 'nonexistent.js' }, testDir)
     expect(tools).toEqual([])
   })
@@ -293,7 +293,7 @@ describe('loadJsTools - 具名导出', () => {
 describe('loadJsTools - 错误处理', () => {
   setup()
 
-  it('JS 文件语法错误时返回空数组、不抛异常', () => {
+  it('jS 文件语法错误时返回空数组、不抛异常', () => {
     writeJsFile('syntax-error.js', `module.exports = { invalid syntax !!!`)
 
     expect(() => loadJsTools({ type: 'js', file: 'syntax-error.js' }, testDir)).not.toThrow()

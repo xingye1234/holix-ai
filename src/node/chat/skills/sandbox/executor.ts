@@ -20,9 +20,9 @@
  *   { ok: false, error: string }    ← 执行失败
  */
 
+import type { SandboxPermissions } from './types'
 import { Worker } from 'node:worker_threads'
 import { logger } from '../../../platform/logger'
-import type { SandboxPermissions } from './types'
 import { DEFAULT_PERMISSIONS, HARDCODED_BLOCKED, SAFE_BUILTINS } from './types'
 
 // ─── Worker 脚本（字符串内嵌，避免打包后路径问题）────────────────────────────
@@ -332,6 +332,7 @@ export function runInSandbox(options: SandboxRunOptions): Promise<string> {
       if (settled)
         return
       settled = true
+      // eslint-disable-next-line ts/no-use-before-define
       clearTimeout(timer)
       fn()
       // 允许 Worker 自然退出，不需要强制 terminate（已 settled）
@@ -352,8 +353,10 @@ export function runInSandbox(options: SandboxRunOptions): Promise<string> {
         // 将沙箱内 console.xxx 转发到 logger（带 skill 前缀）
         const text = `[Skill:${options.toolName}] ${(msg.args as string[]).join(' ')}`
         switch (msg.level) {
-          case 'error': logger.error(text); break
-          case 'warn': logger.warn(text); break
+          case 'error': logger.error(text)
+            break
+          case 'warn': logger.warn(text)
+            break
           default: logger.info(text)
         }
         return
