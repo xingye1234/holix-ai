@@ -3,6 +3,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { commandToTool, scriptToTool } from '../command'
+
 // ─── Mock 依赖 ────────────────────────────────────────────────────────────────
 
 vi.mock('../../../../platform/logger', () => ({
@@ -13,8 +15,6 @@ vi.mock('../../../../platform/logger', () => ({
     debug: vi.fn(),
   },
 }))
-
-import { commandToTool, scriptToTool } from '../command'
 
 // ─── 工具函数 ──────────────────────────────────────────────────────────────────
 

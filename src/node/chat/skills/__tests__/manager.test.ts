@@ -3,6 +3,14 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+// ─── 导入被测模块（在 mock 之后）──────────────────────────────────────────────
+
+// 由于 APP_DATA_PATH 已在模块加载时被读取
+// 我们直接测 scanSkillsDir（通过 loader），SkillManager 通过 getSkillsDir 构建地址
+// 为避免单例状态污染，从 manager 模块直接 import class 并手动实例化
+
+import { scanSkillsDir } from '../loader'
+
 // ─── Mock 依赖 ────────────────────────────────────────────────────────────────
 
 vi.mock('../../../platform/logger', () => ({
@@ -37,14 +45,6 @@ vi.mock('../adapters/command', () => ({
 vi.mock('../../../constant', () => ({
   APP_DATA_PATH: tmpdir(), // 初始占位，每个测试会使用独立临时目录
 }))
-
-// ─── 导入被测模块（在 mock 之后）──────────────────────────────────────────────
-
-// 由于 APP_DATA_PATH 已在模块加载时被读取
-// 我们直接测 scanSkillsDir（通过 loader），SkillManager 通过 getSkillsDir 构建地址
-// 为避免单例状态污染，从 manager 模块直接 import class 并手动实例化
-
-import { getSkillsDir, scanSkillsDir } from '../loader'
 
 // ─── 测试辅助 ─────────────────────────────────────────────────────────────────
 
@@ -122,7 +122,7 @@ describe('getSkillsDir + scanSkillsDir（集成）', () => {
   })
 })
 
-describe('SkillManager 单例行为模拟', () => {
+describe('skillManager 单例行为模拟', () => {
   beforeEach(() => {
     testRoot = join(tmpdir(), `holix-manager-test-${Date.now()}`)
     mkdirSync(testRoot, { recursive: true })
@@ -198,7 +198,7 @@ describe('SkillManager 单例行为模拟', () => {
   })
 })
 
-describe('SkillManager 单例（真实实例）', () => {
+describe('skillManager 单例（真实实例）', () => {
   // 注意：skillManager 在进程内是单例，为避免状态污染，
   // 我们通过检查 API 契约来测试，不依赖已安装的 skill
   it('skillManager 导出存在且具备预期方法', async () => {

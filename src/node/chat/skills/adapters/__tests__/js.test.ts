@@ -3,6 +3,9 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+// langchain 的 tool() 在 Node 环境可正常运行，无需 mock
+import { loadJsTools } from '../js'
+
 // ─── Mock 依赖 ────────────────────────────────────────────────────────────────
 
 vi.mock('../../../../platform/logger', () => ({
@@ -13,9 +16,6 @@ vi.mock('../../../../platform/logger', () => ({
     debug: vi.fn(),
   },
 }))
-
-// langchain 的 tool() 在 Node 环境可正常运行，无需 mock
-import { loadJsTools } from '../js'
 
 // ─── 工具函数 ──────────────────────────────────────────────────────────────────
 
@@ -39,7 +39,7 @@ describe('loadJsTools - 文件不存在', () => {
     rmSync(testDir, { recursive: true, force: true })
   })
 
-  it('JS 文件不存在时返回空数组', () => {
+  it('jS 文件不存在时返回空数组', () => {
     const tools = loadJsTools({ type: 'js', file: 'nonexistent.js' }, testDir)
     expect(tools).toEqual([])
   })
@@ -282,7 +282,7 @@ describe('loadJsTools - 错误处理', () => {
     rmSync(testDir, { recursive: true, force: true })
   })
 
-  it('JS 文件语法错误时返回空数组、不抛异常', () => {
+  it('jS 文件语法错误时返回空数组、不抛异常', () => {
     writeJsFile('syntax-error.js', `
       module.exports = { invalid syntax !!!
     `)

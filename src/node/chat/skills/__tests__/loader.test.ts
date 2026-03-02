@@ -3,6 +3,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { getSkillsDir, scanSkillsDir } from '../loader'
+
 // ─── Mock 依赖（必须在导入被测模块之前）────────────────────────────────────────
 
 vi.mock('../../../platform/logger', () => ({
@@ -23,8 +25,6 @@ vi.mock('../adapters/command', () => ({
   commandToTool: vi.fn(() => ({ name: 'mocked_command' })),
   scriptToTool: vi.fn(() => ({ name: 'mocked_script' })),
 }))
-
-import { getSkillsDir, scanSkillsDir } from '../loader'
 
 // ─── 测试工具函数 ──────────────────────────────────────────────────────────────
 
@@ -213,7 +213,7 @@ describe('scanSkillsDir', () => {
     expect(skills).toHaveLength(0)
   })
 
-  it('JSON 损坏的 skill 被跳过、不抛异常', () => {
+  it('jSON 损坏的 skill 被跳过、不抛异常', () => {
     const dir = join(testRoot, 'broken-skill')
     mkdirSync(dir, { recursive: true })
     writeFileSync(join(dir, 'skill.json'), '{ invalid json !!!', 'utf-8')
