@@ -1,7 +1,8 @@
 import type { AppWindow } from './window'
 import { join } from 'node:path'
 import process from 'node:process'
-import { app, Menu, Tray } from 'electron'
+import { app, Menu, nativeImage, Tray } from 'electron'
+import { logger } from './logger'
 
 let tray: Tray | null = null
 
@@ -15,9 +16,16 @@ export function setupAppTray(mainWindow: AppWindow | null) {
   // On macOS, use tray.png (or trayTemplate.png if you want it to adapt to dark/light mode automatically)
   // On Windows/Linux, use logo.png
   const iconName = isMac ? 'iconTemplate.png' : 'logo.png'
-  const iconPath = join(process.cwd(), 'public', iconName)
+  // In production, app.getAppPath() returns the path inside the asar (Electron handles asar paths transparently).
+  // In development, process.cwd() points to the project root.
+  const basePath = app.isPackaged ? app.getAppPath() : process.cwd()
 
-  tray = new Tray(iconPath)
+  logger.info(`Setting up tray with icon: ${iconName} from path: ${basePath}`)
+
+  const iconPath = join(basePath, 'public', iconName)
+  const icon = nativeImage.createFromPath(iconPath)
+
+  tray = new Tray(icon)
 
   const contextMenu = Menu.buildFromTemplate([
     {
