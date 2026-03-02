@@ -20,8 +20,9 @@ import builtinMessages from './builtin/messages'
 import { contextSchema } from './context'
 import { chatKeywordSearchTool, chatTimeSearchTool } from './tools/chat'
 import { context7Tool } from './tools/context7'
-import { loadSkillTool } from './tools/skills'
+import { buildLoadSkillTool, reloadSkillsTool } from './tools/skills'
 import { systemEnvTool, systemPlatformTool, systemTimeTool, systemTimezoneTool } from './tools/system'
+import { skillManager } from './skills'
 /** 流处理时传递给各 handler 的只读会话上下文 */
 interface StreamSessionCtx {
   chatUid: string
@@ -57,6 +58,13 @@ interface ChatSession {
  */
 class ChatManager {
   private sessions: Map<string, ChatSession> = new Map()
+
+  constructor() {
+    // 初始化 skills 系统并启动目录监听
+    skillManager.initialize()
+    skillManager.watch()
+    logger.info(`[ChatManager] Skills initialized: ${skillManager.size} skill(s) loaded`)
+  }
 
   /**
    * 启动一个新的聊天会话
@@ -145,6 +153,9 @@ class ChatManager {
       // 构建消息历史
       const messages = this.buildMessages(contextMessages, userMessageContent)
 
+      // 收集 skill 注入的 system prompts
+      const skillPrompts = skillManager.getSystemPrompts()
+
       // 创建 Agent
       const agent = createAgent({
         model: llm,
@@ -156,6 +167,8 @@ class ChatManager {
               text: builtinMessages.globalSystem,
             },
             ...(session.systemMessages?.map(msg => ({ type: 'text', text: msg.content })) || []),
+            // 注入所有已启用 skill 的 system prompt
+            ...skillPrompts.map(prompt => ({ type: 'text', text: prompt })),
           ],
         }),
         tools: this.buildTools(),
@@ -459,6 +472,13 @@ class ChatManager {
 
   private buildTools() {
     const context7ApiKey = configStore.get('context7ApiKey')
+
+    // 动态构建 loadSkillTool，确保每次会话获取最新的 skills 列表
+    const loadSkillTool = buildLoadSkillTool()
+
+    // 收集所有已安装 skill 提供的自定义 tools
+    const skillTools = skillManager.getAllTools()
+
     const tools = [
       systemPlatformTool,
       systemEnvTool,
@@ -466,9 +486,14 @@ class ChatManager {
       systemTimeTool,
       chatTimeSearchTool,
       chatKeywordSearchTool,
+      loadSkillTool,
+      reloadSkillsTool,
       ...(context7ApiKey ? [context7Tool] : []),
+      // 注入 skills 提供的自定义工具
+      ...skillTools,
     ]
 
+    logger.debug(`[ChatManager] Built ${tools.length} tools (${skillTools.length} from skills)`)
     return tools
   }
 
