@@ -130,7 +130,7 @@ schema: {
   "timeout": 10000,
   "schema": {
     "pattern": { "type": "string", "description": "Search pattern" },
-    "dir":     { "type": "string", "description": "Search directory" }
+    "dir": { "type": "string", "description": "Search directory" }
   }
 }
 ```
@@ -185,7 +185,7 @@ schema: {
 
 **tools.js：**
 ```js
-const { execSync } = require('child_process')
+const { execSync } = require('node:child_process')
 
 module.exports = [
   {

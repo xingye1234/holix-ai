@@ -61,4 +61,3 @@ export function getSkill(name: string) {
     prompt: skill.prompt ?? '',
   }
 }
-
