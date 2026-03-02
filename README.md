@@ -1,5 +1,9 @@
 # Holix AI
 
+<p align="center">
+  <img src="public/logo.png" alt="Holix AI Logo" width="120" />
+</p>
+
 Holix AI is a cross-platform Electron desktop application built with React, Vite and TypeScript. It integrates modern LLM tooling (LangChain adapters), local storage via LibSQL/drizzle, and a polished UI using Radix + Tailwind-style components.
 
 ## Features
