@@ -47,7 +47,7 @@ export default defineConfig({
     'electron',
     /^@electron\//,
     /^node:/,
-    'better-sqlite3'
+    'better-sqlite3',
   ],
   noExternal: uniqueDeps,
   loader: {
@@ -57,18 +57,26 @@ export default defineConfig({
   },
   outputOptions: {
     manualChunks(id) {
-      if (id.includes('node_modules')) {
-        // 所有生产依赖进 vendor chunk
-        return 'vendor'
+      if (!id.includes('node_modules'))
+        return
+
+      // pnpm 路径形如: node_modules/.pnpm/<pkg>@ver/node_modules/<actual-pkg>/file.js
+      // 需要取最后一个 node_modules/ 之后的真实包名
+      const segments = id.split(/[/\\]node_modules[/\\]/)
+      const last = segments[segments.length - 1]
+
+      // 提取包名：兼容 scoped 包（@scope/pkg）和普通包
+      const match = last.match(/^((@[^/\\]+)[/\\]([^/\\]+)|([^/\\]+))/)
+      if (match) {
+        const pkgName = match[1]
+          .replace(/^@/, '') // 去掉开头的 @
+          .replace(/[/\\+@]/g, '_') // 其余特殊字符统一替换为 _
+        return `vendor/${pkgName}`
       }
+
+      return 'vendor/_unknown'
     },
-    chunkFileNames(chunk) {
-      if (chunk.name === 'vendor') {
-        return 'vendor/[name]-[hash].js'
-      }
-      // 其他（源码）
-      return '[name]-[hash].js'
-    },
+    chunkFileNames: '[name]-[hash].js',
   },
 })
 
