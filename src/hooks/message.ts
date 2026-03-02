@@ -30,10 +30,10 @@ export function useMessageUpdates() {
 
   const flushStreaming = () => {
     streamingBuffer.current.forEach((value, messageUid) => {
-      // ✅ 只需要 messageUid，不需要 chatUid
+      // ✅ 只更新 content，不设置 status
+      // 避免在 done/error/aborted 终态到达后被 RAF 覆盖回 streaming
       updateMessage(messageUid, {
         content: value.content,
-        status: 'streaming',
       })
     })
 
@@ -63,7 +63,11 @@ export function useMessageUpdates() {
 
     /* message.updated → 最终态 / error / metadata */
     const unsubscribeUpdated = onUpdate('message.updated', (payload) => {
-      // ✅ 只需要 messageUid
+      // 若收到终态，清除 RAF 缓冲中该消息的待处理条目，防止 RAF 延迟触发时覆盖终态
+      const terminalStatuses = ['done', 'error', 'aborted'] as const
+      if (payload.updates.status && (terminalStatuses as readonly string[]).includes(payload.updates.status)) {
+        streamingBuffer.current.delete(payload.messageUid)
+      }
       updateMessage(payload.messageUid, payload.updates)
     })
 
