@@ -76,7 +76,7 @@ export default defineConfig({
 
       return 'vendor/_unknown'
     },
-    chunkFileNames: '[name]-[hash].js',
+    chunkFileNames: '[name]_[hash].js',
   },
 })
 
