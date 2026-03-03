@@ -278,3 +278,154 @@ describe('useVirtualScroller — imperative scroll API via VirtualListHandle', (
     expect(spy).toHaveBeenCalledWith({ top: 0, behavior: 'instant' })
   })
 })
+
+// ─── onLoadMoreBottom ─────────────────────────────────────────────────────────
+//
+// 在 happy-dom 中 scrollHeight=0，所以 isScrolledToBottom 始终为 true
+// （0 - scrollTop - 0 = -scrollTop ≤ threshold）。
+// 因此只要 direction='down'（scrollTop 增大）且 hasMoreBottom=true，就会触发。
+
+describe('useVirtualScroller — onLoadMoreBottom', () => {
+  it('向下滚动到底部时触发 onLoadMoreBottom', async () => {
+    const onLoadMoreBottom = vi.fn().mockResolvedValue(undefined)
+
+    render(
+      <ScrollTestHarness
+        count={20}
+        hasMoreBottom={true}
+        onLoadMoreBottom={onLoadMoreBottom}
+        loadMoreBottomThreshold={50}
+      />,
+    )
+
+    await act(async () => {})
+
+    const el = screen.getByTestId('scroll-container')
+    const scrollTo = attachScrollMock(el)
+
+    // scrollHeight=0，向下滚动（direction=down）且始终处于底部 → 触发
+    await scrollTo(200)
+
+    await waitFor(() => {
+      expect(onLoadMoreBottom).toHaveBeenCalled()
+    })
+  })
+
+  it('hasMoreBottom=false 时不触发 onLoadMoreBottom', async () => {
+    const onLoadMoreBottom = vi.fn()
+
+    render(
+      <ScrollTestHarness
+        count={20}
+        hasMoreBottom={false}
+        onLoadMoreBottom={onLoadMoreBottom}
+        loadMoreBottomThreshold={50}
+      />,
+    )
+
+    await act(async () => {})
+
+    const el = screen.getByTestId('scroll-container')
+    const scrollTo = attachScrollMock(el)
+
+    await scrollTo(200)
+
+    await new Promise(r => setTimeout(r, 20))
+    expect(onLoadMoreBottom).not.toHaveBeenCalled()
+  })
+
+  it('onLoadMoreBottom 加载期间不重复触发（防抖/锁定）', async () => {
+    // 模拟慢速异步加载，确保锁定期间不会重复调用
+    let resolveFn!: () => void
+    const onLoadMoreBottom = vi.fn().mockImplementation(
+      () => new Promise<void>((resolve) => { resolveFn = resolve }),
+    )
+
+    render(
+      <ScrollTestHarness
+        count={20}
+        hasMoreBottom={true}
+        onLoadMoreBottom={onLoadMoreBottom}
+        loadMoreBottomThreshold={50}
+      />,
+    )
+
+    await act(async () => {})
+
+    const el = screen.getByTestId('scroll-container')
+    const scrollTo = attachScrollMock(el)
+
+    // 第一次触发
+    await scrollTo(200)
+    expect(onLoadMoreBottom).toHaveBeenCalledTimes(1)
+
+    // 加载未完成，再次向下滚动 → 应被锁定，不重复调用
+    await scrollTo(300)
+    expect(onLoadMoreBottom).toHaveBeenCalledTimes(1)
+
+    // 完成加载，再次滚动才能再次触发
+    resolveFn()
+    await new Promise(r => setTimeout(r, 20))
+    await scrollTo(400)
+
+    await waitFor(() => expect(onLoadMoreBottom).toHaveBeenCalledTimes(2))
+  })
+})
+
+// ─── 顶部状态从 true 变回 false ────────────────────────────────────────────────
+//
+// 验证当用户从顶部滚走时，onAtTopStateChange 会被调用 false。
+
+describe('useVirtualScroller — 顶部状态 false 回调', () => {
+  it('从顶部滚走时以 false 调用 onAtTopStateChange', async () => {
+    const onAtTopStateChange = vi.fn()
+
+    render(
+      <ScrollTestHarness
+        count={10}
+        onAtTopStateChange={onAtTopStateChange}
+        loadMoreTopThreshold={50}
+      />,
+    )
+
+    await act(async () => {})
+
+    const el = screen.getByTestId('scroll-container')
+    const scrollTo = attachScrollMock(el)
+
+    // 先滚到顶部（atTop=0 ≤ 50=true）→ 触发 onAtTopStateChange(true)
+    await scrollTo(0)
+
+    await waitFor(() => expect(onAtTopStateChange).toHaveBeenCalledWith(true))
+
+    // 再滚走（atTop=300 ≤ 50=false）→ 触发 onAtTopStateChange(false)
+    await scrollTo(300)
+
+    await waitFor(() => expect(onAtTopStateChange).toHaveBeenCalledWith(false))
+  })
+
+  it('onAtTopStateChange 不重复触发同一状态', async () => {
+    const onAtTopStateChange = vi.fn()
+
+    render(
+      <ScrollTestHarness
+        count={10}
+        onAtTopStateChange={onAtTopStateChange}
+        loadMoreTopThreshold={50}
+      />,
+    )
+
+    await act(async () => {})
+
+    const el = screen.getByTestId('scroll-container')
+    const scrollTo = attachScrollMock(el)
+
+    // 两次都在顶部（scrollTop=0，scrollTop=10 均 ≤ 50）
+    await scrollTo(0) // atTop: false → true → 触发一次
+    await scrollTo(10) // atTop: true → true → 不触发
+
+    await new Promise(r => setTimeout(r, 20))
+    // onAtTopStateChange(true) 仅触发一次
+    expect(onAtTopStateChange.mock.calls.filter(([v]) => v === true)).toHaveLength(1)
+  })
+})
