@@ -11,6 +11,7 @@
  */
 
 import { act, render, screen, waitFor } from '@testing-library/react'
+import { useVirtualScroller } from '../hooks/use-virtual-scroller'
 
 // mock rafThrottle 为透传，避免同步 RAF stub 的返回值覆盖 rafId 问题
 vi.mock('../utils', async (importOriginal) => {
@@ -20,8 +21,6 @@ vi.mock('../utils', async (importOriginal) => {
     rafThrottle: <T extends (...args: unknown[]) => unknown>(fn: T) => fn,
   }
 })
-
-import { useVirtualScroller } from '../hooks/use-virtual-scroller'
 
 // ─── 测试组件 ─────────────────────────────────────────────────────────────────
 
@@ -67,7 +66,9 @@ function attachScrollMock(el: HTMLElement): (top: number) => Promise<void> {
   })
   return async (top: number) => {
     _top = top
-    await act(async () => { el.dispatchEvent(new Event('scroll')) })
+    await act(async () => {
+      el.dispatchEvent(new Event('scroll'))
+    })
   }
 }
 

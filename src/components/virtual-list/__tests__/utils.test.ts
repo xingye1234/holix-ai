@@ -257,7 +257,7 @@ describe('captureScrollAnchor', () => {
   it('does not change scrollTop when scrollHeight is unchanged', () => {
     let _scrollTop = 100
     const el = document.createElement('div')
-    let currentScrollHeight = 800
+    const currentScrollHeight = 800
 
     Object.defineProperties(el, {
       scrollTop: {

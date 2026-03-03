@@ -8,10 +8,10 @@
  */
 
 import type { RefObject } from 'react'
-import { createRef } from 'react'
-import { act, render, screen, waitFor } from '@testing-library/react'
-import { VirtualMessageList } from '../VirtualMessageList'
 import type { VirtualListHandle } from '../types'
+import { act, render, screen, waitFor } from '@testing-library/react'
+import { createRef } from 'react'
+import { VirtualMessageList } from '../VirtualMessageList'
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -46,7 +46,7 @@ function mockViewport(height: number, width = 800): () => void {
 
 // ─── Empty state ──────────────────────────────────────────────────────────────
 
-describe('VirtualMessageList — empty state', () => {
+describe('virtualMessageList — empty state', () => {
   it('renders empty state message when data is empty', () => {
     render(
       <VirtualMessageList
@@ -82,7 +82,7 @@ describe('VirtualMessageList — empty state', () => {
 
 // ─── Slots ────────────────────────────────────────────────────────────────────
 
-describe('VirtualMessageList — topSlot / bottomSlot', () => {
+describe('virtualMessageList — topSlot / bottomSlot', () => {
   it('renders topSlot with correct data attribute wrapper', () => {
     render(
       <VirtualMessageList
@@ -120,7 +120,7 @@ describe('VirtualMessageList — topSlot / bottomSlot', () => {
 
 // ─── Loading indicators ───────────────────────────────────────────────────────
 
-describe('VirtualMessageList — loading indicators', () => {
+describe('virtualMessageList — loading indicators', () => {
   it('shows top loading indicator when loadingTopState = "loading"', () => {
     render(
       <VirtualMessageList
@@ -182,7 +182,7 @@ describe('VirtualMessageList — loading indicators', () => {
 
 // ─── ARIA attributes ──────────────────────────────────────────────────────────
 
-describe('VirtualMessageList — ARIA', () => {
+describe('virtualMessageList — ARIA', () => {
   it('renders container with role="log" and aria-label', () => {
     render(
       <VirtualMessageList data={makeIds(5)} itemContent={renderItem} />,
@@ -211,7 +211,7 @@ describe('VirtualMessageList — ARIA', () => {
 
 // ─── className / style ────────────────────────────────────────────────────────
 
-describe('VirtualMessageList — className & style', () => {
+describe('virtualMessageList — className & style', () => {
   it('applies custom className to scroll container', () => {
     render(
       <VirtualMessageList
@@ -247,7 +247,6 @@ describe('VirtualMessageList — className & style', () => {
         />,
       )
       // At least one item wrapper should have the class (virtualizer renders items based on container size)
-      const wrappers = document.querySelectorAll('.item-wrapper')
       // In the test env the virtualizer may not render items if height mocking isn't perfect,
       // but we verify the inner container still exists
       const inner = document.querySelector('[data-virtual-list-inner]')
@@ -261,7 +260,7 @@ describe('VirtualMessageList — className & style', () => {
 
 // ─── Internal structure ───────────────────────────────────────────────────────
 
-describe('VirtualMessageList — inner DOM structure', () => {
+describe('virtualMessageList — inner DOM structure', () => {
   it('renders data-virtual-list-inner div for virtual items', () => {
     render(
       <VirtualMessageList data={makeIds(5)} itemContent={renderItem} />,
@@ -286,7 +285,7 @@ describe('VirtualMessageList — inner DOM structure', () => {
 
 // ─── Virtual item rendering ───────────────────────────────────────────────────
 
-describe('VirtualMessageList — virtual item rendering', () => {
+describe('virtualMessageList — virtual item rendering', () => {
   let restoreViewport: () => void
 
   beforeEach(() => {
@@ -359,7 +358,7 @@ describe('VirtualMessageList — virtual item rendering', () => {
 
 // ─── listRef imperative handle ────────────────────────────────────────────────
 
-describe('VirtualMessageList — listRef handle', () => {
+describe('virtualMessageList — listRef handle', () => {
   it('exposes scrollToBottom via ref', async () => {
     const listRef = createRef<VirtualListHandle>() as RefObject<VirtualListHandle | null>
 
@@ -518,7 +517,7 @@ describe('VirtualMessageList — listRef handle', () => {
 
 // ─── onLoadMoreTop callback ───────────────────────────────────────────────────
 
-describe('VirtualMessageList — onLoadMoreTop', () => {
+describe('virtualMessageList — onLoadMoreTop', () => {
   it('accepts onLoadMoreTop + hasMoreTop props without error', async () => {
     const onLoadMoreTop = vi.fn().mockResolvedValue(undefined)
     const listRef = createRef<VirtualListHandle>() as RefObject<VirtualListHandle | null>
@@ -575,7 +574,7 @@ describe('VirtualMessageList — onLoadMoreTop', () => {
 
 // ─── onAtBottomStateChange callback ──────────────────────────────────────────
 
-describe('VirtualMessageList — scroll state callbacks', () => {
+describe('virtualMessageList — scroll state callbacks', () => {
   it('calls onAtBottomStateChange when scroll position changes', async () => {
     const onAtBottomStateChange = vi.fn()
     const listRef = createRef<VirtualListHandle>() as RefObject<VirtualListHandle | null>
@@ -605,7 +604,7 @@ describe('VirtualMessageList — scroll state callbacks', () => {
 
 // ─── followOutput behavior ────────────────────────────────────────────────────
 
-describe('VirtualMessageList — followOutput', () => {
+describe('virtualMessageList — followOutput', () => {
   it('calls followOutputBehavior with current atBottom state', async () => {
     const followOutputBehavior = vi.fn().mockReturnValue('smooth')
     const listRef = createRef<VirtualListHandle>() as RefObject<VirtualListHandle | null>

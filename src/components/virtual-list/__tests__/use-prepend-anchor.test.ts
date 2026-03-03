@@ -3,8 +3,8 @@
  */
 
 import type { RefObject } from 'react'
-import { act } from 'react'
 import { renderHook } from '@testing-library/react'
+import { act } from 'react'
 import { usePrependAnchor } from '../hooks/use-prepend-anchor'
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
@@ -152,15 +152,23 @@ describe('usePrependAnchor', () => {
     const { result } = renderHook(() => usePrependAnchor(ref))
 
     // ── Cycle 1: add 200px of content ────────────────────────────────────────
-    act(() => { result.current.beforePrepend() })
+    act(() => {
+      result.current.beforePrepend()
+    })
     ;(el as any).scrollHeight = 700
-    act(() => { result.current.afterPrepend() })
+    act(() => {
+      result.current.afterPrepend()
+    })
     expect((el as any).scrollTop).toBe(200) // 0 + 200
 
     // ── Cycle 2: add another 100px ────────────────────────────────────────────
-    act(() => { result.current.beforePrepend() })
+    act(() => {
+      result.current.beforePrepend()
+    })
     ;(el as any).scrollHeight = 800
-    act(() => { result.current.afterPrepend() })
+    act(() => {
+      result.current.afterPrepend()
+    })
     expect((el as any).scrollTop).toBe(300) // 200 + 100
   })
 })
