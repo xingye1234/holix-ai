@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as SettingRouteImport } from './routes/setting'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SettingProviderRouteImport } from './routes/setting/provider'
+import { Route as SettingSkillsRouteImport } from './routes/setting/skills'
 import { Route as SettingHelpRouteImport } from './routes/setting/help'
 import { Route as SettingGeneralRouteImport } from './routes/setting/general'
 import { Route as ChatIdRouteImport } from './routes/chat/$id'
@@ -29,6 +30,11 @@ const IndexRoute = IndexRouteImport.update({
 const SettingProviderRoute = SettingProviderRouteImport.update({
   id: '/provider',
   path: '/provider',
+  getParentRoute: () => SettingRoute,
+} as any)
+const SettingSkillsRoute = SettingSkillsRouteImport.update({
+  id: '/skills',
+  path: '/skills',
   getParentRoute: () => SettingRoute,
 } as any)
 const SettingHelpRoute = SettingHelpRouteImport.update({
@@ -54,6 +60,7 @@ export interface FileRoutesByFullPath {
   '/setting/general': typeof SettingGeneralRoute
   '/setting/help': typeof SettingHelpRoute
   '/setting/provider': typeof SettingProviderRoute
+  '/setting/skills': typeof SettingSkillsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -62,6 +69,7 @@ export interface FileRoutesByTo {
   '/setting/general': typeof SettingGeneralRoute
   '/setting/help': typeof SettingHelpRoute
   '/setting/provider': typeof SettingProviderRoute
+  '/setting/skills': typeof SettingSkillsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -71,6 +79,7 @@ export interface FileRoutesById {
   '/setting/general': typeof SettingGeneralRoute
   '/setting/help': typeof SettingHelpRoute
   '/setting/provider': typeof SettingProviderRoute
+  '/setting/skills': typeof SettingSkillsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -81,6 +90,7 @@ export interface FileRouteTypes {
     | '/setting/general'
     | '/setting/help'
     | '/setting/provider'
+    | '/setting/skills'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -89,6 +99,7 @@ export interface FileRouteTypes {
     | '/setting/general'
     | '/setting/help'
     | '/setting/provider'
+    | '/setting/skills'
   id:
     | '__root__'
     | '/'
@@ -97,6 +108,7 @@ export interface FileRouteTypes {
     | '/setting/general'
     | '/setting/help'
     | '/setting/provider'
+    | '/setting/skills'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -142,6 +154,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingGeneralRouteImport
       parentRoute: typeof SettingRoute
     }
+    '/setting/skills': {
+      id: '/setting/skills'
+      path: '/skills'
+      fullPath: '/setting/skills'
+      preLoaderRoute: typeof SettingSkillsRouteImport
+      parentRoute: typeof SettingRoute
+    }
     '/chat/$id': {
       id: '/chat/$id'
       path: '/chat/$id'
@@ -156,12 +175,14 @@ interface SettingRouteChildren {
   SettingGeneralRoute: typeof SettingGeneralRoute
   SettingHelpRoute: typeof SettingHelpRoute
   SettingProviderRoute: typeof SettingProviderRoute
+  SettingSkillsRoute: typeof SettingSkillsRoute
 }
 
 const SettingRouteChildren: SettingRouteChildren = {
   SettingGeneralRoute: SettingGeneralRoute,
   SettingHelpRoute: SettingHelpRoute,
   SettingProviderRoute: SettingProviderRoute,
+  SettingSkillsRoute: SettingSkillsRoute,
 }
 
 const SettingRouteWithChildren =

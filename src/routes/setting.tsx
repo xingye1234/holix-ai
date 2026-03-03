@@ -16,6 +16,10 @@ const settingList = [
     path: '/setting/provider',
   },
   {
+    name: 'Skills',
+    path: '/setting/skills',
+  },
+  {
     name: '帮助与支持',
     path: '/setting/help',
   },
