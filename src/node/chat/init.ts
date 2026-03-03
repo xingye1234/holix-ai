@@ -74,6 +74,7 @@ export function initChat() {
       userMessageContent: content,
       contextMessages,
       systemMessages,
+      workspace: updatedChat?.workspace ?? [],
     })
 
     logger.info(

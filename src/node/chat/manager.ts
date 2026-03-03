@@ -1,7 +1,7 @@
 // biome-ignore assist/source/organizeImports: <explanation>
 import type { BaseChatModel } from '@langchain/core/language_models/chat_models'
 import type { AIMessage, AIMessageChunk, ToolMessage } from '@langchain/core/messages'
-import type { DraftContent, Message } from '../database/schema/chat'
+import type { DraftContent, Message, Workspace } from '../database/schema/chat'
 import type { ChatContext } from './context'
 import util from 'node:util'
 import { HumanMessage, SystemMessage } from '@langchain/core/messages'
@@ -50,6 +50,7 @@ interface ChatSession {
   abortController: AbortController
   status: 'running' | 'completed' | 'aborted' | 'error'
   systemMessages?: SystemMessage[]
+  workspace?: Workspace[]
 }
 
 /**
@@ -75,8 +76,9 @@ class ChatManager {
     userMessageContent: string
     contextMessages?: Message[]
     systemMessages?: string[]
+    workspace?: Workspace[]
   }): Promise<string> {
-    const { chatUid, llm, userMessageContent, contextMessages = [], systemMessages = [] } = params
+    const { chatUid, llm, userMessageContent, contextMessages = [], systemMessages = [], workspace = [] } = params
 
     // 生成唯一 ID
     const requestId = nanoid()
@@ -107,6 +109,7 @@ class ChatManager {
       abortController,
       status: 'running',
       systemMessages: systemMessages.map(msg => new SystemMessage(msg)),
+      workspace,
     }
 
     this.sessions.set(requestId, session)
@@ -156,6 +159,9 @@ class ChatManager {
       // 收集 skill 注入的 system prompts
       const skillPrompts = skillManager.getSystemPrompts()
 
+      // 构建工作区上下文提示词
+      const workspacePrompt = this.buildWorkspacePrompt(session.workspace)
+
       // 创建 Agent
       const agent = createAgent({
         model: llm,
@@ -169,6 +175,8 @@ class ChatManager {
             ...(session.systemMessages?.map(msg => ({ type: 'text', text: msg.content })) || []),
             // 注入所有已启用 skill 的 system prompt
             ...skillPrompts.map(prompt => ({ type: 'text', text: prompt })),
+            // 注入工作区上下文
+            ...(workspacePrompt ? [{ type: 'text', text: workspacePrompt }] : []),
           ],
         }),
         tools: this.buildTools(),
@@ -468,6 +476,40 @@ class ChatManager {
       config: configStore.getData(),
       chatUid: session.chatUid,
     }
+  }
+
+  /**
+   * 根据会话工作区生成系统提示词片段，让 AI 感知可操作的路径。
+   * 无工作区时返回 null（不注入）。
+   */
+  private buildWorkspacePrompt(workspace?: Workspace[]): string | null {
+    if (!workspace || workspace.length === 0)
+      return null
+
+    const dirs = workspace.filter(w => w.type === 'directory').map(w => `  - ${w.value}`)
+    const files = workspace.filter(w => w.type === 'file').map(w => `  - ${w.value}`)
+
+    const lines: string[] = [
+      '## Workspace',
+      '',
+      'The user has configured the following local paths for this conversation.',
+      'You can use file system and code reading tools to read, search, or browse these paths:',
+    ]
+
+    if (dirs.length > 0) {
+      lines.push('', '**Directories:**', ...dirs)
+    }
+    if (files.length > 0) {
+      lines.push('', '**Files:**', ...files)
+    }
+
+    lines.push(
+      '',
+      'When the user asks about code, files, or project structure, look in these paths first.',
+      'Always prefer reading the actual files rather than guessing their content.',
+    )
+
+    return lines.join('\n')
   }
 
   private buildTools() {
