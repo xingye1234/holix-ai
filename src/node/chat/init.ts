@@ -74,7 +74,7 @@ export function initChat() {
       userMessageContent: content,
       contextMessages,
       systemMessages,
-      workspace: updatedChat?.workspace ?? [],
+      workspace: typeof updatedChat?.workspace === 'string' ? JSON.parse(updatedChat.workspace) : (updatedChat?.workspace || []),
     })
 
     logger.info(
