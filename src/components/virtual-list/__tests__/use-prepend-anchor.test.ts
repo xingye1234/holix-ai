@@ -1,5 +1,10 @@
 /**
- * @fileoverview Tests for usePrependAnchor hook
+ * @fileoverview usePrependAnchor hook 单元测试
+ *
+ * 该 hook 用于在虚拟列表顶部预插入历史消息时，
+ * 通过快照 / 补偿 scrollHeight 差值来避免视口跳动。
+ * 测试中使用 Object.defineProperty 控制 scrollTop / scrollHeight
+ * 的 getter/setter，绕开 happy-dom 对非可滚动元素的限制。
  */
 
 import type { RefObject } from 'react'
@@ -46,7 +51,7 @@ function makeElRef(init: FakeScrollEl): {
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
 describe('usePrependAnchor', () => {
-  it('returns beforePrepend and afterPrepend functions', () => {
+  it('返回 beforePrepend 和 afterPrepend 两个函数', () => {
     const { ref } = makeElRef({ scrollTop: 0, scrollHeight: 500 })
 
     const { result } = renderHook(() => usePrependAnchor(ref))
@@ -55,7 +60,7 @@ describe('usePrependAnchor', () => {
     expect(typeof result.current.afterPrepend).toBe('function')
   })
 
-  it('compensates scrollTop when content height grows after beforePrepend', () => {
+  it('插入内容后 scrollHeight 增大时，afterPrepend 自动补偿 scrollTop', () => {
     const { el, ref } = makeElRef({ scrollTop: 200, scrollHeight: 1000 })
 
     const { result } = renderHook(() => usePrependAnchor(ref))
@@ -64,18 +69,18 @@ describe('usePrependAnchor', () => {
       result.current.beforePrepend()
     })
 
-    // Simulate prepend → scrollHeight grows by 300
+    // 模拟顶部插入内容 → scrollHeight 增加 300
     ;(el as any).scrollHeight = 1300
 
     act(() => {
       result.current.afterPrepend()
     })
 
-    // scrollTop should be adjusted: 200 + (1300 - 1000) = 500
+    // 期望 scrollTop 被补偿：200 + (1300 - 1000) = 500
     expect((el as any).scrollTop).toBe(500)
   })
 
-  it('does NOT change scrollTop when scrollHeight is unchanged', () => {
+  it('scrollHeight 未变化时不修改 scrollTop', () => {
     const { el, ref } = makeElRef({ scrollTop: 150, scrollHeight: 800 })
 
     const { result } = renderHook(() => usePrependAnchor(ref))
@@ -84,7 +89,7 @@ describe('usePrependAnchor', () => {
       result.current.beforePrepend()
     })
 
-    // No change in scrollHeight
+    // scrollHeight 未变化，delta = 0
     act(() => {
       result.current.afterPrepend()
     })
@@ -92,7 +97,7 @@ describe('usePrependAnchor', () => {
     expect((el as any).scrollTop).toBe(150)
   })
 
-  it('afterPrepend is idempotent — calling twice does not double-compensate', () => {
+  it('afterPrepend 幂等：重复调用不会重复补偿 scrollTop', () => {
     const { el, ref } = makeElRef({ scrollTop: 100, scrollHeight: 500 })
 
     const { result } = renderHook(() => usePrependAnchor(ref))
@@ -105,17 +110,17 @@ describe('usePrependAnchor', () => {
 
     act(() => {
       result.current.afterPrepend()
-      result.current.afterPrepend() // second call should be no-op
+      result.current.afterPrepend() // 第二次调用应为空操作（幂等）
     })
 
-    // Expected: 100 + (700 - 500) = 300 (only once)
+    // 期望只补偿一次：100 + (700 - 500) = 300
     expect((el as any).scrollTop).toBe(300)
   })
 
-  it('does nothing when ref.current is null', () => {
+  it('ref.current 为 null 时不报错也不执行任何操作', () => {
     const nullRef = { current: null } as RefObject<HTMLElement | null>
 
-    // Should not throw
+    // 不应抛出异常
     const { result } = renderHook(() => usePrependAnchor(nullRef))
 
     expect(() => {
@@ -126,7 +131,7 @@ describe('usePrependAnchor', () => {
     }).not.toThrow()
   })
 
-  it('does not compensate when content shrinks (delta <= 0)', () => {
+  it('内容缩短（delta ≤ 0）时不补偿 scrollTop', () => {
     const { el, ref } = makeElRef({ scrollTop: 300, scrollHeight: 1000 })
 
     const { result } = renderHook(() => usePrependAnchor(ref))
@@ -135,23 +140,23 @@ describe('usePrependAnchor', () => {
       result.current.beforePrepend()
     })
 
-    // Content shrank
+    // 模拟内容缩短
     ;(el as any).scrollHeight = 800
 
     act(() => {
       result.current.afterPrepend()
     })
 
-    // delta = 800 - 1000 = -200 → not > 0, no change
+    // delta = 800 - 1000 = -200 → 不满足 > 0，不补偿
     expect((el as any).scrollTop).toBe(300)
   })
 
-  it('handles multiple sequential prepend cycles correctly', () => {
+  it('多次连续插入周期均能正确依次补偿 scrollTop', () => {
     const { el, ref } = makeElRef({ scrollTop: 0, scrollHeight: 500 })
 
     const { result } = renderHook(() => usePrependAnchor(ref))
 
-    // ── Cycle 1: add 200px of content ────────────────────────────────────────
+    // ── 第一轮：插入 200px 的内容 ──────────────────────────────────────────
     act(() => {
       result.current.beforePrepend()
     })
@@ -161,7 +166,7 @@ describe('usePrependAnchor', () => {
     })
     expect((el as any).scrollTop).toBe(200) // 0 + 200
 
-    // ── Cycle 2: add another 100px ────────────────────────────────────────────
+    // ── 第二轮：再插入 100px 的内容 ──────────────────────────────────────────
     act(() => {
       result.current.beforePrepend()
     })

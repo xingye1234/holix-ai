@@ -47,7 +47,7 @@ function mockViewport(height: number, width = 800): () => void {
 // ─── Empty state ──────────────────────────────────────────────────────────────
 
 describe('virtualMessageList — empty state', () => {
-  it('renders empty state message when data is empty', () => {
+  it('data 为空时渲染空状态占位内容', () => {
     render(
       <VirtualMessageList
         data={[]}
@@ -57,7 +57,7 @@ describe('virtualMessageList — empty state', () => {
     expect(screen.getByLabelText('暂无消息')).toBeInTheDocument()
   })
 
-  it('renders topSlot inside empty state container', () => {
+  it('空状态下也和正常一样渲染 topSlot', () => {
     render(
       <VirtualMessageList
         data={[]}
@@ -68,7 +68,7 @@ describe('virtualMessageList — empty state', () => {
     expect(screen.getByTestId('top-slot-empty')).toBeInTheDocument()
   })
 
-  it('renders bottomSlot inside empty state container', () => {
+  it('空状态下也和正常一样渲染 bottomSlot', () => {
     render(
       <VirtualMessageList
         data={[]}
@@ -83,7 +83,7 @@ describe('virtualMessageList — empty state', () => {
 // ─── Slots ────────────────────────────────────────────────────────────────────
 
 describe('virtualMessageList — topSlot / bottomSlot', () => {
-  it('renders topSlot with correct data attribute wrapper', () => {
+  it('topSlot 渲染在正确的 data-attribute 容器中', () => {
     render(
       <VirtualMessageList
         data={makeIds(5)}
@@ -96,7 +96,7 @@ describe('virtualMessageList — topSlot / bottomSlot', () => {
     expect(screen.getByTestId('my-top-slot')).toBeInTheDocument()
   })
 
-  it('renders bottomSlot with correct data attribute wrapper', () => {
+  it('bottomSlot 渲染在正确的 data-attribute 容器中', () => {
     render(
       <VirtualMessageList
         data={makeIds(5)}
@@ -109,7 +109,7 @@ describe('virtualMessageList — topSlot / bottomSlot', () => {
     expect(screen.getByTestId('my-bottom-slot')).toBeInTheDocument()
   })
 
-  it('does NOT render slot wrappers when no slots are provided', () => {
+  it('未传入 slot 时不渲染 slot 容器元素', () => {
     render(
       <VirtualMessageList data={makeIds(3)} itemContent={renderItem} />,
     )
@@ -121,7 +121,7 @@ describe('virtualMessageList — topSlot / bottomSlot', () => {
 // ─── Loading indicators ───────────────────────────────────────────────────────
 
 describe('virtualMessageList — loading indicators', () => {
-  it('shows top loading indicator when loadingTopState = "loading"', () => {
+  it('loadingTopState = "loading" 时显示顶部加载指示器', () => {
     render(
       <VirtualMessageList
         data={makeIds(10)}
@@ -132,7 +132,7 @@ describe('virtualMessageList — loading indicators', () => {
     expect(screen.getByLabelText('加载历史消息')).toBeInTheDocument()
   })
 
-  it('hides top loading indicator when loadingTopState = "idle"', () => {
+  it('loadingTopState = "idle" 时隐藏顶部加载指示器', () => {
     render(
       <VirtualMessageList
         data={makeIds(10)}
@@ -143,7 +143,7 @@ describe('virtualMessageList — loading indicators', () => {
     expect(screen.queryByLabelText('加载历史消息')).toBeNull()
   })
 
-  it('shows custom top loading content when provided', () => {
+  it('传入 loadingTopContent 时渲染自定义加载内容', () => {
     render(
       <VirtualMessageList
         data={makeIds(10)}
@@ -155,7 +155,7 @@ describe('virtualMessageList — loading indicators', () => {
     expect(screen.getByTestId('custom-top-loader')).toBeInTheDocument()
   })
 
-  it('shows bottom loading indicator when loadingBottomState = "loading"', () => {
+  it('loadingBottomState = "loading" 时显示底部加载指示器', () => {
     render(
       <VirtualMessageList
         data={makeIds(10)}
@@ -168,7 +168,7 @@ describe('virtualMessageList — loading indicators', () => {
     expect(screen.getByText('正在加载...')).toBeInTheDocument()
   })
 
-  it('hides bottom loading indicator when loadingBottomState = "idle"', () => {
+  it('loadingBottomState = "idle" 时隐藏底部加载指示器', () => {
     render(
       <VirtualMessageList
         data={makeIds(10)}
@@ -183,7 +183,7 @@ describe('virtualMessageList — loading indicators', () => {
 // ─── ARIA attributes ──────────────────────────────────────────────────────────
 
 describe('virtualMessageList — ARIA', () => {
-  it('renders container with role="log" and aria-label', () => {
+  it('容器具有 role="log" 和正确的 aria-label', () => {
     render(
       <VirtualMessageList data={makeIds(5)} itemContent={renderItem} />,
     )
@@ -192,7 +192,7 @@ describe('virtualMessageList — ARIA', () => {
     expect(list).toHaveAttribute('aria-label', '消息列表')
   })
 
-  it('sets aria-live="polite" for assistive technology announce', () => {
+  it('aria-live="polite" 供辅助技术播报新消息', () => {
     render(
       <VirtualMessageList data={makeIds(5)} itemContent={renderItem} />,
     )
@@ -200,7 +200,7 @@ describe('virtualMessageList — ARIA', () => {
     expect(list).toHaveAttribute('aria-live', 'polite')
   })
 
-  it('sets aria-relevant="additions"', () => {
+  it('aria-relevant="additions" 仅播报新增内容', () => {
     render(
       <VirtualMessageList data={makeIds(5)} itemContent={renderItem} />,
     )
@@ -212,7 +212,7 @@ describe('virtualMessageList — ARIA', () => {
 // ─── className / style ────────────────────────────────────────────────────────
 
 describe('virtualMessageList — className & style', () => {
-  it('applies custom className to scroll container', () => {
+  it('自定义 className 挂载到滚动容器', () => {
     render(
       <VirtualMessageList
         data={makeIds(5)}
@@ -223,7 +223,7 @@ describe('virtualMessageList — className & style', () => {
     expect(document.querySelector('.my-chat-list')).toBeInTheDocument()
   })
 
-  it('merges custom style onto scroll container', () => {
+  it('自定义 style 合并到滚动容器', () => {
     render(
       <VirtualMessageList
         data={makeIds(5)}
@@ -235,7 +235,7 @@ describe('virtualMessageList — className & style', () => {
     expect(container).toHaveStyle({ height: '400px' })
   })
 
-  it('applies itemClassName to virtual item wrappers', () => {
+  it('itemClassName 应用到每个虚拟条目包装元素', () => {
     const restore = mockViewport(600)
     try {
       render(
@@ -246,9 +246,9 @@ describe('virtualMessageList — className & style', () => {
           estimatedItemSize={50}
         />,
       )
-      // At least one item wrapper should have the class (virtualizer renders items based on container size)
-      // In the test env the virtualizer may not render items if height mocking isn't perfect,
-      // but we verify the inner container still exists
+      // 验证 itemClassName 是否被应用（virtualizer 根据容器尺寸决定渲染数量）
+      // 在测试环境中高度 mock 不完整时 virtualizer 可能不渲染条目，
+      // 最低限度验证内层容器存在即可
       const inner = document.querySelector('[data-virtual-list-inner]')
       expect(inner).toBeInTheDocument()
     }
@@ -261,14 +261,14 @@ describe('virtualMessageList — className & style', () => {
 // ─── Internal structure ───────────────────────────────────────────────────────
 
 describe('virtualMessageList — inner DOM structure', () => {
-  it('renders data-virtual-list-inner div for virtual items', () => {
+  it('渲染 data-virtual-list-inner 内层容器', () => {
     render(
       <VirtualMessageList data={makeIds(5)} itemContent={renderItem} />,
     )
     expect(document.querySelector('[data-virtual-list-inner]')).toBeInTheDocument()
   })
 
-  it('inner div height equals totalSize from virtualizer', () => {
+  it('内层容器高度等于 virtualizer 计算的 totalSize', () => {
     render(
       <VirtualMessageList
         data={makeIds(5)}
@@ -278,7 +278,7 @@ describe('virtualMessageList — inner DOM structure', () => {
     )
     const inner = document.querySelector('[data-virtual-list-inner]') as HTMLElement
     expect(inner).toBeInTheDocument()
-    // totalSize = 5 * 80 = 400 initially (before measurement)
+    // 首次渲染前（测量前）：totalSize = 条数 × 默认高度
     expect(inner.style.height).toBe('400px')
   })
 })
@@ -297,7 +297,7 @@ describe('virtualMessageList — virtual item rendering', () => {
     restoreViewport()
   })
 
-  it('renders virtual item wrappers (data-index) when viewport has height', async () => {
+  it('视口有高度时渲染 data-index 条目包装元素', async () => {
     render(
       <VirtualMessageList
         data={makeIds(3)}
@@ -305,7 +305,7 @@ describe('virtualMessageList — virtual item rendering', () => {
         estimatedItemSize={200}
       />,
     )
-    // Flush any pending layout effects / state updates
+    // 刷新待处理的 layout effects / 状态更新
     await act(async () => {})
     const items = document.querySelectorAll('[data-index]')
     // 在 happy-dom 中，layout 尺寸可能不完全生效；
@@ -318,7 +318,7 @@ describe('virtualMessageList — virtual item rendering', () => {
     expect(items.length).toBeGreaterThanOrEqual(0)
   })
 
-  it('uses getItemKey for stable item keys (no duplicate data-indices)', () => {
+  it('getItemKey 生成紀一的条目 key（无重复 data-index）', () => {
     render(
       <VirtualMessageList
         data={makeIds(5)}
@@ -333,7 +333,7 @@ describe('virtualMessageList — virtual item rendering', () => {
     expect(unique.size).toBe(dataIndices.length)
   })
 
-  it('passes correct isFirst / isLast flags to itemContent', () => {
+  it('itemContent 收到正确的 isFirst / isLast 标志', () => {
     const flags: Array<{ isFirst: boolean, isLast: boolean, index: number }> = []
 
     render(
@@ -359,7 +359,7 @@ describe('virtualMessageList — virtual item rendering', () => {
 // ─── listRef imperative handle ────────────────────────────────────────────────
 
 describe('virtualMessageList — listRef handle', () => {
-  it('exposes scrollToBottom via ref', async () => {
+  it('通过 ref 暴露 scrollToBottom 方法', async () => {
     const listRef = createRef<VirtualListHandle>() as RefObject<VirtualListHandle | null>
 
     render(
@@ -377,7 +377,7 @@ describe('virtualMessageList — listRef handle', () => {
     expect(typeof listRef.current?.scrollToBottom).toBe('function')
   })
 
-  it('exposes scrollToTop via ref', async () => {
+  it('通过 ref 暴露 scrollToTop 方法', async () => {
     const listRef = createRef<VirtualListHandle>() as RefObject<VirtualListHandle | null>
 
     render(
@@ -395,7 +395,7 @@ describe('virtualMessageList — listRef handle', () => {
     expect(typeof listRef.current?.scrollToTop).toBe('function')
   })
 
-  it('exposes scrollToIndex via ref', async () => {
+  it('通过 ref 暴露 scrollToIndex 方法', async () => {
     const listRef = createRef<VirtualListHandle>() as RefObject<VirtualListHandle | null>
 
     render(
@@ -413,7 +413,7 @@ describe('virtualMessageList — listRef handle', () => {
     expect(typeof listRef.current?.scrollToIndex).toBe('function')
   })
 
-  it('exposes getScrollElement via ref and returns the DOM node', async () => {
+  it('通过 ref 暴露 getScrollElement 并返回 DOM 节点', async () => {
     const listRef = createRef<VirtualListHandle>() as RefObject<VirtualListHandle | null>
 
     render(
@@ -432,7 +432,7 @@ describe('virtualMessageList — listRef handle', () => {
     expect(el).toBeInstanceOf(HTMLElement)
   })
 
-  it('isAtBottom returns boolean', async () => {
+  it('isAtBottom 返回布尔值', async () => {
     const listRef = createRef<VirtualListHandle>() as RefObject<VirtualListHandle | null>
 
     render(
@@ -450,7 +450,7 @@ describe('virtualMessageList — listRef handle', () => {
     expect(typeof listRef.current?.isAtBottom()).toBe('boolean')
   })
 
-  it('isAtTop returns boolean', async () => {
+  it('isAtTop 返回布尔值', async () => {
     const listRef = createRef<VirtualListHandle>() as RefObject<VirtualListHandle | null>
 
     render(
@@ -468,7 +468,7 @@ describe('virtualMessageList — listRef handle', () => {
     expect(typeof listRef.current?.isAtTop()).toBe('boolean')
   })
 
-  it('scrollToBottom calls scrollTo on the underlying element', async () => {
+  it('scrollToBottom 调用底层元素的 scrollTo 方法', async () => {
     const listRef = createRef<VirtualListHandle>() as RefObject<VirtualListHandle | null>
 
     render(
@@ -491,7 +491,7 @@ describe('virtualMessageList — listRef handle', () => {
     expect(spy).toHaveBeenCalledWith(expect.objectContaining({ behavior: 'smooth' }))
   })
 
-  it('scrollToTop calls scrollTo with top = 0', async () => {
+  it('scrollToTop 以 top=0 调用 scrollTo', async () => {
     const listRef = createRef<VirtualListHandle>() as RefObject<VirtualListHandle | null>
 
     render(
@@ -518,7 +518,7 @@ describe('virtualMessageList — listRef handle', () => {
 // ─── onLoadMoreTop callback ───────────────────────────────────────────────────
 
 describe('virtualMessageList — onLoadMoreTop', () => {
-  it('accepts onLoadMoreTop + hasMoreTop props without error', async () => {
+  it('传入 onLoadMoreTop + hasMoreTop 不报错', async () => {
     const onLoadMoreTop = vi.fn().mockResolvedValue(undefined)
     const listRef = createRef<VirtualListHandle>() as RefObject<VirtualListHandle | null>
 
@@ -541,7 +541,7 @@ describe('virtualMessageList — onLoadMoreTop', () => {
     expect(typeof listRef.current?.isAtTop()).toBe('boolean')
   })
 
-  it('does NOT call onLoadMoreTop when hasMoreTop=false', async () => {
+  it('hasMoreTop=false 时不触发 onLoadMoreTop', async () => {
     const onLoadMoreTop = vi.fn()
     const listRef = createRef<VirtualListHandle>() as RefObject<VirtualListHandle | null>
 
@@ -565,7 +565,7 @@ describe('virtualMessageList — onLoadMoreTop', () => {
       el.dispatchEvent(new Event('scroll'))
     })
 
-    // Give time for any potential async call
+    // 等待任何异步副作用结束
     await new Promise(r => setTimeout(r, 50))
 
     expect(onLoadMoreTop).not.toHaveBeenCalled()
@@ -575,7 +575,7 @@ describe('virtualMessageList — onLoadMoreTop', () => {
 // ─── onAtBottomStateChange callback ──────────────────────────────────────────
 
 describe('virtualMessageList — scroll state callbacks', () => {
-  it('calls onAtBottomStateChange when scroll position changes', async () => {
+  it('滚动位置变化时触发 onAtBottomStateChange', async () => {
     const onAtBottomStateChange = vi.fn()
     const listRef = createRef<VirtualListHandle>() as RefObject<VirtualListHandle | null>
 
@@ -596,8 +596,7 @@ describe('virtualMessageList — scroll state callbacks', () => {
       el.dispatchEvent(new Event('scroll'))
     })
 
-    // The callback may or may not fire depending on initial state,
-    // but it should be a function and not throw
+    // 该回调是否触发取决于初始状态，此处只验证它是可调用的函数且不会抛出异常
     expect(onAtBottomStateChange).toBeDefined()
   })
 })
@@ -605,7 +604,7 @@ describe('virtualMessageList — scroll state callbacks', () => {
 // ─── followOutput behavior ────────────────────────────────────────────────────
 
 describe('virtualMessageList — followOutput', () => {
-  it('calls followOutputBehavior with current atBottom state', async () => {
+  it('followOutputBehavior 接收当前 atBottom 状态', async () => {
     const followOutputBehavior = vi.fn().mockReturnValue('smooth')
     const listRef = createRef<VirtualListHandle>() as RefObject<VirtualListHandle | null>
 
@@ -620,7 +619,7 @@ describe('virtualMessageList — followOutput', () => {
 
     await waitFor(() => expect(listRef.current).not.toBeNull())
 
-    // Re-render with more items to trigger followOutput check
+    // 用更多条目重新渲染，触发 followOutput 的 layout effect 检查
     act(() => {
       rerender(
         <VirtualMessageList
@@ -632,8 +631,8 @@ describe('virtualMessageList — followOutput', () => {
       )
     })
 
-    // followOutputBehavior may be called during the count-increase layout effect
-    // We just verify it's callable and won't throw
+    // followOutputBehavior 可能在 count 增加引发的 layout effect 中被调用
+    // 验证它不会抛出异常即可
     expect(() => followOutputBehavior(true)).not.toThrow()
     expect(followOutputBehavior(true)).toBe('smooth')
     expect(followOutputBehavior(false)).toBe('smooth')

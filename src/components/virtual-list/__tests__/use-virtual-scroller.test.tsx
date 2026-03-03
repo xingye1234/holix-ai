@@ -75,7 +75,7 @@ function attachScrollMock(el: HTMLElement): (top: number) => Promise<void> {
 // ─── onLoadMoreTop ────────────────────────────────────────────────────────────
 
 describe('useVirtualScroller — onLoadMoreTop', () => {
-  it('fires onLoadMoreTop when scrolling up past the top threshold', async () => {
+  it('向上滚动并到达顶部阈值时触发 onLoadMoreTop', async () => {
     const onLoadMoreTop = vi.fn().mockResolvedValue(undefined)
 
     render(
@@ -87,14 +87,14 @@ describe('useVirtualScroller — onLoadMoreTop', () => {
       />,
     )
 
-    await act(async () => {}) // flush effects including scroll listener registration
+    await act(async () => {}) // 刷新 effects，包括 scroll 监听器的注册
 
     const el = screen.getByTestId('scroll-container')
     const scrollTo = attachScrollMock(el)
 
-    // scroll down first (registers prevScrollTop = 200)
+    // 先向下滚动（记录 prevScrollTop = 200）
     await scrollTo(200)
-    // scroll up to 0 → direction='up', scrollTop=0 <= threshold=50 → triggers
+    // 再向上滚动到 0 → direction='up'，scrollTop=0 ≤ threshold=50 → 触发
     await scrollTo(0)
 
     await waitFor(() => {
@@ -102,7 +102,7 @@ describe('useVirtualScroller — onLoadMoreTop', () => {
     })
   })
 
-  it('does NOT fire onLoadMoreTop when hasMoreTop=false', async () => {
+  it('hasMoreTop=false 时不触发 onLoadMoreTop', async () => {
     const onLoadMoreTop = vi.fn()
 
     render(
@@ -122,12 +122,12 @@ describe('useVirtualScroller — onLoadMoreTop', () => {
     await scrollTo(200)
     await scrollTo(0)
 
-    // Give a moment for any async side effects
+    // 等待异步副作用结束
     await new Promise(r => setTimeout(r, 20))
     expect(onLoadMoreTop).not.toHaveBeenCalled()
   })
 
-  it('does NOT fire when scrolled down (not at top threshold)', async () => {
+  it('仅向下滚动（未到达顶部阈值）时不触发', async () => {
     const onLoadMoreTop = vi.fn()
 
     render(
@@ -144,7 +144,7 @@ describe('useVirtualScroller — onLoadMoreTop', () => {
     const el = screen.getByTestId('scroll-container')
     const scrollTo = attachScrollMock(el)
 
-    // Scroll DOWN only — never reaches top
+    // 仅向下滚动，永远不会触及顶部
     await scrollTo(500)
     await scrollTo(300)
 
@@ -152,7 +152,7 @@ describe('useVirtualScroller — onLoadMoreTop', () => {
     expect(onLoadMoreTop).not.toHaveBeenCalled()
   })
 
-  it('does NOT fire when above threshold but direction is DOWN', async () => {
+  it('在阈值范围内但方向为向下时不触发', async () => {
     const onLoadMoreTop = vi.fn()
 
     render(
@@ -169,7 +169,7 @@ describe('useVirtualScroller — onLoadMoreTop', () => {
     const el = screen.getByTestId('scroll-container')
     const scrollTo = attachScrollMock(el)
 
-    // Start at 0 and scroll down to 30 — direction='down', within threshold but wrong direction
+    // 从 0 向下滚动到 30 — 方向为 down，虽在阈值内但方向错误
     await scrollTo(30)
 
     await new Promise(r => setTimeout(r, 20))
@@ -180,7 +180,7 @@ describe('useVirtualScroller — onLoadMoreTop', () => {
 // ─── onAtBottomStateChange / onAtTopStateChange ───────────────────────────────
 
 describe('useVirtualScroller — scroll state callbacks', () => {
-  it('calls onAtTopStateChange(true) when scrolled to top', async () => {
+  it('滚动到顶部时以 true 调用 onAtTopStateChange', async () => {
     const onAtTopStateChange = vi.fn()
 
     // Use small threshold so scrollTop=0 ≤ threshold
@@ -197,10 +197,10 @@ describe('useVirtualScroller — scroll state callbacks', () => {
     const el = screen.getByTestId('scroll-container')
     const scrollTo = attachScrollMock(el)
 
-    // Start somewhere in the middle (not at top)
+    // 先滚到中间位置（不在顶部）
     await scrollTo(200)
 
-    // Scroll to top — should trigger onAtTopStateChange(true)
+    // 再滚到顶部 → 应触发 onAtTopStateChange(true)
     await scrollTo(0)
 
     await waitFor(() => {
@@ -208,7 +208,7 @@ describe('useVirtualScroller — scroll state callbacks', () => {
     })
   })
 
-  it('calls onAtBottomStateChange when bottom state changes', async () => {
+  it('底部状态变化时触发 onAtBottomStateChange', async () => {
     const onAtBottomStateChange = vi.fn()
 
     render(
@@ -238,7 +238,7 @@ describe('useVirtualScroller — scroll state callbacks', () => {
 // ─── scrollToBottom / scrollToTop imperative API ─────────────────────────────
 
 describe('useVirtualScroller — imperative scroll API via VirtualListHandle', () => {
-  it('scrollToBottom calls scrollTo on the element', async () => {
+  it('scrollToBottom 调用底层元素的 scrollTo', async () => {
     const listRef: React.RefObject<import('../types').VirtualListHandle | null>
       = { current: null }
 
@@ -258,7 +258,7 @@ describe('useVirtualScroller — imperative scroll API via VirtualListHandle', (
     expect(spy).toHaveBeenCalledWith(expect.objectContaining({ behavior: 'smooth' }))
   })
 
-  it('scrollToTop calls scrollTo with top = 0', async () => {
+  it('scrollToTop 以 top=0 调用 scrollTo', async () => {
     const listRef: React.RefObject<import('../types').VirtualListHandle | null>
       = { current: null }
 
