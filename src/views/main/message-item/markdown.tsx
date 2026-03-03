@@ -4,6 +4,7 @@
  * - 流式输出时在末尾追加打字光标
  */
 import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { MarkdownCode, MarkdownPre } from '@/components/markdown/code-block'
 import { rehypeShiki } from '@/lib/shiki'
 import { cn } from '@/lib/utils'
@@ -27,6 +28,7 @@ export function MessageMarkdown({ content, isUser, isStreaming = false }: Messag
       <ReactMarkdown
         // @ts-expect-error - rehypeShiki type mismatch with react-markdown
         rehypePlugins={[rehypeShiki]}
+        remarkPlugins={[remarkGfm]}
         components={{
           p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
           ul: ({ children }) => <ul className="list-disc pl-4 mb-2 last:mb-0">{children}</ul>,
@@ -59,15 +61,24 @@ export function MessageMarkdown({ content, isUser, isStreaming = false }: Messag
             </blockquote>
           ),
           table: ({ children }) => (
-            <div className="overflow-x-auto mb-2">
+            <div className="overflow-x-auto mb-3 rounded-md border border-border/50">
               <table className="w-full border-collapse text-xs">{children}</table>
             </div>
           ),
+          thead: ({ children }) => (
+            <thead className="bg-muted/60">{children}</thead>
+          ),
+          tbody: ({ children }) => (
+            <tbody className="divide-y divide-border/40">{children}</tbody>
+          ),
+          tr: ({ children }) => (
+            <tr className="hover:bg-muted/30 transition-colors">{children}</tr>
+          ),
           th: ({ children }) => (
-            <th className="border border-border/50 px-2 py-1 text-left font-semibold bg-muted/40">{children}</th>
+            <th className="px-3 py-1.5 text-left font-semibold text-foreground border-b border-border/50 whitespace-nowrap">{children}</th>
           ),
           td: ({ children }) => (
-            <td className="border border-border/50 px-2 py-1">{children}</td>
+            <td className="px-3 py-1.5 text-muted-foreground">{children}</td>
           ),
         }}
       >
