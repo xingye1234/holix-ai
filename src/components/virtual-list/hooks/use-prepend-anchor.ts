@@ -31,11 +31,11 @@ interface ScrollSnapshot {
 export function usePrependAnchor(
   scrollRef: React.RefObject<HTMLElement | null>,
 ): {
-    /** 在修改数据之前调用，记录当前滚动快照 */
-    beforePrepend: () => void
-    /** 由 useLayoutEffect 自动调用，也可手动触发 */
-    afterPrepend: () => void
-  } {
+  /** 在修改数据之前调用，记录当前滚动快照 */
+  beforePrepend: () => void
+  /** 由 useLayoutEffect 自动调用，也可手动触发 */
+  afterPrepend: () => void
+} {
   const snapshotRef = useRef<ScrollSnapshot | null>(null)
   const pendingRef = useRef(false)
 

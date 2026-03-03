@@ -28,11 +28,13 @@ export function VirtualListSpinner({ size = 16 }: { size?: number }) {
       aria-hidden="true"
     >
       <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-      <style>{`
+      <style>
+        {`
         @keyframes virtual-list-spin {
           to { transform: rotate(360deg); }
         }
-      `}</style>
+      `}
+      </style>
     </svg>
   )
 }
