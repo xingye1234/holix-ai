@@ -155,7 +155,7 @@ export const MessageItem = memo(({ id, index, onDelete }: MessageItemProps) => {
           <ContextMenuTrigger asChild>
             <div
               className={cn(
-                'relative min-w-16 rounded-2xl px-4 py-3 text-sm shadow-sm transition-colors',
+                'relative min-w-16 max-w-full rounded-2xl px-4 py-3 text-sm shadow-sm transition-colors',
                 isUser
                   ? 'bg-primary text-primary-foreground rounded-tr-none'
                   : 'bg-secondary text-secondary-foreground rounded-tl-none border border-border/50',
