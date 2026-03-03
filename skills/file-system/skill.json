@@ -1,0 +1,17 @@
+{
+  "name": "file_system",
+  "version": "1.0.0",
+  "description": "提供本地文件系统能力：读写文件、列举目录、检查路径、浏览目录树",
+  "prompt": "You have access to file system tools that let you read files, write files, list directories, check if a path exists, and explore directory trees. When the user asks about file contents or directory structure, use these tools proactively. Always prefer absolute paths. For large directories, use list_directory before get_directory_tree to avoid excessive output.",
+  "tools": [
+    {
+      "type": "js",
+      "file": "index.js",
+      "permissions": {
+        "allowedBuiltins": ["node:fs", "node:path", "node:os", "fs", "path", "os"],
+        "timeout": 20000,
+        "maxMemoryMb": 128
+      }
+    }
+  ]
+}

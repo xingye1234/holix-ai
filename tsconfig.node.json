@@ -8,6 +8,9 @@
     "src/node/**/*",
     "src/types/**/*",
     "src/share/**/*",
-    "src/env.d.ts"
+    "src/env.d.ts",
+    "skills/**/*",
+    "tsdown.config.ts",
+    "tsdown.skills.config.ts"
   ]
 }

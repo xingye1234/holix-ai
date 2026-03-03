@@ -1,0 +1,17 @@
+{
+  "name": "code_reader",
+  "version": "1.0.0",
+  "description": "代码文件阅读与搜索工具：带行号读取代码、在目录下全文搜索、按名称查找文件",
+  "prompt": "You have access to code reading tools. Use read_code_file to view source code with line numbers, search_in_files to search for patterns or text across a directory, and find_files to locate files by name or extension. These tools are especially useful when analyzing codebases or debugging issues.",
+  "tools": [
+    {
+      "type": "js",
+      "file": "index.js",
+      "permissions": {
+        "allowedBuiltins": ["node:fs", "node:path", "node:os", "fs", "path", "os"],
+        "timeout": 30000,
+        "maxMemoryMb": 128
+      }
+    }
+  ]
+}
