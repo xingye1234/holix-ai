@@ -1,5 +1,5 @@
 import type { Chat } from '@/node/database/schema/chat'
-import { Link, useNavigate } from '@tanstack/react-router'
+import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
 import { Delete, Ellipsis, Pencil } from 'lucide-react'
 import { useCallback, useState } from 'react'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
@@ -14,6 +14,8 @@ import useChat from '@/store/chat'
 
 export function ChatPanel(props: Chat) {
   const navigate = useNavigate()
+  const location = useRouterState({ select: s => s.location.pathname })
+  const chats = useChat(state => state.chats)
   const removeChat = useChat(state => state.removeChat)
   const updateChat = useChat(state => state.updateChat)
   const [isRenameOpen, setIsRenameOpen] = useState(false)
@@ -21,10 +23,17 @@ export function ChatPanel(props: Chat) {
 
   const onDelete = useCallback(
     async () => {
-      await navigate({ to: '/' })
+      // 仅当前正在查看被删会话时才需要跳转
+      const isActive = location === `/chat/${props.uid}`
+      if (isActive) {
+        const idx = chats.findIndex(c => c.uid === props.uid)
+        // 优先跳前一个，没有则跳后一个，都没有则回首页
+        const target = chats[idx - 1] ?? chats[idx + 1]
+        await navigate({ to: target ? `/chat/${target.uid}` : '/' })
+      }
       removeChat(props.uid)
     },
-    [props.uid, navigate, removeChat],
+    [props.uid, location, chats, navigate, removeChat],
   )
 
   const onRename = useCallback(async () => {

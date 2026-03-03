@@ -1,7 +1,7 @@
 import type { PendingMessage } from '@/node/database/schema/chat'
 import { createFileRoute } from '@tanstack/react-router'
 import { AnimatePresence } from 'framer-motion'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ChatContext } from '@/context/chat'
 import { SettingsPanelProvider } from '@/context/settings-panel'
 import { updateConfig } from '@/lib/config'
@@ -20,6 +20,10 @@ function Component() {
   // ✅ 配合 immer 优化，chat 对象引用只在真正变化时才更新
   const chat = useChat(state => state.chats.find(chat => chat.uid === id))
 
+  // 消息列表底部滚动状态，供 content 更新、footer 读取
+  const [isAtBottom, setIsAtBottom] = useState(true)
+  const scrollToBottomRef = useRef<(() => void) | null>(null)
+
   useEffect(() => {
     updateConfig('currentChatId', id)
   }, [id])
@@ -34,9 +38,17 @@ function Component() {
           : (chat.pendingMessages ?? [])
         : []
 
-      return { chat: chat || null, chatId: id, pendingMessages }
+      return {
+        chat: chat || null,
+        chatId: id,
+        pendingMessages,
+        isAtBottom,
+        setIsAtBottom,
+        scrollToBottomRef,
+      }
     },
-    [chat, id],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [chat, id, isAtBottom],
   )
 
   const settingsPanelValue = useMemo(

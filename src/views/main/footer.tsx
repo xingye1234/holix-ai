@@ -1,6 +1,7 @@
 import type { EditorHandle } from '@/components/editor/props'
 import type { PendingMessage } from '@/node/database/schema/chat'
-import { Coins, Send, Settings } from 'lucide-react'
+import { ChevronsDown, Coins, Send, Settings } from 'lucide-react'
+import { AnimatePresence, motion } from 'framer-motion'
 import { nanoid } from 'nanoid'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
@@ -17,7 +18,7 @@ import DraftsView from './drafts'
 export default function MainFooter() {
   const editorRef = useRef<EditorHandle>(null)
   const [value, setValue] = useState('')
-  const { chat, pendingMessages } = useChatContext()
+  const { chat, pendingMessages, isAtBottom, scrollToBottomRef } = useChatContext()
   const { toggle: toggleSettingsPanel } = useSettingsPanel()
   const saveDraftInProgress = useRef(false)
   const [_, setProvider] = useState<string | undefined>(
@@ -169,7 +170,30 @@ export default function MainFooter() {
   }, [pendingMessages])
 
   return (
-    <footer className="w-full mt-auto h-(--app-chat-footer-height) border-t">
+    <footer className="relative w-full mt-auto h-(--app-chat-footer-height) border-t">
+      {/* 回到底部浮动按钮：当用户滚动到远离底部时出现 */}
+      <AnimatePresence>
+        {!isAtBottom && (
+          <motion.div
+            key="scroll-to-bottom"
+            className="absolute -top-11 left-1/2 z-10 -translate-x-1/2"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            transition={{ duration: 0.18, ease: 'easeOut' }}
+          >
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 rounded-full px-3 shadow-md gap-1.5 text-xs"
+              onClick={() => scrollToBottomRef.current?.()}
+            >
+              <ChevronsDown className="h-3.5 w-3.5" />
+              回到底部
+            </Button>
+          </motion.div>
+        )}
+      </AnimatePresence>
       <div className="h-(--app-chat-input-header-height) border-b px-2 flex items-center justify-between">
         <div className="mr-auto">
           <DraftsView onEdit={onDraftEdit} onSend={onDraftSend} onDelete={onDraftDelete} />

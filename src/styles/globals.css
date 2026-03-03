@@ -212,3 +212,22 @@ html {
   border-radius: 1px;
   animation: cursor-blink 0.9s step-end infinite;
 }
+
+/* 流式输出光标：挂在最后一个 markdown 块元素的 ::after，内联显示在末行右侧 */
+.streaming-cursor-ai > :last-child::after,
+.streaming-cursor-user > :last-child::after {
+  content: '';
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  vertical-align: text-bottom;
+  margin-left: 1px;
+  border-radius: 1px;
+  animation: cursor-blink 0.9s step-end infinite;
+}
+.streaming-cursor-ai > :last-child::after {
+  background: hsl(var(--foreground) / 0.7);
+}
+.streaming-cursor-user > :last-child::after {
+  background: hsl(var(--primary-foreground));
+}
