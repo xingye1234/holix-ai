@@ -1,3 +1,4 @@
+import type { MutableRefObject } from 'react'
 import type { Chat, PendingMessage } from '@/node/database/schema/chat'
 import { createContext, useContext } from 'react'
 
@@ -10,6 +11,12 @@ export interface ChatContextValue {
   /** 聊天 ID */
   chatId: string
   pendingMessages: PendingMessage[]
+  /** 消息列表是否处于底部 */
+  isAtBottom: boolean
+  /** 更新底部状态（由 MainContent 调用） */
+  setIsAtBottom: (v: boolean) => void
+  /** 滚动到底部的命令式函数（由 MainContent 挂载） */
+  scrollToBottomRef: MutableRefObject<(() => void) | null>
 }
 
 /**

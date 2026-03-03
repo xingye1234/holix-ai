@@ -1,5 +1,6 @@
 import type { VirtualItemRenderInfo } from '@/components/virtual-list'
 import { AnimatePresence, motion } from 'framer-motion'
+import { useEffect } from 'react'
 import { VirtualMessageList } from '@/components/virtual-list'
 import { useChatContext } from '@/context/chat'
 import { useChatVirtualList } from '@/hooks/chat-virtual-list'
@@ -15,7 +16,7 @@ function renderItem({ item: id, index }: VirtualItemRenderInfo<string>) {
 // ─── 主内容区 ─────────────────────────────────────────────────────────────────
 
 export const MainContent = memo(() => {
-  const { chat } = useChatContext()
+  const { chat, setIsAtBottom, scrollToBottomRef } = useChatContext()
 
   const {
     messageIds,
@@ -26,6 +27,23 @@ export const MainContent = memo(() => {
     onAtBottomStateChange,
     listRef,
   } = useChatVirtualList()
+
+  // 把滚动到底部的函数挂载到 context ref，供 footer 调用
+  useEffect(() => {
+    scrollToBottomRef.current = () => listRef.current?.scrollToBottom('smooth')
+    return () => {
+      scrollToBottomRef.current = null
+    }
+  }, [listRef, scrollToBottomRef])
+
+  // 桥接底部状态变更：同时更新 hook 内部 ref 和 context 状态
+  const handleAtBottomStateChange = useCallback(
+    (atBottom: boolean) => {
+      onAtBottomStateChange(atBottom)
+      setIsAtBottom(atBottom)
+    },
+    [onAtBottomStateChange, setIsAtBottom],
+  )
 
   return (
     <main className="h-(--app-chat-content-height)">
@@ -57,7 +75,7 @@ export const MainContent = memo(() => {
             // AI 流式输出跟随底部
             followOutputBehavior={followOutputBehavior}
             atBottomThreshold={80}
-            onAtBottomStateChange={onAtBottomStateChange}
+            onAtBottomStateChange={handleAtBottomStateChange}
 
             // 初始从最新消息开始
             initialIndex={messageIds.length > 0 ? messageIds.length - 1 : 0}
