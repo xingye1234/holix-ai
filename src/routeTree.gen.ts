@@ -11,8 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SettingRouteImport } from './routes/setting'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as SettingProviderRouteImport } from './routes/setting/provider'
 import { Route as SettingSkillsRouteImport } from './routes/setting/skills'
+import { Route as SettingProviderRouteImport } from './routes/setting/provider'
 import { Route as SettingHelpRouteImport } from './routes/setting/help'
 import { Route as SettingGeneralRouteImport } from './routes/setting/general'
 import { Route as ChatIdRouteImport } from './routes/chat/$id'
@@ -27,14 +27,14 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SettingProviderRoute = SettingProviderRouteImport.update({
-  id: '/provider',
-  path: '/provider',
-  getParentRoute: () => SettingRoute,
-} as any)
 const SettingSkillsRoute = SettingSkillsRouteImport.update({
   id: '/skills',
   path: '/skills',
+  getParentRoute: () => SettingRoute,
+} as any)
+const SettingProviderRoute = SettingProviderRouteImport.update({
+  id: '/provider',
+  path: '/provider',
   getParentRoute: () => SettingRoute,
 } as any)
 const SettingHelpRoute = SettingHelpRouteImport.update({
@@ -133,6 +133,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/setting/skills': {
+      id: '/setting/skills'
+      path: '/skills'
+      fullPath: '/setting/skills'
+      preLoaderRoute: typeof SettingSkillsRouteImport
+      parentRoute: typeof SettingRoute
+    }
     '/setting/provider': {
       id: '/setting/provider'
       path: '/provider'
@@ -152,13 +159,6 @@ declare module '@tanstack/react-router' {
       path: '/general'
       fullPath: '/setting/general'
       preLoaderRoute: typeof SettingGeneralRouteImport
-      parentRoute: typeof SettingRoute
-    }
-    '/setting/skills': {
-      id: '/setting/skills'
-      path: '/skills'
-      fullPath: '/setting/skills'
-      preLoaderRoute: typeof SettingSkillsRouteImport
       parentRoute: typeof SettingRoute
     }
     '/chat/$id': {
