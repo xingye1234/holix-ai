@@ -39,6 +39,14 @@
       "filter": [
         "**/*"
       ]
+    },
+    {
+      "from": "./skills",
+      "to": "resources/builtin-skills",
+      "filter": [
+        "**/*.js",
+        "**/*.json"
+      ]
     }
   ],
   "asar": true,

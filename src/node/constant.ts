@@ -15,8 +15,10 @@ export const databaseUrl = `file:///${normalize(join(userDataDir, './sqlite.db')
 export const SCHEME = 'holix'
 
 /**
- * 内置 skills 编译产物目录（tsdown.skills.config.ts 的输出位置）
- * - 开发：<项目根>/.holix/builtin-skills/
- * - 打包：app.asar 内同路径（electron-builder files 已包含 .holix/**/*）
+ * 内置 skills 目录（纯 JS，无需编译）
+ * - 开发：<项目根>/skills/（直接扫描源码目录）
+ * - 打包：<resourcesPath>/builtin-skills/（electron-builder extraFiles 复制）
  */
-export const BUILTIN_SKILLS_PATH = join(app.getAppPath(), '.holix', 'builtin-skills')
+export const BUILTIN_SKILLS_PATH = app.isPackaged
+  ? join(process.resourcesPath, 'builtin-skills')
+  : join(process.cwd(), 'skills')
