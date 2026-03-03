@@ -26,7 +26,7 @@ export const MainContent = memo(() => {
   // 滚动到顶部时加载更多历史消息
   const handleStartReached = useCallback(async () => {
     logger.info('MainContent: Scroll to top, loading more messages...')
-    await loadMore()
+    loadMore()
   }, [loadMore])
 
   // followOutput：仅当用户已在底部时才自动跟随新消息滚动到底部
@@ -37,8 +37,10 @@ export const MainContent = memo(() => {
   // streaming / 消息更新事件：若当前在底部则平滑滚动到最新消息
   const scrollToBottom = useRafThrottle(() => {
     const lastIndex = messages.length - 1
-    if (lastIndex < 0 || !isAtBottomRef.current)
+    if (lastIndex < 0 || !isAtBottomRef.current) {
+      logger.warn('MainContent: Not at bottom, skipping auto-scroll')
       return
+    }
     virtuosoRef.current?.scrollToIndex({ index: lastIndex, align: 'end', behavior: 'smooth' })
   }, [messages.length])
 
