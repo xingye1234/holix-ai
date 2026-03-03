@@ -15,15 +15,15 @@ interface MessageMarkdownProps {
   isStreaming?: boolean
 }
 
-/** 在 markdown 源文本末尾注入光标占位，渲染后再用 CSS 绘制 */
-function appendCursor(content: string): string {
-  // 在末尾加一个零宽字符占位，实际光标由 .cursor-blink 伪元素 / span 渲染
-  return content
-}
-
 export function MessageMarkdown({ content, isUser, isStreaming = false }: MessageMarkdownProps) {
   return (
-    <div className={cn('text-sm leading-relaxed wrap-break-word relative')}>
+    <div
+      className={cn(
+        'text-sm leading-relaxed wrap-break-word relative',
+        // streaming-cursor-* 类让 CSS ::after 把光标注入到最后一个块元素内联末尾
+        isStreaming && (isUser ? 'streaming-cursor-user' : 'streaming-cursor-ai'),
+      )}
+    >
       <ReactMarkdown
         // @ts-expect-error - rehypeShiki type mismatch with react-markdown
         rehypePlugins={[rehypeShiki]}
@@ -71,18 +71,8 @@ export function MessageMarkdown({ content, isUser, isStreaming = false }: Messag
           ),
         }}
       >
-        {appendCursor(content)}
+        {content}
       </ReactMarkdown>
-      {/* 打字光标——只在流式且有内容时显示 */}
-      {isStreaming && (
-        <span
-          className={cn(
-            'cursor-blink',
-            isUser ? 'bg-primary-foreground' : 'bg-foreground/70',
-          )}
-          aria-hidden
-        />
-      )}
     </div>
   )
 }
