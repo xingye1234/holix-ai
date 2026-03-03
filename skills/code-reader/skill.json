@@ -1,0 +1,15 @@
+{
+  "name": "code_reader",
+  "version": "1.0.0",
+  "description": "Code reading and search tools: read source files with line numbers, full-text search across files, and find files by name or extension.",
+  "tools": [
+    {
+      "type": "js",
+      "file": "index.js",
+      "permissions": {
+        "allowedBuiltins": ["node:fs", "node:path", "node:os", "fs", "path", "os"],
+        "timeout": 30000
+      }
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "name": "file_system",
+  "version": "1.0.0",
+  "description": "Local file system tools: read/write files, list directories, check paths, and browse directory trees.",
+  "tools": [
+    {
+      "type": "js",
+      "file": "index.js",
+      "permissions": {
+        "allowedBuiltins": ["node:fs", "node:path", "node:os", "fs", "path", "os"],
+        "timeout": 20000
+      }
+    }
+  ]
+}
