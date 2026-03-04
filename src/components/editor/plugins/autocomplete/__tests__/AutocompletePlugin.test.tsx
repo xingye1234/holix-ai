@@ -30,6 +30,7 @@ import {
 } from 'lexical'
 import { useEffect } from 'react'
 import { describe, expect, it, vi } from 'vitest'
+import { MentionNode } from '../../../nodes/MentionNode'
 import { KeyboardPlugin } from '../../KeyboardPlugin'
 import { AutocompletePlugin } from '../AutocompletePlugin'
 
@@ -85,6 +86,7 @@ interface TestEditorProps {
 function TestEditor({ sources, onInsert, editorRef }: TestEditorProps) {
   const initialConfig = {
     namespace: 'autocomplete-test',
+    nodes: [MentionNode],
     onError: (err: Error) => { throw err },
   }
 
@@ -426,9 +428,9 @@ describe('确认选中', () => {
 
     await waitFor(() => expect(screen.queryByRole('listbox')).toBeNull())
 
-    // 默认 insertText = trigger + label + ' ' = "@file_system "
+    // MentionNode.getTextContent() 返回不含触发前缀的纯值 + 紧跟空格 TextNode
     const text = getEditorText()
-    expect(text).toBe('@file_system ')
+    expect(text).toBe('file_system ')
   })
 
   it('# 触发源确认后使用自定义 insertText', async () => {
@@ -437,13 +439,13 @@ describe('确认选中', () => {
     await type('#read')
     await waitFor(() => expect(screen.getByRole('listbox')).toBeInTheDocument())
 
-    // README.md 是唯一匹配项，Enter 后插入 '#README.md '
+    // README.md 是唯一匹配项，Enter 后 MentionNode 不含 # 前缀
     await pressEnter()
 
     await waitFor(() => expect(screen.queryByRole('listbox')).toBeNull())
 
     const text = getEditorText()
-    expect(text).toBe('#README.md ')
+    expect(text).toBe('README.md ')
   })
 
   it('arrowDown + enter 选中指定项', async () => {
@@ -459,7 +461,7 @@ describe('确认选中', () => {
     await waitFor(() => expect(screen.queryByRole('listbox')).toBeNull())
 
     const text = getEditorText()
-    expect(text).toBe('@code_reader ')
+    expect(text).toBe('code_reader ')
   })
 
   it('onInsert 回调被正确调用', async () => {
@@ -544,6 +546,7 @@ function TestEditorWithKeyboard({
 }: TestEditorWithKeyboardProps) {
   const initialConfig = {
     namespace: 'autocomplete-isolation-test',
+    nodes: [MentionNode],
     onError: (err: Error) => { throw err },
   }
   return (
@@ -643,7 +646,7 @@ describe('键盘事件隔离（autocomplete 与 KeyboardPlugin 不冲突）', ()
 
     await waitFor(() => expect(screen.queryByRole('listbox')).toBeNull())
     expect(onEnter).not.toHaveBeenCalled()
-    expect(getEditorText()).toBe('@file_system ')
+    expect(getEditorText()).toBe('file_system ')
   })
 
   it('弹窗打开时 shift+enter 不触发选中，让 lexical 执行默认换行', async () => {

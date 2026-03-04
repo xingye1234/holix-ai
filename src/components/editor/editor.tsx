@@ -10,6 +10,7 @@ import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin'
 import { $getRoot } from 'lexical'
 import { forwardRef, useImperativeHandle, useMemo, useRef } from 'react'
 import { cn } from '@/lib/utils'
+import { MentionNode } from './nodes/MentionNode'
 import { AutocompletePlugin } from './plugins/autocomplete'
 import { EditorBridgePlugin } from './plugins/BridgePlugin'
 import { KeyboardPlugin } from './plugins/KeyboardPlugin'
@@ -21,6 +22,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>((props: EditorProps,
   const initialConfig = useMemo(
     () => ({
       namespace: props.namespace || 'holix-editor',
+      nodes: [MentionNode],
       theme: Object.assign(
         {
           root: cn(

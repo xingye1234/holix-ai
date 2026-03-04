@@ -7,6 +7,7 @@ import type {
 } from './types'
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
 import {
+  $createTextNode,
   $getSelection,
   $isRangeSelection,
   $isTextNode,
@@ -18,7 +19,8 @@ import {
   KEY_TAB_COMMAND,
 } from 'lexical'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { filterSuggestions, formatInsertText } from './detect'
+import { $createMentionNode } from '../../nodes/MentionNode'
+import { filterSuggestions } from './detect'
 import { AutocompletePopup } from './Popup'
 
 const TRIGGER_RE = /(^|\s)([@#/])(\S*)$/
@@ -91,8 +93,6 @@ export function AutocompletePlugin({ sources, onInsert }: AutocompletePluginProp
       if (!match)
         return
 
-      const insertText = formatInsertText(match.trigger, item)
-
       editor.update(() => {
         const selection = $getSelection()
         if (!$isRangeSelection(selection))
@@ -102,7 +102,15 @@ export function AutocompletePlugin({ sources, onInsert }: AutocompletePluginProp
           return
         const anchorOffset = selection.anchor.offset
         const deleteCount = anchorOffset - match.triggerOffset
-        anchorNode.spliceText(match.triggerOffset, deleteCount, insertText, true)
+
+        // 1. 清除触发字符 + query 文本
+        // 2. 用 RangeSelection.insertNodes 替换为 MentionNode + 空格
+        //    MentionNode.getTextContent() 返回不含触发前缀的纯值
+        const rangeSelection = anchorNode.select(match.triggerOffset, match.triggerOffset + deleteCount)
+        rangeSelection.insertNodes([
+          $createMentionNode(match.trigger, item.label, item.label),
+          $createTextNode(' '),
+        ])
       })
 
       onInsert?.(match.trigger, item)
