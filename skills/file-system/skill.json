@@ -2,7 +2,6 @@
   "name": "file_system",
   "version": "1.0.0",
   "description": "Local file system tools: read/write files, list directories, check paths, and browse directory trees.",
-  "dangerous": true,
   "tools": [
     {
       "type": "js",

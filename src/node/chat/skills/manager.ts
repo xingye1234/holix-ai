@@ -15,7 +15,6 @@ import type { LoadedSkill } from './type'
 import { existsSync, mkdirSync, watch } from 'node:fs'
 import { APP_DATA_PATH, BUILTIN_SKILLS_PATH } from '../../constant'
 import { logger } from '../../platform/logger'
-import { wrapWithApproval } from '../tools/approval'
 import { getSkillsDir, scanSkillsDir } from './loader'
 
 class SkillManager {
@@ -137,19 +136,12 @@ class SkillManager {
 
   /**
    * 收集所有 skills 提供的 LangChain tools（用于注入 agent）
-   * 高风险 skill 的工具将被自动包装审批拦截器
+   * 工具的审批拦截器已在加载阶段按权限自动注入
    */
   getAllTools(): DynamicStructuredTool[] {
     const tools: DynamicStructuredTool[] = []
     for (const skill of this.skills.values()) {
-      if (skill.dangerous) {
-        // 高风险 skill：所有工具包装审批拦截器
-        logger.info(`[SkillManager] skill "${skill.name}" is dangerous – wrapping ${skill.tools.length} tool(s) with approval interceptor`)
-        tools.push(...skill.tools.map(t => wrapWithApproval(t, skill.name)))
-      }
-      else {
-        tools.push(...skill.tools)
-      }
+      tools.push(...skill.tools)
     }
     return tools
   }

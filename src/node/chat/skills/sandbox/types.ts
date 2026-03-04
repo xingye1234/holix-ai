@@ -81,6 +81,43 @@ export const HARDCODED_BLOCKED: readonly string[] = [
   '@libsql/client',
 ] as const
 
+/**
+ * 需要用户审批的中高风险内置模块集合。
+ *
+ * 包含：
+ *   🟡 中风险：fs、net、http、https、dgram、dns、stream 及其 node: 前缀变体
+ *   🔴 高风险：child_process、worker_threads、cluster 及其 node: 前缀变体
+ *
+ * 如果 allowedBuiltins 中出现任何一个，该工具调用前需要用户确认。
+ */
+export const RISKY_BUILTINS: ReadonlySet<string> = new Set([
+  // 🟡 中风险 — 文件系统
+  'fs', 'node:fs', 'fs/promises', 'node:fs/promises',
+  // 🟡 中风险 — 网络
+  'net', 'node:net',
+  'http', 'node:http',
+  'https', 'node:https',
+  'dgram', 'node:dgram',
+  'dns', 'node:dns', 'dns/promises', 'node:dns/promises',
+  'tls', 'node:tls',
+  'http2', 'node:http2',
+  // 🔴 高风险 — 子进程 / 线程 / 集群
+  'child_process', 'node:child_process',
+  'worker_threads', 'node:worker_threads',
+  'cluster', 'node:cluster',
+])
+
+/**
+ * 根据沙箱权限配置判断该工具是否需要用户审批。
+ *
+ * 规则：allowedBuiltins 中只要包含任意一个 RISKY_BUILTINS 中的模块，即返回 true。
+ */
+export function requiresApprovalForPermissions(permissions?: SandboxPermissions): boolean {
+  if (!permissions?.allowedBuiltins?.length)
+    return false
+  return permissions.allowedBuiltins.some(m => RISKY_BUILTINS.has(m))
+}
+
 /** 分类：安全/可选开放的 Node.js 内置模块 */
 export const SAFE_BUILTINS: readonly string[] = [
   // 🟢 低风险

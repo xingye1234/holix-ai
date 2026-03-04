@@ -25,8 +25,10 @@ import type { LoadedSkill, SkillManifest, ToolDeclaration } from './type'
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { extname, join } from 'node:path'
 import { logger } from '../../platform/logger'
+import { wrapWithApproval } from '../tools/approval'
 import { commandToTool, scriptToTool } from './adapters/command'
 import { loadJsTools } from './adapters/js'
+import { requiresApprovalForPermissions } from './sandbox/types'
 
 // ─── Schema 验证 ──────────────────────────────────────────────────────────────
 
@@ -57,7 +59,6 @@ function validateManifest(raw: unknown, source: string): SkillManifest | null {
     description: obj.description.trim(),
     prompt: typeof obj.prompt === 'string' ? obj.prompt : undefined,
     disabled: obj.disabled === true,
-    dangerous: obj.dangerous === true,
     tools: Array.isArray(obj.tools) ? (obj.tools as ToolDeclaration[]) : [],
   }
 }
@@ -67,20 +68,29 @@ function validateManifest(raw: unknown, source: string): SkillManifest | null {
 /**
  * 根据工具声明列表构建 LangChain tools
  */
-function buildTools(declarations: ToolDeclaration[], skillDir: string): DynamicStructuredTool[] {
+function buildTools(declarations: ToolDeclaration[], skillDir: string, skillName: string): DynamicStructuredTool[] {
   const tools: DynamicStructuredTool[] = []
 
   for (const decl of declarations) {
     try {
       switch (decl.type) {
-        case 'js':
-          tools.push(...loadJsTools(decl, skillDir))
+        case 'js': {
+          const jsTools = loadJsTools(decl, skillDir)
+          const needsApproval = requiresApprovalForPermissions(decl.permissions)
+          if (needsApproval) {
+            logger.info(`[skill-loader] js tool "${decl.file}" requires approval (risky permissions)`)
+            tools.push(...jsTools.map(t => wrapWithApproval(t, skillName)))
+          }
+          else {
+            tools.push(...jsTools)
+          }
           break
+        }
         case 'command':
-          tools.push(commandToTool(decl, skillDir))
+          tools.push(wrapWithApproval(commandToTool(decl, skillDir), skillName))
           break
         case 'script':
-          tools.push(scriptToTool(decl, skillDir))
+          tools.push(wrapWithApproval(scriptToTool(decl, skillDir), skillName))
           break
         default:
           logger.warn(`[skill-loader] Unknown tool type: ${(decl as any).type}`)
@@ -117,7 +127,7 @@ function loadSkillFromDir(skillDir: string): LoadedSkill | null {
       return null
     }
 
-    const tools = buildTools(manifest.tools ?? [], skillDir)
+    const tools = buildTools(manifest.tools ?? [], skillDir, manifest.name)
 
     logger.info(
       `[skill-loader] Loaded skill from dir: ${manifest.name} (${tools.length} tools)`,
@@ -129,7 +139,6 @@ function loadSkillFromDir(skillDir: string): LoadedSkill | null {
       description: manifest.description,
       prompt: manifest.prompt,
       dir: skillDir,
-      dangerous: manifest.dangerous ?? false,
       tools,
     }
   }
@@ -173,7 +182,6 @@ function loadSkillFromFile(filePath: string): LoadedSkill | null {
       description: manifest.description,
       prompt: manifest.prompt,
       dir: skillDir,
-      dangerous: manifest.dangerous ?? false,
       tools: [],
     }
   }
