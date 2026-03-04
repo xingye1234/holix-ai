@@ -144,6 +144,7 @@ class SkillManager {
     for (const skill of this.skills.values()) {
       if (skill.dangerous) {
         // 高风险 skill：所有工具包装审批拦截器
+        logger.info(`[SkillManager] skill "${skill.name}" is dangerous – wrapping ${skill.tools.length} tool(s) with approval interceptor`)
         tools.push(...skill.tools.map(t => wrapWithApproval(t, skill.name)))
       }
       else {
