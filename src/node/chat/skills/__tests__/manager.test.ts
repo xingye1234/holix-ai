@@ -44,6 +44,7 @@ vi.mock('../adapters/command', () => ({
 // 我们在每个测试中通过 SkillManager 内部的 skillsDir 来控制
 vi.mock('../../../constant', () => ({
   APP_DATA_PATH: tmpdir(), // 初始占位，每个测试会使用独立临时目录
+  BUILTIN_SKILLS_PATH: tmpdir(), // 内置 skills 目录占位，指向空临时目录
 }))
 
 // ─── 测试辅助 ─────────────────────────────────────────────────────────────────
