@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Switch } from '@/components/ui/switch'
+import { TagInput } from '@/components/ui/tag-input'
 import {
   addProvider,
   getDefaultProvider,
@@ -185,21 +186,10 @@ function RouteComponent() {
 
                 <div className="space-y-2">
                   <Label htmlFor={`models-${provider.name}`}>支持的模型</Label>
-                  <Input
-                    id={`models-${provider.name}`}
-                    value={provider.models.join(', ')}
-                    onChange={e =>
-                      handleUpdateProvider(
-                        provider.name,
-                        'models',
-                        e.target.value
-                          .split(/[,，/|\s]+/)
-                          .map(m => m.trim())
-                          .filter(Boolean),
-                      )}
-                    placeholder="model-1, model-2, model-3"
+                  <TagInput
+                    value={provider.models}
+                    onChange={models => handleUpdateProvider(provider.name, 'models', models)}
                   />
-                  <p className="text-xs text-muted-foreground">多个模型可用逗号、空格、/、| 等分隔</p>
                 </div>
               </div>
             </div>
@@ -311,20 +301,12 @@ function RouteComponent() {
               <Label htmlFor="new-models" className="text-right">
                 模型列表
               </Label>
-              <Input
-                id="new-models"
-                value={newProvider.models.join(', ')}
-                onChange={e =>
-                  setNewProvider({
-                    ...newProvider,
-                    models: e.target.value
-                      .split(/[,，/|\s]+/)
-                      .map(m => m.trim())
-                      .filter(Boolean),
-                  })}
-                className="col-span-3"
-                placeholder="gpt-4, gpt-3.5-turbo"
-              />
+              <div className="col-span-3">
+                <TagInput
+                  value={newProvider.models}
+                  onChange={models => setNewProvider({ ...newProvider, models })}
+                />
+              </div>
             </div>
           </div>
 
