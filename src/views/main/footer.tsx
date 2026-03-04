@@ -71,6 +71,20 @@ export default function MainFooter() {
     }
   }, [chat?.uid, chat?.workspace])
 
+  // sources 用 useMemo 稳定引用，避免每次渲染都重新注册 listener
+  const autocompleteConfig = useMemo(
+    () => workspaceFileSuggestions.length > 0
+      ? {
+          sources: [{
+            trigger: '#' as const,
+            title: '工作区文件',
+            suggestions: workspaceFileSuggestions,
+          }],
+        }
+      : undefined,
+    [workspaceFileSuggestions],
+  )
+
   const handleProviderChange = useCallback(
     async (newProvider: string) => {
       setProvider(newProvider)
@@ -272,15 +286,7 @@ export default function MainFooter() {
               return true
             },
           }}
-          autocomplete={workspaceFileSuggestions.length > 0
-            ? {
-                sources: [{
-                  trigger: '#',
-                  title: '工作区文件',
-                  suggestions: workspaceFileSuggestions,
-                }],
-              }
-            : undefined}
+          autocomplete={autocompleteConfig}
         />
       </div>
 

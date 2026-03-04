@@ -17,13 +17,12 @@ import {
   KEY_ESCAPE_COMMAND,
   KEY_TAB_COMMAND,
 } from 'lexical'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { filterSuggestions, formatInsertText } from './detect'
 import { AutocompletePopup } from './Popup'
 
 const TRIGGER_RE = /(^|\s)([@#/])(\S*)$/
 
-/** 从光标前文本中检测触发状态（专为 Lexical 消费，inline 避免 import cycle） */
 function detectInline(textBeforeCursor: string): TriggerMatch | null {
   const m = TRIGGER_RE.exec(textBeforeCursor)
   if (!m)
@@ -36,15 +35,17 @@ function detectInline(textBeforeCursor: string): TriggerMatch | null {
   }
 }
 
-/** 获取光标矩形（相对于视口），用于定位弹窗 */
 function getCursorRect(): DOMRect | null {
   const sel = window.getSelection()
   if (!sel || sel.rangeCount === 0)
     return null
-  return sel.getRangeAt(0).getBoundingClientRect()
+  const rect = sel.getRangeAt(0).getBoundingClientRect()
+  // 零大小的 rect 说明 DOM 还没 paint，无效
+  if (rect.width === 0 && rect.height === 0 && rect.x === 0 && rect.y === 0)
+    return null
+  return rect
 }
 
-/** 根据光标位置计算弹窗的固定坐标 */
 function calcPosition(rect: DOMRect): PopupPosition {
   const POPUP_H = 300
   const pad = 8
@@ -66,17 +67,24 @@ export function AutocompletePlugin({ sources, onInsert }: AutocompletePluginProp
   const [currentTitle, setCurrentTitle] = useState<string | undefined>()
   const [currentQuery, setCurrentQuery] = useState('')
 
-  // 使用 ref 缓存当前匹配，供命令回调（闭包）直接读取
+  // 用 ref 缓存 sources，避免 sources 引用不稳定导致 useEffect 反复重注册 listener
+  const sourcesRef = useRef(sources)
+  useLayoutEffect(() => {
+    sourcesRef.current = sources
+  })
+
   const matchRef = useRef<TriggerMatch | null>(null)
+  // 标记「当前是否应该显示弹窗」，用于在 rAF 中判断
+  const shouldShowRef = useRef(false)
 
   const closePopup = useCallback(() => {
+    shouldShowRef.current = false
+    matchRef.current = null
     setIsOpen(false)
     setItems([])
     setActiveIndex(0)
-    matchRef.current = null
   }, [])
 
-  /** 将选中的候选项插入到编辑器 */
   const confirmSelection = useCallback(
     (item: AutocompleteSuggestion) => {
       const match = matchRef.current
@@ -89,13 +97,10 @@ export function AutocompletePlugin({ sources, onInsert }: AutocompletePluginProp
         const selection = $getSelection()
         if (!$isRangeSelection(selection))
           return
-
         const anchorNode = selection.anchor.getNode()
         if (!$isTextNode(anchorNode))
           return
-
         const anchorOffset = selection.anchor.offset
-        // 从 triggerOffset 到光标处全部替换
         const deleteCount = anchorOffset - match.triggerOffset
         anchorNode.spliceText(match.triggerOffset, deleteCount, insertText, true)
       })
@@ -106,38 +111,31 @@ export function AutocompletePlugin({ sources, onInsert }: AutocompletePluginProp
     [editor, onInsert, closePopup],
   )
 
-  // ─── 监听编辑器状态变化 ─────────────────────────────────────────────────────
+  // ─── 监听编辑器状态变化，检测触发 ─────────────────────────────────────────
   useEffect(() => {
     return editor.registerUpdateListener(({ editorState }) => {
+      // 在 read() 里收集纯逻辑数据（不操作 DOM，不调用 setState）
+      let nextMatch: TriggerMatch | null = null
+      let nextItems: AutocompleteSuggestion[] = []
+      let nextTitle: string | undefined
+
       editorState.read(() => {
         const selection = $getSelection()
-        if (!$isRangeSelection(selection) || !selection.isCollapsed()) {
-          closePopup()
+        if (!$isRangeSelection(selection) || !selection.isCollapsed())
           return
-        }
 
         const anchorNode = selection.anchor.getNode()
-        if (!$isTextNode(anchorNode)) {
-          closePopup()
+        if (!$isTextNode(anchorNode))
           return
-        }
 
-        const anchorOffset = selection.anchor.offset
-        const text = anchorNode.getTextContent()
-        const textBefore = text.slice(0, anchorOffset)
-
+        const textBefore = anchorNode.getTextContent().slice(0, selection.anchor.offset)
         const match = detectInline(textBefore)
-        if (!match) {
-          closePopup()
+        if (!match)
           return
-        }
 
-        // 找对应 source
-        const source = sources.find(s => s.trigger === match.trigger)
-        if (!source) {
-          closePopup()
+        const source = sourcesRef.current.find(s => s.trigger === match.trigger)
+        if (!source)
           return
-        }
 
         const rawSuggestions
           = typeof source.suggestions === 'function'
@@ -145,28 +143,47 @@ export function AutocompletePlugin({ sources, onInsert }: AutocompletePluginProp
             : source.suggestions
 
         const filtered = filterSuggestions(rawSuggestions, match.query)
-        if (filtered.length === 0) {
-          closePopup()
+        if (filtered.length === 0)
           return
-        }
 
-        // 更新弹窗状态（在 read 回调外部更新 React state）
-        const rect = getCursorRect()
-        matchRef.current = match
-
-        // 由于在 editorState.read 内，不能直接 setState；改用微任务
-        Promise.resolve().then(() => {
-          setItems(filtered)
-          setActiveIndex(0)
-          setCurrentTitle(source.title)
-          setCurrentQuery(match.query)
-          if (rect)
-            setPosition(calcPosition(rect))
-          setIsOpen(true)
-        })
+        nextMatch = match
+        nextItems = filtered
+        nextTitle = source.title
       })
+
+      // read() 已结束，在此同步更新状态——
+      // 此时 Lexical 内部状态已提交但 DOM 可能还未 paint，
+      // popup 位置交给 useLayoutEffect + rAF 处理
+      if (nextMatch && nextItems.length > 0) {
+        matchRef.current = nextMatch
+        shouldShowRef.current = true
+        setItems(nextItems)
+        setCurrentTitle(nextTitle)
+        setCurrentQuery((nextMatch as TriggerMatch).query)
+        setActiveIndex(0)
+        setIsOpen(true)
+      }
+      else {
+        closePopup()
+      }
     })
-  }, [editor, sources, closePopup])
+  }, [editor, closePopup]) // sources 通过 sourcesRef 访问，不作为 dep
+
+  // ─── DOM paint 后更新 popup 位置 ──────────────────────────────────────────
+  // useLayoutEffect 在 DOM 更新后同步执行，rAF 确保 Lexical 已完成 DOM reconcile
+  useLayoutEffect(() => {
+    if (!isOpen)
+      return
+
+    const rafId = requestAnimationFrame(() => {
+      if (!shouldShowRef.current)
+        return
+      const rect = getCursorRect()
+      if (rect)
+        setPosition(calcPosition(rect))
+    })
+    return () => cancelAnimationFrame(rafId)
+  }, [isOpen, currentQuery])
 
   // ─── 弹窗打开时拦截键盘命令 ───────────────────────────────────────────────
   useEffect(() => {
@@ -178,11 +195,10 @@ export function AutocompletePlugin({ sources, onInsert }: AutocompletePluginProp
       (e: KeyboardEvent) => {
         e.preventDefault()
         setActiveIndex(i => (i - 1 + items.length) % items.length)
-        return true // 阻止光标移动
+        return true
       },
       COMMAND_PRIORITY_HIGH,
     )
-
     const removeDown = editor.registerCommand(
       KEY_ARROW_DOWN_COMMAND,
       (e: KeyboardEvent) => {
@@ -192,7 +208,6 @@ export function AutocompletePlugin({ sources, onInsert }: AutocompletePluginProp
       },
       COMMAND_PRIORITY_HIGH,
     )
-
     const removeEnter = editor.registerCommand(
       KEY_ENTER_COMMAND,
       (e: KeyboardEvent) => {
@@ -206,7 +221,6 @@ export function AutocompletePlugin({ sources, onInsert }: AutocompletePluginProp
       },
       COMMAND_PRIORITY_HIGH,
     )
-
     const removeTab = editor.registerCommand(
       KEY_TAB_COMMAND,
       (e: KeyboardEvent) => {
@@ -218,10 +232,9 @@ export function AutocompletePlugin({ sources, onInsert }: AutocompletePluginProp
       },
       COMMAND_PRIORITY_HIGH,
     )
-
     const removeEsc = editor.registerCommand(
       KEY_ESCAPE_COMMAND,
-      (_e: KeyboardEvent) => {
+      () => {
         closePopup()
         return true
       },
