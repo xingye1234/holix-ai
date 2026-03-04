@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react'
+
 export type TriggerChar = '@' | '#' | '/'
 
 export interface AutocompleteSuggestion {
@@ -6,8 +8,8 @@ export interface AutocompleteSuggestion {
   label: string
   /** 副标题 / 描述 */
   description?: string
-  /** emoji 或单字母图标 */
-  icon?: string
+  /** emoji 字符、文字或 React 图标节点（如 lucide-react 组件） */
+  icon?: ReactNode
   /** 业务类型标记：skill | file | command | ... */
   type?: string
   /**

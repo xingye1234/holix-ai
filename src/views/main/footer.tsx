@@ -1,9 +1,10 @@
+import type { AutocompleteSuggestion } from '@/components/editor/plugins/autocomplete'
 import type { EditorHandle } from '@/components/editor/props'
 import type { PendingMessage } from '@/node/database/schema/chat'
-import { ChevronsDown, Coins, Send, Settings } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
+import { ChevronsDown, Coins, FileText, Folder, Send, Settings } from 'lucide-react'
 import { nanoid } from 'nanoid'
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { Editor } from '@/components/editor/editor'
 import ProviderModelSelector from '@/components/provider-model-selector'
@@ -29,6 +30,46 @@ export default function MainFooter() {
     setValue(text)
   }, [])
   const estimatedTokens = useMemo(() => estimateTokens(value), [value])
+
+  // ─── workspace 文件智能提示 ─────────────────────────────────────────────────
+  const [workspaceFileSuggestions, setWorkspaceFileSuggestions] = useState<AutocompleteSuggestion[]>([])
+
+  useEffect(() => {
+    if (!chat?.uid || !chat.workspace || chat.workspace.length === 0) {
+      setWorkspaceFileSuggestions([])
+      return
+    }
+
+    let cancelled = false
+    trpcClient.workspace.queryFiles({
+      chatUid: chat.uid,
+      query: '',
+      maxResults: 200,
+      onlyFiles: false,
+    }).then(({ items }) => {
+      if (cancelled)
+        return
+      setWorkspaceFileSuggestions(
+        items.map(f => ({
+          id: f.path,
+          label: f.label,
+          description: f.relativePath,
+          icon: f.type === 'directory'
+            ? <Folder className="w-4 h-4" />
+            : <FileText className="w-4 h-4" />,
+          type: f.type,
+          insertText: `#${f.relativePath} `,
+        })),
+      )
+    }).catch(() => {
+      if (!cancelled)
+        setWorkspaceFileSuggestions([])
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [chat?.uid, chat?.workspace])
 
   const handleProviderChange = useCallback(
     async (newProvider: string) => {
@@ -231,6 +272,15 @@ export default function MainFooter() {
               return true
             },
           }}
+          autocomplete={workspaceFileSuggestions.length > 0
+            ? {
+                sources: [{
+                  trigger: '#',
+                  title: '工作区文件',
+                  suggestions: workspaceFileSuggestions,
+                }],
+              }
+            : undefined}
         />
       </div>
 

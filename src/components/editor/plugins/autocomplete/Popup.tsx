@@ -75,7 +75,7 @@ export function AutocompletePopup({
               onClick={() => onSelect(item)}
             >
               {item.icon && (
-                <span className="mt-0.5 shrink-0 text-base leading-none select-none" aria-hidden>
+                <span className="mt-0.5 shrink-0 flex items-center text-muted-foreground" aria-hidden>
                   {item.icon}
                 </span>
               )}
