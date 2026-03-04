@@ -3,6 +3,7 @@ import type { Workspace } from '../database/schema/chat'
 import { readdirSync, statSync } from 'node:fs'
 import { basename, join, relative } from 'node:path'
 import { z } from 'zod'
+import logger from '@/lib/logger'
 import { getChatByUid } from '../database/chat-operations'
 import { procedure, router } from './trpc'
 
@@ -193,17 +194,36 @@ export const workspaceRouter = router({
     )
     .query(async ({ input }) => {
       const chat = await getChatByUid(input.chatUid)
-      if (!chat || !chat.workspace || chat.workspace.length === 0) {
+      if (!chat || !chat.workspace)
+        return { items: [] }
+
+      // Drizzle 的 .$type<>() 只是 TypeScript 类型标注，不做运行时转换。
+      // workspace 在数据库中以 JSON 字符串存储，读取时需手动 parse。
+      let workspaces: import('../database/schema/chat').Workspace[]
+      try {
+        workspaces = typeof chat.workspace === 'string'
+          ? JSON.parse(chat.workspace)
+          : chat.workspace
+      }
+      catch {
         return { items: [] }
       }
 
-      let files = collectFiles(chat.workspace)
+      logger.info(`[workspace] queryFiles: chatUid=${input.chatUid}, query="${input.query}", maxResults=${input.maxResults}, onlyFiles=${input.onlyFiles} => total workspace files=${workspaces.length}`)
+
+      if (!Array.isArray(workspaces) || workspaces.length === 0)
+        return { items: [] }
+
+      let files = collectFiles(workspaces)
 
       if (input.onlyFiles) {
         files = files.filter(f => f.type === 'file')
       }
 
       const items = filterFiles(files, input.query, input.maxResults)
+
+      logger.info(`[workspace] queryFiles: chatUid=${input.chatUid}, query="${input.query}", maxResults=${input.maxResults}, onlyFiles=${input.onlyFiles} => returned ${items.length} items`)
+
       return { items }
     }),
 })
