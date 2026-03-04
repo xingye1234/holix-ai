@@ -1,0 +1,16 @@
+{
+  "name": "shell",
+  "version": "1.0.0",
+  "description": "Execute shell commands on the user's system. Supports running arbitrary commands with optional working directory and timeout.",
+  "prompt": "You have access to shell command execution. Before running any command, briefly explain to the user what you are about to do and why. Prefer idempotent, read-only commands when possible. Never run destructive commands (rm -rf, format, etc.) without explicit user instruction.",
+  "tools": [
+    {
+      "type": "js",
+      "file": "index.js",
+      "permissions": {
+        "allowedBuiltins": ["node:child_process", "node:path", "node:os", "child_process", "path", "os"],
+        "timeout": 120000
+      }
+    }
+  ]
+}
