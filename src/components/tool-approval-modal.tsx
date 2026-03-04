@@ -37,7 +37,13 @@ export function ToolApprovalModal() {
     : null
 
   return (
-    <Dialog open onOpenChange={(open) => { if (!open) deny() }}>
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open)
+          deny()
+      }}
+    >
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-destructive">
