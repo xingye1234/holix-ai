@@ -10,6 +10,7 @@ import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin'
 import { $getRoot } from 'lexical'
 import { forwardRef, useImperativeHandle, useMemo, useRef } from 'react'
 import { cn } from '@/lib/utils'
+import { AutocompletePlugin } from './plugins/autocomplete'
 import { EditorBridgePlugin } from './plugins/BridgePlugin'
 import { KeyboardPlugin } from './plugins/KeyboardPlugin'
 
@@ -78,6 +79,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>((props: EditorProps,
         <EditorBridgePlugin apiRef={apiRef} />
         {onChange && <OnChangePlugin onChange={onChange} />}
         {props.keyboard && <KeyboardPlugin {...props.keyboard} />}
+        {props.autocomplete && <AutocompletePlugin {...props.autocomplete} />}
       </LexicalComposer>
     </div>
   )

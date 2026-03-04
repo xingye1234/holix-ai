@@ -1,4 +1,5 @@
 import type { EditorState, EditorThemeClasses, LexicalEditor } from 'lexical'
+import type { AutocompleteEditorProps } from './plugins/autocomplete'
 import type { KeyboardPluginProps } from './plugins/KeyboardPlugin'
 
 export interface EditorProps {
@@ -35,6 +36,9 @@ export interface EditorProps {
 
   /** 键盘事件回调 */
   keyboard?: KeyboardPluginProps
+
+  /** 自动补全 / @ # / 触发提示 */
+  autocomplete?: AutocompleteEditorProps
 }
 
 export interface EditorHandle {
