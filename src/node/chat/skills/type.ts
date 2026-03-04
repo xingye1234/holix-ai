@@ -76,6 +76,11 @@ export interface SkillManifest {
   prompt?: string
   /** 是否禁用此 skill，默认 false */
   disabled?: boolean
+  /**
+   * 是否包含高风险操作。
+   * 设为 true 后，此 skill 的所有工具调用在执行前需要用户确认。
+   */
+  dangerous?: boolean
   /** Tool 声明列表 */
   tools?: ToolDeclaration[]
 }
@@ -94,6 +99,8 @@ export interface LoadedSkill {
   prompt?: string
   /** Skill 所在目录的绝对路径 */
   dir: string
+  /** 是否包含高风险操作（需要用户确认） */
+  dangerous: boolean
   /** 从此 Skill 实例化的 LangChain tools */
   tools: DynamicStructuredTool[]
 }

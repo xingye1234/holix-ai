@@ -26,6 +26,25 @@ export interface DraftSegment {
 
   /** 时间戳 */
   createdAt: number
+
+  // ─── 工具调用专属字段（phase === 'tool' 时填充）────────────────────────
+
+  /** LangChain tool_call_id，用于关联 model 调用请求与 tool 执行结果 */
+  toolCallId?: string
+
+  /** 工具名称（预解析，方便 UI 直接展示） */
+  toolName?: string
+
+  /** 工具调用参数（预解析） */
+  toolArgs?: Record<string, unknown>
+
+  /**
+   * 审批状态，仅限 source==='model' 且工具为高风险时设置。
+   * - 'pending'  : 等待用户审批
+   * - 'approved' : 用户已批准，正在执行
+   * - 'denied'   : 用户拒绝，工具调用被阻断
+   */
+  approvalStatus?: 'pending' | 'approved' | 'denied'
 }
 
 export interface PendingMessage {

@@ -5,7 +5,6 @@ import {
   OctagonX,
   Sparkles,
   User,
-  Wrench,
 } from 'lucide-react'
 import { memo, useCallback, useMemo } from 'react'
 import { toast } from 'sonner'
@@ -18,6 +17,7 @@ import { cn } from '@/lib/utils'
 import { MessageFooter } from './footer'
 import { GeneratingIndicator } from './generating'
 import { MessageMarkdown } from './markdown'
+import { pairToolCallSegments, ToolCallCard } from './tool-call-card'
 
 interface MessageItemProps {
   id: string
@@ -52,20 +52,11 @@ export const MessageItem = memo(({ id, index, onDelete }: MessageItemProps) => {
     return ''
   }, [message.content, message.draftContent])
 
-  /** 当前活跃的工具调用（最新一条 model 侧未完成的） */
-  const activeToolCall = useMemo(() => {
-    if (!generating || !message.draftContent)
-      return null
-    const toolSegs = message.draftContent.filter(s => s.phase === 'tool')
-    if (!toolSegs.length)
-      return null
-    return toolSegs[toolSegs.length - 1]
-  }, [generating, message.draftContent])
-
-  const toolCallCount = useMemo(() => {
+  /** 配对好的工具调用（请求 + 结果） */
+  const toolCallPairs = useMemo(() => {
     if (!message.draftContent)
-      return 0
-    return message.draftContent.filter(s => s.phase === 'tool' && s.source === 'tool').length
+      return []
+    return pairToolCallSegments(message.draftContent)
   }, [message.draftContent])
 
   const handleCancelGeneration = useCallback(() => {
@@ -92,29 +83,16 @@ export const MessageItem = memo(({ id, index, onDelete }: MessageItemProps) => {
     )
   }
 
-  // ── 工具调用标签 ─────────────────────────────────────────────────────────
-  const toolBadge = isStreaming && activeToolCall && activeToolCall.source === 'model' && (
-    <div className="inline-flex items-center gap-1.5 text-[10px] text-muted-foreground bg-muted/60 px-2 py-0.5 rounded-full mb-2 border border-border/40">
-      <Wrench className="w-2.5 h-2.5 shrink-0 animate-pulse text-primary" />
-      <span className="truncate max-w-40">
-        {(() => {
-          try {
-            return JSON.parse(activeToolCall.content)?.name ?? 'tool'
-          }
-          catch {
-            return 'tool'
-          }
-        })()}
-      </span>
-      {toolCallCount > 0 && (
-        <span className="opacity-50">
-          ·
-          {' '}
-          {toolCallCount}
-          {' '}
-          done
-        </span>
-      )}
+  // ── 工具调用列表 ─────────────────────────────────────────────────────────
+  const toolCallList = !isUser && toolCallPairs.length > 0 && (
+    <div className="flex flex-col gap-1.5 mb-2 w-full">
+      {toolCallPairs.map(pair => (
+        <ToolCallCard
+          key={pair.request.id}
+          pair={pair}
+          isStreaming={isStreaming}
+        />
+      ))}
     </div>
   )
 
@@ -147,8 +125,8 @@ export const MessageItem = memo(({ id, index, onDelete }: MessageItemProps) => {
 
       {/* 气泡 + 取消按钮 */}
       <div className={cn('flex flex-col gap-1.5', isUser ? 'items-end' : 'items-start', 'max-w-[85%]')}>
-        {/* 工具调用 badge */}
-        {!isUser && toolBadge}
+        {/* 工具调用列表 */}
+        {!isUser && toolCallList}
 
         {/* 内容气泡 */}
         <ContextMenu>

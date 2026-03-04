@@ -342,6 +342,9 @@ class ChatManager {
           source: 'model',
           delta: false,
           createdAt: Date.now(),
+          toolCallId: call.id,
+          toolName: call.name,
+          toolArgs: call.args,
         })
         logger.info(`[chat/manager] Tool call dispatched | name=${call.name} id=${call.id} args=${JSON.stringify(call.args)}`)
       }
@@ -361,6 +364,7 @@ class ChatManager {
         source: 'tool',
         delta: false,
         createdAt: Date.now(),
+        toolCallId: toolMsg.tool_call_id,
       })
       logger.info(`[chat/manager] Tool result received | tool_call_id=${toolMsg.tool_call_id} content_len=${content.length}`)
     }

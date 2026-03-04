@@ -57,6 +57,7 @@ function validateManifest(raw: unknown, source: string): SkillManifest | null {
     description: obj.description.trim(),
     prompt: typeof obj.prompt === 'string' ? obj.prompt : undefined,
     disabled: obj.disabled === true,
+    dangerous: obj.dangerous === true,
     tools: Array.isArray(obj.tools) ? (obj.tools as ToolDeclaration[]) : [],
   }
 }
@@ -128,6 +129,7 @@ function loadSkillFromDir(skillDir: string): LoadedSkill | null {
       description: manifest.description,
       prompt: manifest.prompt,
       dir: skillDir,
+      dangerous: manifest.dangerous ?? false,
       tools,
     }
   }
@@ -171,6 +173,7 @@ function loadSkillFromFile(filePath: string): LoadedSkill | null {
       description: manifest.description,
       prompt: manifest.prompt,
       dir: skillDir,
+      dangerous: manifest.dangerous ?? false,
       tools: [],
     }
   }
