@@ -10,7 +10,7 @@ import {
   $getSelection,
   $isRangeSelection,
   $isTextNode,
-  COMMAND_PRIORITY_HIGH,
+  COMMAND_PRIORITY_CRITICAL,
   KEY_ARROW_DOWN_COMMAND,
   KEY_ARROW_UP_COMMAND,
   KEY_ENTER_COMMAND,
@@ -197,7 +197,7 @@ export function AutocompletePlugin({ sources, onInsert }: AutocompletePluginProp
         setActiveIndex(i => (i - 1 + items.length) % items.length)
         return true
       },
-      COMMAND_PRIORITY_HIGH,
+      COMMAND_PRIORITY_CRITICAL,
     )
     const removeDown = editor.registerCommand(
       KEY_ARROW_DOWN_COMMAND,
@@ -206,7 +206,7 @@ export function AutocompletePlugin({ sources, onInsert }: AutocompletePluginProp
         setActiveIndex(i => (i + 1) % items.length)
         return true
       },
-      COMMAND_PRIORITY_HIGH,
+      COMMAND_PRIORITY_CRITICAL,
     )
     const removeEnter = editor.registerCommand(
       KEY_ENTER_COMMAND,
@@ -219,7 +219,7 @@ export function AutocompletePlugin({ sources, onInsert }: AutocompletePluginProp
           confirmSelection(item)
         return true
       },
-      COMMAND_PRIORITY_HIGH,
+      COMMAND_PRIORITY_CRITICAL,
     )
     const removeTab = editor.registerCommand(
       KEY_TAB_COMMAND,
@@ -230,7 +230,7 @@ export function AutocompletePlugin({ sources, onInsert }: AutocompletePluginProp
           confirmSelection(item)
         return true
       },
-      COMMAND_PRIORITY_HIGH,
+      COMMAND_PRIORITY_CRITICAL,
     )
     const removeEsc = editor.registerCommand(
       KEY_ESCAPE_COMMAND,
@@ -238,7 +238,7 @@ export function AutocompletePlugin({ sources, onInsert }: AutocompletePluginProp
         closePopup()
         return true
       },
-      COMMAND_PRIORITY_HIGH,
+      COMMAND_PRIORITY_CRITICAL,
     )
 
     return () => {

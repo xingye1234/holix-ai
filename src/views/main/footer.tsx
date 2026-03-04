@@ -47,7 +47,6 @@ export default function MainFooter() {
       maxResults: 200,
       onlyFiles: false,
     }).then(({ items }) => {
-      console.log('Fetched workspace files for autocomplete:', items)
       if (cancelled)
         return
       setWorkspaceFileSuggestions(
