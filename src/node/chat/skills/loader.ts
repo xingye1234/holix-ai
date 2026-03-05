@@ -21,9 +21,10 @@
  */
 
 import type { DynamicStructuredTool } from '@langchain/core/tools'
-import type { LoadedSkill, SkillManifest, ToolDeclaration } from './type'
+import type { LoadedSkill, SkillManifest, SkillMdFrontmatter, ToolDeclaration } from './type'
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
-import { extname, join } from 'node:path'
+import { basename, extname, join } from 'node:path'
+import matter from 'gray-matter'
 import { logger } from '../../platform/logger'
 import { wrapWithApproval } from '../tools/approval'
 import { commandToTool, scriptToTool } from './adapters/command'
@@ -107,14 +108,26 @@ function buildTools(declarations: ToolDeclaration[], skillDir: string, skillName
 // ─── 单个 Skill 加载 ──────────────────────────────────────────────────────────
 
 /**
- * 从目录型 skill 加载（目录包含 skill.json）
+ * 从目录型 skill 加载：优先 skill.json，其次 SKILL.md（antfu/skills 格式）
  */
 function loadSkillFromDir(skillDir: string): LoadedSkill | null {
   const manifestPath = join(skillDir, 'skill.json')
+  const mdPath = join(skillDir, 'SKILL.md')
 
-  if (!existsSync(manifestPath))
-    return null
+  if (existsSync(manifestPath)) {
+    return loadSkillFromJsonFile(manifestPath, skillDir)
+  }
+  else if (existsSync(mdPath)) {
+    return loadSkillFromMdFile(mdPath, skillDir)
+  }
 
+  return null
+}
+
+/**
+ * 从 skill.json 加载目录型 skill
+ */
+function loadSkillFromJsonFile(manifestPath: string, skillDir: string): LoadedSkill | null {
   try {
     const raw = JSON.parse(readFileSync(manifestPath, 'utf-8'))
     const manifest = validateManifest(raw, manifestPath)
@@ -130,7 +143,7 @@ function loadSkillFromDir(skillDir: string): LoadedSkill | null {
     const tools = buildTools(manifest.tools ?? [], skillDir, manifest.name)
 
     logger.info(
-      `[skill-loader] Loaded skill from dir: ${manifest.name} (${tools.length} tools)`,
+      `[skill-loader] Loaded skill from dir (json): ${manifest.name} (${tools.length} tools)`,
     )
 
     return {
@@ -149,9 +162,87 @@ function loadSkillFromDir(skillDir: string): LoadedSkill | null {
 }
 
 /**
+ * 从 SKILL.md 文件加载知识型 skill（antfu/skills 格式）。
+ *
+ * 文件格式：
+ * ```md
+ * ---
+ * name: vite
+ * description: Vite build tool...
+ * metadata:
+ *   author: Anthony Fu
+ *   version: "2026.1.31"
+ * ---
+ *
+ * # Vite
+ * ...（Markdown 正文直接作为 system prompt 注入）
+ * ```
+ *
+ * @param mdPath  SKILL.md 的绝对路径
+ * @param skillDir skill 所在目录（可为文件所在目录）
+ */
+function loadSkillFromMdFile(mdPath: string, skillDir: string): LoadedSkill | null {
+  try {
+    const raw = readFileSync(mdPath, 'utf-8')
+    const parsed = matter(raw)
+    const fm = parsed.data as Partial<SkillMdFrontmatter>
+
+    // name 可从 frontmatter 获取，fallback 到目录/文件名
+    const name = (typeof fm.name === 'string' && fm.name.trim())
+      ? fm.name.trim()
+      : basename(skillDir)
+
+    if (typeof fm.description !== 'string' || !fm.description.trim()) {
+      logger.warn(`[skill-loader] SKILL.md at ${mdPath} missing "description" in frontmatter`)
+      return null
+    }
+
+    if (fm.disabled === true) {
+      logger.info(`[skill-loader] Skill disabled: ${name} (${mdPath})`)
+      return null
+    }
+
+    const version = fm.metadata?.version ?? '1.0.0'
+    // Markdown 正文作为 system prompt（去掉首尾空白）
+    const prompt = parsed.content.trim() || undefined
+
+    logger.info(`[skill-loader] Loaded skill from SKILL.md: ${name}`)
+
+    return {
+      name,
+      version,
+      description: fm.description.trim(),
+      prompt,
+      dir: skillDir,
+      tools: [],
+    }
+  }
+  catch (err) {
+    logger.error(`[skill-loader] Failed to parse SKILL.md at ${mdPath}:`, err)
+    return null
+  }
+}
+
+/**
  * 从单文件型 skill 加载（.json 文件放在 skills 根目录）
  */
 function loadSkillFromFile(filePath: string): LoadedSkill | null {
+  const ext = extname(filePath).toLowerCase()
+
+  if (ext === '.json') {
+    return loadSkillFromJsonStandalone(filePath)
+  }
+  else if (ext === '.md') {
+    return loadSkillFromMdFile(filePath, join(filePath, '..'))
+  }
+
+  return null
+}
+
+/**
+ * 从独立 .json 文件加载（无 tools 支持）
+ */
+function loadSkillFromJsonStandalone(filePath: string): LoadedSkill | null {
   try {
     const raw = JSON.parse(readFileSync(filePath, 'utf-8'))
     const manifest = validateManifest(raw, filePath)
@@ -172,7 +263,7 @@ function loadSkillFromFile(filePath: string): LoadedSkill | null {
     }
 
     // 单文件型技能的 dir 取文件所在目录
-    const skillDir = dirname(filePath)
+    const skillDir = join(filePath, '..')
 
     logger.info(`[skill-loader] Loaded skill from file: ${manifest.name}`)
 
@@ -189,10 +280,6 @@ function loadSkillFromFile(filePath: string): LoadedSkill | null {
     logger.error(`[skill-loader] Failed to parse skill file ${filePath}:`, err)
     return null
   }
-}
-
-function dirname(filePath: string): string {
-  return join(filePath, '..')
 }
 
 // ─── 全量扫描 ──────────────────────────────────────────────────────────────────
@@ -228,12 +315,20 @@ export function scanSkillsDir(skillsDir: string): LoadedSkill[] {
       let skill: LoadedSkill | null = null
 
       if (stat.isDirectory()) {
-        // 目录型 skill
+        // 目录型 skill：skill.json 优先，其次 SKILL.md
         skill = loadSkillFromDir(fullPath)
       }
-      else if (stat.isFile() && extname(entry).toLowerCase() === '.json') {
-        // 单文件型 skill（.json）
-        skill = loadSkillFromFile(fullPath)
+      else if (stat.isFile()) {
+        const ext = extname(entry).toLowerCase()
+        const fname = basename(entry)
+        if (ext === '.json') {
+          // 单文件型 skill（.json）
+          skill = loadSkillFromFile(fullPath)
+        }
+        else if (ext === '.md' && fname !== 'README.md') {
+          // 独立 SKILL.md（或任意 .md skill 文件，跳过 README）
+          skill = loadSkillFromFile(fullPath)
+        }
       }
 
       if (skill) {

@@ -29,6 +29,7 @@ export type {
   ScriptToolDeclaration,
   Skill,
   SkillManifest,
+  SkillMdFrontmatter,
   ToolDeclaration,
 } from './type'
 

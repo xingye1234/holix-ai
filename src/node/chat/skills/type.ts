@@ -106,3 +106,39 @@ export interface Skill {
   description: string
   prompt: string
 }
+
+// ─── Markdown SKILL.md (antfu/skills format) ──────────────────────────────────
+
+/**
+ * SKILL.md frontmatter，兼容 https://github.com/antfu/skills 格式。
+ *
+ * 文件格式：
+ * ```md
+ * ---
+ * name: vite
+ * description: Vite build tool...
+ * metadata:
+ *   author: Anthony Fu
+ *   version: "2026.1.31"
+ *   source: https://...
+ * ---
+ *
+ * # Vite
+ * ...（Markdown 正文作为 system prompt 注入）
+ * ```
+ */
+export interface SkillMdFrontmatter {
+  /** Skill 唯一标识 */
+  name: string
+  /** 简短描述，告知 AI 何时使用此知识 */
+  description: string
+  /** 可选元数据（作者、版本、来源等） */
+  metadata?: {
+    author?: string
+    version?: string
+    source?: string
+    [key: string]: unknown
+  }
+  /** 是否禁用，默认 false */
+  disabled?: boolean
+}

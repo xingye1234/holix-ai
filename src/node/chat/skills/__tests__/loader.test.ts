@@ -257,12 +257,104 @@ describe('scanSkillsDir', () => {
     expect(skills[0].dir).toBe(testRoot)
   })
 
-  it('忽略非 .json 的文件', () => {
+  it('忽略无有效 frontmatter 的 .md 文件和非 .md/.json 的文件', () => {
     writeFileSync(join(testRoot, 'readme.md'), '# readme', 'utf-8')
     writeFileSync(join(testRoot, 'script.sh'), 'echo hello', 'utf-8')
 
     const skills = scanSkillsDir(testRoot)
     expect(skills).toHaveLength(0)
+  })
+
+  // ─── SKILL.md (antfu/skills 格式) ─────────────────────────────────────────────
+
+  it('加载独立 SKILL.md 文件（antfu/skills 格式）', () => {
+    const content = [
+      '---',
+      'name: vite',
+      'description: Vite build tool configuration and plugin API.',
+      'metadata:',
+      '  author: Anthony Fu',
+      '  version: "2026.1.31"',
+      '---',
+      '',
+      '# Vite',
+      '',
+      'Vite is a next-generation frontend build tool.',
+    ].join('\n')
+    writeFileSync(join(testRoot, 'SKILL.md'), content, 'utf-8')
+
+    const skills = scanSkillsDir(testRoot)
+    expect(skills).toHaveLength(1)
+    expect(skills[0].name).toBe('vite')
+    expect(skills[0].description).toBe('Vite build tool configuration and plugin API.')
+    expect(skills[0].version).toBe('2026.1.31')
+    expect(skills[0].prompt).toContain('# Vite')
+    expect(skills[0].tools).toHaveLength(0)
+  })
+
+  it('sKILL.md 正文作为 system prompt 注入', () => {
+    const content = [
+      '---',
+      'name: react',
+      'description: React hooks and patterns.',
+      '---',
+      '',
+      '# React',
+      '',
+      'Use functional components and hooks.',
+    ].join('\n')
+    writeFileSync(join(testRoot, 'react.md'), content, 'utf-8')
+
+    const skills = scanSkillsDir(testRoot)
+    expect(skills[0].prompt).toBe('# React\n\nUse functional components and hooks.')
+  })
+
+  it('sKILL.md 无正文时 prompt 为 undefined', () => {
+    const content = ['---', 'name: empty_skill', 'description: Skill with no body.', '---'].join('\n')
+    writeFileSync(join(testRoot, 'empty.md'), content, 'utf-8')
+
+    const skills = scanSkillsDir(testRoot)
+    expect(skills[0].prompt).toBeUndefined()
+  })
+
+  it('sKILL.md 缺少 description 时跳过', () => {
+    const content = ['---', 'name: no_desc', '---', '', '# Something'].join('\n')
+    writeFileSync(join(testRoot, 'no-desc.md'), content, 'utf-8')
+
+    const skills = scanSkillsDir(testRoot)
+    expect(skills).toHaveLength(0)
+  })
+
+  it('sKILL.md disabled=true 时跳过', () => {
+    const content = ['---', 'name: disabled_skill', 'description: Should be skipped.', 'disabled: true', '---', '', '# Disabled'].join('\n')
+    writeFileSync(join(testRoot, 'disabled.md'), content, 'utf-8')
+
+    const skills = scanSkillsDir(testRoot)
+    expect(skills).toHaveLength(0)
+  })
+
+  it('目录中的 SKILL.md 可以作为目录型 skill 加载', () => {
+    const dir = join(testRoot, 'vite-skill')
+    mkdirSync(dir, { recursive: true })
+    const content = ['---', 'name: vite_dir', 'description: Vite in a directory.', '---', '', '# Vite Directory Skill'].join('\n')
+    writeFileSync(join(dir, 'SKILL.md'), content, 'utf-8')
+
+    const skills = scanSkillsDir(testRoot)
+    expect(skills).toHaveLength(1)
+    expect(skills[0].name).toBe('vite_dir')
+    expect(skills[0].dir).toBe(dir)
+  })
+
+  it('目录同时有 skill.json 和 SKILL.md 时优先使用 skill.json', () => {
+    const dir = join(testRoot, 'mixed-skill')
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(join(dir, 'skill.json'), JSON.stringify({ name: 'from_json', description: 'From JSON manifest' }), 'utf-8')
+    const mdContent = ['---', 'name: from_md', 'description: From SKILL.md', '---'].join('\n')
+    writeFileSync(join(dir, 'SKILL.md'), mdContent, 'utf-8')
+
+    const skills = scanSkillsDir(testRoot)
+    expect(skills).toHaveLength(1)
+    expect(skills[0].name).toBe('from_json')
   })
 
   // ─── 重名去重 ──────────────────────────────────────────────────────────────────
