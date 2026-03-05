@@ -5,7 +5,7 @@
  * 让用户查看调用参数后决定批准或拒绝。
  */
 
-import { AlertTriangle, ShieldAlert } from 'lucide-react'
+import { AlertTriangle, ShieldAlert, ShieldCheck, Zap } from 'lucide-react'
 import { useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import {
@@ -19,7 +19,7 @@ import {
 import { useToolApprovalStore } from '@/store/tool-approval'
 
 export function ToolApprovalModal() {
-  const { pendingRequest, approve, deny } = useToolApprovalStore()
+  const { pendingRequest, approve, deny, approveAlwaysForSkill, approveAllForSession } = useToolApprovalStore()
 
   const handleApprove = useCallback(() => {
     approve()
@@ -28,6 +28,14 @@ export function ToolApprovalModal() {
   const handleDeny = useCallback(() => {
     deny()
   }, [deny])
+
+  const handleApproveAlwaysForSkill = useCallback(() => {
+    approveAlwaysForSkill()
+  }, [approveAlwaysForSkill])
+
+  const handleApproveAllForSession = useCallback(() => {
+    approveAllForSession()
+  }, [approveAllForSession])
 
   if (!pendingRequest)
     return null
@@ -96,20 +104,44 @@ export function ToolApprovalModal() {
           </div>
         </div>
 
-        <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={handleDeny}
-            className="text-muted-foreground"
-          >
-            拒绝
-          </Button>
-          <Button
-            variant="destructive"
-            onClick={handleApprove}
-          >
-            批准执行
-          </Button>
+        <DialogFooter className="flex-col gap-2 sm:flex-col">
+          {/* 快速允许选项 */}
+          <div className="flex gap-2 w-full">
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 text-xs"
+              onClick={handleApproveAlwaysForSkill}
+            >
+              <ShieldCheck className="w-3.5 h-3.5 mr-1.5" />
+              始终允许此 Skill
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 text-xs"
+              onClick={handleApproveAllForSession}
+            >
+              <Zap className="w-3.5 h-3.5 mr-1.5" />
+              本次对话全部允许
+            </Button>
+          </div>
+          {/* 主操作 */}
+          <div className="flex gap-2 w-full justify-end">
+            <Button
+              variant="outline"
+              onClick={handleDeny}
+              className="text-muted-foreground"
+            >
+              拒绝
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleApprove}
+            >
+              批准执行
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
