@@ -5,6 +5,8 @@
  * getTextContent() 返回不含触发前缀的纯值，用于消息发送时剥离 @、# 等指令前缀。
  */
 import type {
+  DOMConversionMap,
+  DOMConversionOutput,
   DOMExportOutput,
   EditorConfig,
   LexicalNode,
@@ -92,7 +94,30 @@ export class MentionNode extends DecoratorNode<React.JSX.Element> {
   exportDOM(): DOMExportOutput {
     const el = document.createElement('span')
     el.textContent = this.__value
+    el.setAttribute('data-lexical-mention-trigger', this.__trigger)
+    el.setAttribute('data-lexical-mention-value', this.__value)
+    el.setAttribute('data-lexical-mention-display', this.__displayText)
     return { element: el }
+  }
+
+  static importDOM(): DOMConversionMap {
+    return {
+      span: (node: Node) => {
+        const el = node as HTMLElement
+        if (!el.hasAttribute('data-lexical-mention-trigger'))
+          return null
+        return {
+          conversion: (domNode: Node): DOMConversionOutput => {
+            const span = domNode as HTMLElement
+            const trigger = span.getAttribute('data-lexical-mention-trigger') ?? '@'
+            const value = span.getAttribute('data-lexical-mention-value') ?? span.textContent ?? ''
+            const displayText = span.getAttribute('data-lexical-mention-display') ?? value
+            return { node: $createMentionNode(trigger, value, displayText) }
+          },
+          priority: 1,
+        }
+      },
+    }
   }
 
   // ─── JSON 序列化 ───────────────────────────────────────────────────────────
