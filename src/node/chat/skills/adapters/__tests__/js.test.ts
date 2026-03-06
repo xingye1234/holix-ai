@@ -409,3 +409,70 @@ describe('loadJsTools - 安全沙箱（执行阶段）', () => {
     expect(result).toBe('baz.txt')
   }, 15_000)
 })
+
+// ─── 解析阶段：顶层 require 和顶层调用的健壮性 ───────────────────────────────────
+
+describe('loadJsTools - 解析阶段：顶层 require 健壮性', () => {
+  setup()
+
+  it('顶层 require("node:util") + promisify 调用不崩溃，能正确提取元数据', () => {
+    // 模拟 shell/index.js 的真实写法
+    writeJsFile('promisify.js', `
+      const { execFile } = require('node:child_process');
+      const { promisify } = require('node:util');
+      const execFileAsync = promisify(execFile);
+      const os = require('node:os');
+
+      module.exports = {
+        name: 'run_cmd',
+        description: 'Runs a shell command',
+        schema: { command: 'string' },
+        execute: async ({ command }) => execFileAsync(command)
+      }
+    `)
+
+    // 元数据解析不应抛异常
+    expect(() => loadJsTools({ type: 'js', file: 'promisify.js' }, testDir, 'test_skill')).not.toThrow()
+
+    const tools = loadJsTools({ type: 'js', file: 'promisify.js' }, testDir, 'test_skill')
+    expect(tools).toHaveLength(1)
+    expect(tools[0].name).toBe('run_cmd')
+    expect(tools[0].description).toBe('Runs a shell command')
+  })
+
+  it('顶层多层方法链调用（stub.method().otherMethod()）不崩溃', () => {
+    writeJsFile('chained.js', `
+      const path = require('path');
+      const resolved = path.join('/some', 'dir');
+      const base = resolved.split('/').pop();
+
+      module.exports = {
+        name: 'chain_tool',
+        description: 'Uses chained method calls at top level',
+        execute: async () => base
+      }
+    `)
+
+    expect(() => loadJsTools({ type: 'js', file: 'chained.js' }, testDir, 'test_skill')).not.toThrow()
+    const tools = loadJsTools({ type: 'js', file: 'chained.js' }, testDir, 'test_skill')
+    expect(tools).toHaveLength(1)
+    expect(tools[0].name).toBe('chain_tool')
+  })
+
+  it('顶层 require 返回的 stub 可被 new 调用（如 new EventEmitter()）', () => {
+    writeJsFile('new-call.js', `
+      const { EventEmitter } = require('events');
+      const emitter = new EventEmitter();
+
+      module.exports = {
+        name: 'emitter_tool',
+        description: 'Uses EventEmitter at top level',
+        execute: async () => 'ok'
+      }
+    `)
+
+    expect(() => loadJsTools({ type: 'js', file: 'new-call.js' }, testDir, 'test_skill')).not.toThrow()
+    const tools = loadJsTools({ type: 'js', file: 'new-call.js' }, testDir, 'test_skill')
+    expect(tools).toHaveLength(1)
+  })
+})

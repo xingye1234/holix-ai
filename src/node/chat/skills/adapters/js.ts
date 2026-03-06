@@ -86,6 +86,33 @@ function buildZodSchema(schema?: Record<string, SchemaField | string>): z.ZodObj
 // ─── 加载阶段：vm 沙箱解析元数据（主进程，无副作用）─────────────────────────────
 
 /**
+ * 递归可调用 Proxy stub：用于元数据解析阶段的 require 返回值。
+ *
+ * 解决 `const { promisify } = require('node:util')` 之类的顶层解构调用问题：
+ * - 任何属性访问（如 `.promisify`）返回一个新 stub
+ * - stub 本身也可被调用（`promisify(fn)` 返回新 stub，不抛异常）
+ * - 这样解析阶段的顶层代码不会因为 "xxx is not a function" 崩溃
+ */
+function makeParseStub(): any {
+  // 使用普通函数（非箭头函数），以支持 new 调用（如 new EventEmitter()）
+  // eslint-disable-next-line prefer-arrow-callback
+  function stubFn(this: unknown, ..._args: unknown[]): any {
+    return makeParseStub()
+  }
+  return new Proxy(stubFn, {
+    get(_target, _prop: string | symbol) {
+      return makeParseStub()
+    },
+    apply(_target, _thisArg, _args) {
+      return makeParseStub()
+    },
+    construct(_target, _args) {
+      return makeParseStub()
+    },
+  })
+}
+
+/**
  * 在 vm 沙箱中解析 JS 文件，只提取元数据（name/description/schema）。
  * 不执行任何 execute() 函数，require / process 完全不可见。
  */
@@ -98,8 +125,8 @@ function parseToolMeta(filePath: string, exportName: string): ToolMeta[] {
   const context = vm.createContext({
     module: moduleObj,
     exports: moduleExports,
-    // require 在元数据解析阶段返回空对象（execute 中的 require 在沙箱执行阶段才生效）
-    require: (_: string) => ({}),
+    // require 在元数据解析阶段返回递归 stub（避免顶层解构/调用报 "not a function"）
+    require: (_: string) => makeParseStub(),
     process: Object.freeze({
       platform: process.platform,
       arch: process.arch,
