@@ -8,7 +8,7 @@
       "type": "js",
       "file": "index.js",
       "permissions": {
-        "allowedBuiltins": ["node:child_process", "node:path", "node:os", "child_process", "path", "os"],
+        "allowedBuiltins": ["node:child_process", "node:path", "node:os", "node:util", "child_process", "path", "os", "util"],
         "timeout": 120000
       }
     }
