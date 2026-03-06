@@ -26,11 +26,6 @@ function fmtSize(bytes) {
 
 const readFile = {
   name: 'read_file',
-  description: '读取文件内容。超过 256KB 的文件会被截断并提示。',
-  schema: {
-    file_path: { type: 'string', description: '文件的绝对路径' },
-    encoding: { type: 'string', description: '文件编码（默认 utf-8）', optional: true },
-  },
   execute: async ({ file_path, encoding = 'utf-8' }) => {
     const resolved = path.resolve(file_path)
 
@@ -58,12 +53,6 @@ const readFile = {
 
 const writeFile = {
   name: 'write_file',
-  description: '写入文件（覆盖或追加）。父目录不存在时自动创建。',
-  schema: {
-    file_path: { type: 'string', description: '目标文件的绝对路径' },
-    content: { type: 'string', description: '要写入的文本内容' },
-    append: { type: 'boolean', description: '是否追加（默认 false = 覆盖）', optional: true },
-  },
   execute: async ({ file_path, content, append = false }) => {
     const resolved = path.resolve(file_path)
     const dir = path.dirname(resolved)
@@ -84,11 +73,6 @@ const writeFile = {
 
 const listDirectory = {
   name: 'list_directory',
-  description: '列举目录下的文件和子目录（不递归）。',
-  schema: {
-    dir_path: { type: 'string', description: '要列举的目录绝对路径' },
-    show_hidden: { type: 'boolean', description: '是否显示隐藏文件（默认 false）', optional: true },
-  },
   execute: async ({ dir_path, show_hidden = false }) => {
     const resolved = path.resolve(dir_path)
 
@@ -115,10 +99,6 @@ const listDirectory = {
 
 const fileExists = {
   name: 'file_exists',
-  description: '检查文件或目录是否存在，返回类型和大小信息。',
-  schema: {
-    file_path: { type: 'string', description: '要检查的绝对路径' },
-  },
   execute: async ({ file_path }) => {
     const resolved = path.resolve(file_path)
     if (!fs.existsSync(resolved)) return `不存在：${resolved}`
@@ -134,12 +114,6 @@ const fileExists = {
 
 const getDirectoryTree = {
   name: 'get_directory_tree',
-  description: '递归输出目录结构树（默认 3 层深，每层最多 50 个条目）。',
-  schema: {
-    dir_path: { type: 'string', description: '根目录的绝对路径' },
-    max_depth: { type: 'number', description: '最大递归深度（1-5，默认 3）', optional: true },
-    show_hidden: { type: 'boolean', description: '是否包含隐藏条目（默认 false）', optional: true },
-  },
   execute: async ({ dir_path, max_depth = 3, show_hidden = false }) => {
     const resolved = path.resolve(dir_path)
     if (!fs.existsSync(resolved)) return `目录不存在：${resolved}`

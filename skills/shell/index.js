@@ -51,25 +51,6 @@ function getShellArgs(command) {
 
 const runShellCommand = {
   name: 'run_shell_command',
-  description:
-    '在指定目录执行一条 shell 命令，返回 stdout / stderr 及退出码。'
-    + ' 适用于查看文件内容、运行脚本、构建项目等任务。',
-  schema: {
-    command: {
-      type: 'string',
-      description: '要执行的完整 shell 命令（传给 /bin/sh -c）',
-    },
-    cwd: {
-      type: 'string',
-      description: '工作目录（绝对路径，Unix 下支持 ~/… 相对主目录）。留空则使用用户主目录。',
-      optional: true,
-    },
-    timeout_ms: {
-      type: 'number',
-      description: `命令超时毫秒数，默认 ${DEFAULT_TIMEOUT}，最大 120000`,
-      optional: true,
-    },
-  },
   execute: async ({ command, cwd, timeout_ms }) => {
     const workDir = resolveCwd(cwd)
     const timeout = Math.min(Math.max(timeout_ms ?? DEFAULT_TIMEOUT, 1000), 120_000)
@@ -127,10 +108,6 @@ const runShellCommand = {
 
 const getEnvironmentInfo = {
   name: 'get_environment_info',
-  description:
-    '获取当前系统环境的基本信息：操作系统、平台、主目录、默认 shell、CPU 架构等。'
-    + ' 适合在执行命令前了解运行环境。',
-  schema: {},
   execute: async () => {
     const info = {
       platform: os.platform(),

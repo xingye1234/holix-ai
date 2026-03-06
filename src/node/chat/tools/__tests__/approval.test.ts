@@ -10,6 +10,7 @@
  */
 
 import type { DynamicStructuredTool } from '@langchain/core/tools'
+import { DynamicStructuredTool as DynamicStructuredToolImpl } from '@langchain/core/tools'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import z from 'zod'
 
@@ -18,14 +19,14 @@ import { wrapWithApproval } from '../approval'
 
 // ─── 主进程审批状态（必须在导入被测模块前 mock）──────────────────────────────────
 
-const mockApprovalState = {
-  isApproved: vi.fn<[string], boolean>(() => false),
-  isAlwaysAllowed: vi.fn<[string], boolean>(() => false),
+const mockApprovalState = vi.hoisted(() => ({
+  isApproved: vi.fn<() => boolean>(() => false),
+  isAlwaysAllowed: vi.fn<() => boolean>(() => false),
   setAlwaysAllow: vi.fn(),
   removeAlwaysAllow: vi.fn(),
   setSessionAllowAll: vi.fn(),
   setSessionAllowSkill: vi.fn(),
-}
+}))
 
 vi.mock('../approval-state', () => ({
   approvalState: mockApprovalState,
@@ -33,11 +34,24 @@ vi.mock('../approval-state', () => ({
 
 // ─── updateAwait（SSE callback 弹窗机制）─────────────────────────────────────
 
-const mockUpdateAwait = vi.fn<[string, ...unknown[]], Promise<boolean>>()
+const mockUpdateAwait = vi.hoisted(() => vi.fn<() => Promise<boolean>>())
+
+const mockKvGet = vi.hoisted(() => vi.fn<(key: string) => unknown>())
+const mockKvSet = vi.hoisted(() => vi.fn())
+const mockKvDelete = vi.hoisted(() => vi.fn())
 
 vi.mock('../../../platform/update', () => ({
-  updateAwait: (...args: unknown[]) => mockUpdateAwait(...args as [string, ...unknown[]]),
+  updateAwait: (...args: unknown[]) => mockUpdateAwait(...(args as Parameters<typeof mockUpdateAwait>)),
   update: vi.fn(),
+}))
+
+vi.mock('../../../database/kv-operations', () => ({
+  kvGet: (key: string) => mockKvGet(key),
+  kvSet: (key: string, value: unknown) => mockKvSet(key, value),
+  kvDelete: (key: string) => mockKvDelete(key),
+  kvDeletePrefix: vi.fn(),
+  kvSetObject: vi.fn(),
+  kvGetObject: vi.fn(),
 }))
 
 vi.mock('../../../platform/logger', () => ({
@@ -50,8 +64,6 @@ function makeDummyTool(
   name: string,
   fn: (input: Record<string, unknown>) => Promise<string>,
 ): DynamicStructuredTool {
-  const DynamicStructuredToolImpl = require('@langchain/core/tools').DynamicStructuredTool
-
   return new DynamicStructuredToolImpl({
     name,
     description: `Test tool: ${name}`,
@@ -195,26 +207,13 @@ describe('approvalState（直接单元测试）', () => {
   // 单独导入真实实现（不 mock）
   // 注意：需要 mock kv-operations 以避免 Electron 依赖链
 
-  const mockKvGet = vi.fn<[string], unknown>()
-  const mockKvSet = vi.fn()
-  const mockKvDelete = vi.fn()
-
-  vi.mock('../../../database/kv-operations', () => ({
-    kvGet: (key: string) => mockKvGet(key),
-    kvSet: (key: string, value: unknown) => mockKvSet(key, value),
-    kvDelete: (key: string) => mockKvDelete(key),
-    kvDeletePrefix: vi.fn(),
-    kvSetObject: vi.fn(),
-    kvGetObject: vi.fn(),
-  }))
-
   // 使用真实的 approval-state（不走上面的 vi.mock）— 需要单独 import
   // 这里通过动态 import 绕过模块缓存
   let realApprovalState: typeof import('../approval-state')['approvalState']
 
   beforeEach(async () => {
     vi.clearAllMocks()
-    const mod = await import('../approval-state')
+    const mod = await vi.importActual<typeof import('../approval-state')>('../approval-state')
     realApprovalState = mod.approvalState
     realApprovalState._reset()
   })

@@ -47,12 +47,6 @@ function fmtSize(bytes) {
 
 const readCodeFile = {
   name: 'read_code_file',
-  description: '读取代码或文本文件，输出带行号的内容。支持指定行范围，最多返回 500 行。',
-  schema: {
-    file_path: { type: 'string', description: '文件的绝对路径' },
-    start_line: { type: 'number', description: '起始行（从 1 开始，默认 1）', optional: true },
-    end_line: { type: 'number', description: '结束行（含，默认至末尾，最多 500 行）', optional: true },
-  },
   execute: async ({ file_path, start_line = 1, end_line }) => {
     const resolved = path.resolve(file_path)
 
@@ -91,15 +85,6 @@ const readCodeFile = {
 
 const searchInFiles = {
   name: 'search_in_files',
-  description: '在目录下递归搜索包含指定关键词或正则的行（类 grep），最多返回 100 条。',
-  schema: {
-    dir_path: { type: 'string', description: '搜索的根目录绝对路径' },
-    pattern: { type: 'string', description: '要搜索的关键词或正则表达式' },
-    file_ext: { type: 'string', description: '限定扩展名，如 ".ts"（可选）', optional: true },
-    is_regex: { type: 'boolean', description: '是否将 pattern 当正则处理（默认 false）', optional: true },
-    case_sensitive: { type: 'boolean', description: '区分大小写（默认 false）', optional: true },
-    max_results: { type: 'number', description: '最大返回条数（1-200，默认 100）', optional: true },
-  },
   execute: async ({ dir_path, pattern, file_ext, is_regex = false, case_sensitive = false, max_results = 100 }) => {
     const resolved = path.resolve(dir_path)
     if (!fs.existsSync(resolved) || !fs.statSync(resolved).isDirectory())
@@ -165,12 +150,6 @@ const searchInFiles = {
 
 const findFiles = {
   name: 'find_files',
-  description: '递归查找匹配文件名或扩展名的文件（类 find），最多返回 200 个。',
-  schema: {
-    dir_path: { type: 'string', description: '搜索根目录绝对路径' },
-    name_pattern: { type: 'string', description: '文件名关键词或扩展名（如 ".ts"）' },
-    max_depth: { type: 'number', description: '最大深度（1-10，默认 6）', optional: true },
-  },
   execute: async ({ dir_path, name_pattern, max_depth = 6 }) => {
     const resolved = path.resolve(dir_path)
     if (!fs.existsSync(resolved) || !fs.statSync(resolved).isDirectory())
