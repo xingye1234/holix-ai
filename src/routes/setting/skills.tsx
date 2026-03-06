@@ -207,7 +207,7 @@ function ConfigForm({
 
   async function handleChange(key: string, value: string) {
     setLocalValues(prev => ({ ...prev, [key]: value }))
-    await trpcClient.skill.setConfig.mutate({ skillName, key, value })
+    await trpcClient.skill.setConfig({ skillName, key, value })
   }
 
   return (

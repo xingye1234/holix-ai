@@ -28,6 +28,18 @@ vi.mock('../adapters/command', () => ({
   scriptToTool: vi.fn(() => ({ name: 'mocked_script' })),
 }))
 
+// mock approval-state 避免 kv-operations → connect → constant → Electron 依赖链
+vi.mock('../../tools/approval-state', () => ({
+  approvalState: {
+    isApproved: vi.fn(() => false),
+    isAlwaysAllowed: vi.fn(() => false),
+    setAlwaysAllow: vi.fn(),
+    removeAlwaysAllow: vi.fn(),
+    setSessionAllowAll: vi.fn(),
+    setSessionAllowSkill: vi.fn(),
+  },
+}))
+
 // ─── 测试工具函数 ──────────────────────────────────────────────────────────────
 
 let testRoot: string

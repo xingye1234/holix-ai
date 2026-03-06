@@ -9,6 +9,7 @@ import type { DynamicStructuredTool } from '@langchain/core/tools'
 import { DynamicStructuredTool as DynamicStructuredToolImpl } from '@langchain/core/tools'
 import { logger } from '../../platform/logger'
 import { updateAwait } from '../../platform/update'
+import { approvalState } from './approval-state'
 
 /** 发送给前端的审批请求载荷 */
 export interface ToolApprovalRequestPayload {
@@ -41,6 +42,16 @@ export function wrapWithApproval(tool: DynamicStructuredTool, skillName: string)
     description: tool.description,
     schema: tool.schema,
     func: async (input: Record<string, unknown>) => {
+      // ① Node 侧先检查审批状态，无需渲染进程交互
+      if (approvalState.isApproved(skillName)) {
+        const reason = approvalState.isAlwaysAllowed(skillName) ? '始终允许' : '本次对话已允许'
+        logger.info(
+          `[ToolApproval] "${tool.name}" (skill: ${skillName}) auto-approved [${reason}], executing directly`,
+        )
+        return originalFunc(input)
+      }
+
+      // ② 未在允许列表，向渲染进程发起弹窗审批
       const payload: ToolApprovalRequestPayload = {
         toolName: tool.name,
         skillName,

@@ -4,31 +4,13 @@
  * 管理工具调用审批的前端状态。
  * 当高风险 skill 的工具被 AI 调用时，服务端通过 SSE callback 向前端发起审批请求，
  * 前端弹出确认弹窗等待用户决策，再将结果返回给服务端。
+ *
+ * 注意：审批白名单状态（始终允许 / 本次对话允许）统一由 Node 主进程维护，
+ * 通过 tRPC `approval.*` 接口读写，渲染进程无需在本地缓存这些状态。
  */
 
 import { create } from 'zustand'
-
-const ALLOWED_SKILLS_KEY = 'tool-approval:allowed-skills'
-
-function loadAllowedSkills(): Set<string> {
-  try {
-    const raw = localStorage.getItem(ALLOWED_SKILLS_KEY)
-    if (raw) {
-      const arr = JSON.parse(raw)
-      if (Array.isArray(arr))
-        return new Set<string>(arr)
-    }
-  }
-  catch {}
-  return new Set()
-}
-
-function saveAllowedSkills(skills: Set<string>) {
-  try {
-    localStorage.setItem(ALLOWED_SKILLS_KEY, JSON.stringify([...skills]))
-  }
-  catch {}
-}
+import { trpcClient } from '@/lib/trpc-client'
 
 /** 服务端发来的审批请求载荷（与 approval.ts 的 ToolApprovalRequestPayload 一致） */
 export interface ToolApprovalRequest {
@@ -49,34 +31,23 @@ export interface ToolApprovalRequest {
 interface ToolApprovalStore {
   /** 当前等待用户审批的请求，null 表示无待处理 */
   pendingRequest: ToolApprovalRequest | null
-  /** 本次会话中已永久允许的 skill 名称集合 */
-  allowedSkills: Set<string>
-  /** 是否已对本次对话全部允许 */
-  allowAllForSession: boolean
   /** 内部：设置待处理请求（由注册的 command handler 调用） */
   _setPendingRequest: (req: ToolApprovalRequest) => void
   /** 用户点击批准（仅本次） */
   approve: () => void
   /** 用户点击拒绝 */
   deny: () => void
-  /** 批准并永久允许该 skill 的所有工具调用 */
+  /** 批准并永久允许该 skill 的所有工具调用（持久化到 Node 侧 KV） */
   approveAlwaysForSkill: () => void
-  /** 批准并允许本次对话所有工具调用 */
+  /** 批准并允许本次对话所有工具调用（Node 侧进程内存） */
   approveAllForSession: () => void
 }
 
 export const useToolApprovalStore = create<ToolApprovalStore>((set, get) => ({
   pendingRequest: null,
-  allowedSkills: loadAllowedSkills(),
-  allowAllForSession: false,
 
   _setPendingRequest: (req) => {
-    const { allowAllForSession, allowedSkills } = get()
-    // 已设置全部允许或该 skill 已在白名单中，直接静默批准
-    if (allowAllForSession || allowedSkills.has(req.skillName)) {
-      req.resolve(true)
-      return
-    }
+    // 审批白名单由 Node 主进程维护，到达此处说明尚未在白名单中，直接展示弹窗
     set({ pendingRequest: req })
   },
 
@@ -99,19 +70,20 @@ export const useToolApprovalStore = create<ToolApprovalStore>((set, get) => ({
   approveAlwaysForSkill: () => {
     const req = get().pendingRequest
     if (req) {
-      const newAllowedSkills = new Set(get().allowedSkills)
-      newAllowedSkills.add(req.skillName)
-      saveAllowedSkills(newAllowedSkills)
+      // 先解除当前请求的阻塞，再异步通知 Node 更新 KV
       req.resolve(true)
-      set({ pendingRequest: null, allowedSkills: newAllowedSkills })
+      set({ pendingRequest: null })
+      trpcClient.approval.setAlwaysAllow({ skillName: req.skillName }).catch(() => {})
     }
   },
 
   approveAllForSession: () => {
     const req = get().pendingRequest
     if (req) {
+      // 先解除当前请求的阻塞，再异步通知 Node 更新进程内存
       req.resolve(true)
-      set({ pendingRequest: null, allowAllForSession: true })
+      set({ pendingRequest: null })
+      trpcClient.approval.setSessionAllowAll().catch(() => {})
     }
   },
 }))

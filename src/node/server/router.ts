@@ -1,3 +1,4 @@
+import { approvalRouter } from './approval'
 import { chatRouter } from './chat'
 import { dialogRouter } from './dialog'
 import { messageRouter } from './message'
@@ -12,6 +13,7 @@ export const appRouter = router({
   dialog: dialogRouter,
   skill: skillRouter,
   workspace: workspaceRouter,
+  approval: approvalRouter,
 })
 
 // 导出类型

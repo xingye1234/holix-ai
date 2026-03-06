@@ -40,11 +40,24 @@ vi.mock('../adapters/command', () => ({
   })),
 }))
 
+// mock approval-state 避免 kv-operations → connect → constant → Electron 依赖链
+vi.mock('../../tools/approval-state', () => ({
+  approvalState: {
+    isApproved: vi.fn(() => false),
+    isAlwaysAllowed: vi.fn(() => false),
+    setAlwaysAllow: vi.fn(),
+    removeAlwaysAllow: vi.fn(),
+    setSessionAllowAll: vi.fn(),
+    setSessionAllowSkill: vi.fn(),
+  },
+}))
+
 // mock constant - SkillManager 通过 APP_DATA_PATH 构建技能目录
 // 我们在每个测试中通过 SkillManager 内部的 skillsDir 来控制
 vi.mock('../../../constant', () => ({
   APP_DATA_PATH: tmpdir(), // 初始占位，每个测试会使用独立临时目录
   BUILTIN_SKILLS_PATH: tmpdir(), // 内置 skills 目录占位，指向空临时目录
+  databaseUrl: ':memory:', // connect.ts 需要此 export
 }))
 
 // ─── 测试辅助 ─────────────────────────────────────────────────────────────────
