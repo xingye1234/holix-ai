@@ -3,20 +3,33 @@ import type { SandboxPermissions } from './sandbox/types'
 
 // ─── Skill Manifest (skill.json) ──────────────────────────────────────────────
 
-/** JS 文件工具声明：从指定 JS 文件加载 LangChain tools */
+/** JS 沙箱工具声明：在 skill.json 中完整定义 tool，调用时在沙箱中执行指定 JS 脚本 */
 export interface JsToolDeclaration {
   type: 'js'
-  /** 相对于 skill 目录的 JS 文件路径 */
-  file: string
-  /** 导出名称，默认 'default'，支持具名导出或默认导出 */
-  export?: string
   /**
-   * 沙箱权限配置。
-   *
-   * 不配置则使用最严格的默认权限：
-   * - 不允许任何 require()
-   * - 不暴露任何 process.env
-   * - 10 秒超时，64MB 内存上限
+   * Tool 名称（snake_case）。
+   * 必须与 JS 脚本中对应导出对象的 `name` 字段一致，执行时按此名匹配 execute()。
+   */
+  name: string
+  /** Tool 描述，告知 AI 何时调用此工具 */
+  description: string
+  /**
+   * 相对于 skill 目录的 JS 脚本路径。
+   * 解析顺序：`<skillDir>/<file>` → `<skillDir>/scripts/<file>`
+   */
+  file: string
+  /** 导出名称，默认 'default'，支持具名导出 */
+  export?: string
+  /** Tool 参数 schema（与 CommandToolDeclaration 同格式） */
+  schema?: Record<string, SchemaField | string>
+  /**
+   * 是否标记为高风险，触发用户审批弹窗。
+   * 未声明时由 `permissions` 中的模块白名单自动推断。
+   */
+  dangerous?: boolean
+  /**
+   * 沙箱权限配置。不配置则使用最严格默认权限：
+   * 不允许任何 require()，不暴露任何 env，10 秒超时，64MB 内存。
    */
   permissions?: SandboxPermissions
 }

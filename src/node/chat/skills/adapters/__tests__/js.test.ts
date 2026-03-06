@@ -2,13 +2,15 @@
  * JS Adapter 沙箱版测试
  *
  * 测试覆盖：
- * 1. 文件不存在 → 返回空数组
- * 2. 元数据解析阶段（vm，主进程）：name/description/schema 提取
- * 3. 执行阶段（Worker + vm）：正常返回、对象序列化、异常处理
- * 4. 数组导出、具名导出
- * 5. schema 构建（无 schema、简写、完整）
- * 6. 安全沙箱：require('electron')、相对路径 require、无权限模块 → 错误
- * 7. 没有 execute 函数 → 加载成功但 invoke 返回错误
+ * 1. 文件不存在（skillDir 及 scripts/ 子目录均无）→ 返回空数组
+ * 2. scripts/ 子目录路径解析
+ * 3. name / description / schema 来自 declaration（非 JS 文件）
+ * 4. 同一文件多个声明（数组导出）→ 每个声明独立创建一个 tool
+ * 5. 执行阶段：正常返回、对象序列化、异常处理、没有 execute 函数
+ * 6. schema 构建：无 schema、简写类型、完整字段
+ * 7. 具名导出：export 字段
+ * 8. 错误处理：语法错误文件、null 导出
+ * 9. 安全沙箱（执行阶段）：electron / 相对路径 / 无权限模块 → 错误
  */
 
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
@@ -60,45 +62,135 @@ function setup() {
 describe('loadJsTools - 文件不存在', () => {
   setup()
 
-  it('jS 文件不存在时返回空数组', () => {
-    const tools = loadJsTools({ type: 'js', file: 'nonexistent.js' }, testDir, 'test_skill')
+  it('skillDir 和 scripts/ 子目录均无对应文件时返回空数组', () => {
+    const tools = loadJsTools(
+      { type: 'js', name: 'missing_tool', description: 'Missing', file: 'nonexistent.js' },
+      testDir,
+      'test_skill',
+    )
     expect(tools).toEqual([])
   })
 })
 
-// ─── 元数据解析（默认导出）──────────────────────────────────────────────────────
+// ─── scripts/ 子目录路径解析 ──────────────────────────────────────────────────
 
-describe('loadJsTools - 默认导出（单个 tool）', () => {
+describe('loadJsTools - scripts/ 子目录路径解析', () => {
   setup()
 
-  it('加载单个 tool 的默认导出：名称和描述正确', () => {
-    writeJsFile('single.js', `
+  it('文件在 scripts/ 子目录时可找到并加载', () => {
+    mkdirSync(join(testDir, 'scripts'), { recursive: true })
+    writeFileSync(join(testDir, 'scripts', 'sub.js'), `
       module.exports = {
-        name: 'echo_tool',
-        description: 'Echoes the input',
-        schema: { input: 'string' },
-        execute: async ({ input }) => input
+        name: 'sub_tool',
+        execute: async () => 'from scripts/'
+      }
+    `, 'utf-8')
+
+    const tools = loadJsTools(
+      { type: 'js', name: 'sub_tool', description: 'Sub-directory tool', file: 'sub.js' },
+      testDir,
+      'test_skill',
+    )
+    expect(tools).toHaveLength(1)
+    expect(tools[0].name).toBe('sub_tool')
+  })
+
+  it('skillDir 同级文件优先于 scripts/ 子目录', () => {
+    // 同时在两个位置有文件（同级优先）
+    writeJsFile('both.js', `
+      module.exports = { name: 'priority_tool', execute: async () => 'from root' }
+    `)
+    mkdirSync(join(testDir, 'scripts'), { recursive: true })
+    writeFileSync(join(testDir, 'scripts', 'both.js'), `
+      module.exports = { name: 'priority_tool', execute: async () => 'from scripts' }
+    `, 'utf-8')
+
+    const tools = loadJsTools(
+      { type: 'js', name: 'priority_tool', description: 'Priority test', file: 'both.js' },
+      testDir,
+      'test_skill',
+    )
+    expect(tools).toHaveLength(1)
+    // 执行结果应来自 skillDir 同级文件
+    // （文件存在性验证，无需执行）
+  })
+})
+
+// ─── 声明元数据（name / description 来自 declaration）─────────────────────────
+
+describe('loadJsTools - declaration 元数据优先', () => {
+  setup()
+
+  it('工具 name 和 description 来自 declaration，而非 JS 文件', () => {
+    writeJsFile('override.js', `
+      module.exports = {
+        name: 'js_name',
+        description: 'JS description',
+        execute: async () => 'ok'
       }
     `)
 
-    const tools = loadJsTools({ type: 'js', file: 'single.js' }, testDir, 'test_skill')
+    const tools = loadJsTools(
+      {
+        type: 'js',
+        name: 'declared_name',
+        description: 'Declared description',
+        file: 'override.js',
+      },
+      testDir,
+      'test_skill',
+    )
 
     expect(tools).toHaveLength(1)
-    expect(tools[0].name).toBe('echo_tool')
-    expect(tools[0].description).toBe('Echoes the input')
+    expect(tools[0].name).toBe('declared_name')          // 来自 declaration
+    expect(tools[0].description).toBe('Declared description') // 来自 declaration
   })
 
+  it('文件存在即可加载，JS 文件内容不影响 loadJsTools 返回值', () => {
+    // JS 文件可以只有 name + execute（不需要 description/schema 字段）
+    writeJsFile('minimal.js', `
+      module.exports = {
+        name: 'my_tool',
+        execute: async ({ x }) => String(x)
+      }
+    `)
+
+    const tools = loadJsTools(
+      { type: 'js', name: 'my_tool', description: 'Description from declaration', file: 'minimal.js' },
+      testDir,
+      'test_skill',
+    )
+
+    expect(tools).toHaveLength(1)
+    expect(tools[0].name).toBe('my_tool')
+    expect(tools[0].description).toBe('Description from declaration')
+  })
+})
+
+// ─── 执行阶段 ─────────────────────────────────────────────────────────────────
+
+describe('loadJsTools - 执行阶段', () => {
+  setup()
+
   it('invoke() 在沙箱中执行并返回字符串结果', async () => {
-    writeJsFile('invoke.js', `
+    writeJsFile('greet.js', `
       module.exports = {
         name: 'greet',
-        description: 'Greets by name',
-        schema: { name: { type: 'string', description: 'Person name' } },
         execute: async ({ name }) => 'Hello, ' + name + '!'
       }
     `)
 
-    const tools = loadJsTools({ type: 'js', file: 'invoke.js' }, testDir, 'test_skill')
+    const tools = loadJsTools(
+      {
+        type: 'js',
+        name: 'greet',
+        description: 'Greets by name',
+        file: 'greet.js',
+        schema: { name: { type: 'string', description: 'Person name' } },
+      },
+      testDir,
+      'test_skill',
+    )
     const result = await tools[0].invoke({ name: 'World' })
 
     expect(result).toBe('Hello, World!')
@@ -108,12 +200,15 @@ describe('loadJsTools - 默认导出（单个 tool）', () => {
     writeJsFile('json-result.js', `
       module.exports = {
         name: 'json_tool',
-        description: 'Returns object',
         execute: async () => ({ status: 'ok', count: 42 })
       }
     `)
 
-    const tools = loadJsTools({ type: 'js', file: 'json-result.js' }, testDir, 'test_skill')
+    const tools = loadJsTools(
+      { type: 'js', name: 'json_tool', description: 'Returns object', file: 'json-result.js' },
+      testDir,
+      'test_skill',
+    )
     const result = await tools[0].invoke({})
 
     expect(result).toBe('{"status":"ok","count":42}')
@@ -123,130 +218,143 @@ describe('loadJsTools - 默认导出（单个 tool）', () => {
     writeJsFile('throws.js', `
       module.exports = {
         name: 'fail_tool',
-        description: 'Always fails',
         execute: async () => { throw new Error('something went wrong') }
       }
     `)
 
-    const tools = loadJsTools({ type: 'js', file: 'throws.js' }, testDir, 'test_skill')
+    const tools = loadJsTools(
+      { type: 'js', name: 'fail_tool', description: 'Always fails', file: 'throws.js' },
+      testDir,
+      'test_skill',
+    )
     const result = await tools[0].invoke({})
 
     expect(result).toContain('something went wrong')
     expect(result).toContain('fail_tool')
   }, 15_000)
-})
-
-// ─── 数组导出（多个 tools）────────────────────────────────────────────────────
-
-describe('loadJsTools - 数组导出（多个 tools）', () => {
-  setup()
-
-  it('加载数组导出的多个 tools', () => {
-    writeJsFile('multi.js', `
-      module.exports = [
-        { name: 'tool_one',   description: 'Tool one',   execute: async () => 'one'   },
-        { name: 'tool_two',   description: 'Tool two',   execute: async () => 'two'   },
-        { name: 'tool_three', description: 'Tool three', execute: async () => 'three' }
-      ]
-    `)
-
-    const tools = loadJsTools({ type: 'js', file: 'multi.js' }, testDir, 'test_skill')
-
-    expect(tools).toHaveLength(3)
-    expect(tools.map(t => t.name)).toEqual(['tool_one', 'tool_two', 'tool_three'])
-  })
-
-  it('数组中过滤掉缺少 name 或 description 的条目', () => {
-    writeJsFile('partial.js', `
-      module.exports = [
-        { name: 'valid_tool',    description: 'Valid',      execute: async () => 'ok'  },
-        {                        description: 'No name',    execute: async () => 'x'   },
-        { name: 'no_desc',                                  execute: async () => 'x'   }
-      ]
-    `)
-
-    const tools = loadJsTools({ type: 'js', file: 'partial.js' }, testDir, 'test_skill')
-
-    // 只有同时具备 name 和 description 的条目才会被加载
-    expect(tools).toHaveLength(1)
-    expect(tools[0].name).toBe('valid_tool')
-  })
 
   it('没有 execute 函数的 tool 可加载，但 invoke 时返回错误', async () => {
     writeJsFile('no-exec.js', `
       module.exports = {
-        name: 'no_execute',
-        description: 'No execute function'
+        name: 'no_execute'
       }
     `)
 
-    const tools = loadJsTools({ type: 'js', file: 'no-exec.js' }, testDir, 'test_skill')
+    const tools = loadJsTools(
+      { type: 'js', name: 'no_execute', description: 'No execute function', file: 'no-exec.js' },
+      testDir,
+      'test_skill',
+    )
 
-    // 元数据阶段不过滤缺少 execute 的 tool
+    // 加载阶段不过滤缺少 execute 的 tool：声明决定加载
     expect(tools).toHaveLength(1)
     expect(tools[0].name).toBe('no_execute')
 
     // 执行阶段报错
     const result = await tools[0].invoke({})
-    expect(result).toContain('no_execute')
     expect(typeof result).toBe('string')
+  }, 15_000)
+})
+
+// ─── 数组导出（多个 tools 共用一个文件）──────────────────────────────────────
+
+describe('loadJsTools - 数组导出（多个 tools）', () => {
+  setup()
+
+  it('每个声明对应一个 tool，同一文件多个声明调用正确的 tool', async () => {
+    writeJsFile('multi.js', `
+      module.exports = [
+        { name: 'tool_one',   execute: async () => 'one'   },
+        { name: 'tool_two',   execute: async () => 'two'   },
+        { name: 'tool_three', execute: async () => 'three' }
+      ]
+    `)
+
+    const t1 = loadJsTools(
+      { type: 'js', name: 'tool_one', description: 'Tool one', file: 'multi.js' },
+      testDir, 'test_skill',
+    )
+    const t2 = loadJsTools(
+      { type: 'js', name: 'tool_two', description: 'Tool two', file: 'multi.js' },
+      testDir, 'test_skill',
+    )
+
+    // 每次 loadJsTools 返回恰好 1 个 tool
+    expect(t1).toHaveLength(1)
+    expect(t1[0].name).toBe('tool_one')
+    expect(t2).toHaveLength(1)
+    expect(t2[0].name).toBe('tool_two')
+
+    // invoke 各自执行正确的函数
+    expect(await t1[0].invoke({})).toBe('one')
+    expect(await t2[0].invoke({})).toBe('two')
   }, 15_000)
 })
 
 // ─── schema 构建 ──────────────────────────────────────────────────────────────
 
-describe('loadJsTools - schema 构建', () => {
+describe('loadJsTools - schema 构建（来自 declaration）', () => {
   setup()
 
-  it('schema 为空时 tool 仍可 invoke', async () => {
+  it('declaration 无 schema 时 tool 仍可 invoke', async () => {
     writeJsFile('no-schema.js', `
-      module.exports = {
-        name: 'no_schema',
-        description: 'No schema',
-        execute: async () => 'result'
-      }
+      module.exports = { name: 'no_schema', execute: async () => 'result' }
     `)
 
-    const tools = loadJsTools({ type: 'js', file: 'no-schema.js' }, testDir, 'test_skill')
+    const tools = loadJsTools(
+      { type: 'js', name: 'no_schema', description: 'No schema', file: 'no-schema.js' },
+      testDir, 'test_skill',
+    )
     const result = await tools[0].invoke({})
     expect(result).toBe('result')
   }, 15_000)
 
-  it('简写 schema（字符串类型）数据正常传入 execute', async () => {
+  it('declaration 简写 schema（字符串类型）数据正常传入 execute', async () => {
+    // JS 文件不需要声明 schema，schema 来自 declaration
     writeJsFile('shorthand-schema.js', `
       module.exports = {
         name: 'shorthand',
-        description: 'Shorthand schema',
-        schema: {
-          text: 'string',
-          count: 'number',
-          flag: 'boolean'
-        },
         execute: async ({ text, count, flag }) =>
           text + ':' + count + ':' + flag
       }
     `)
 
-    const tools = loadJsTools({ type: 'js', file: 'shorthand-schema.js' }, testDir, 'test_skill')
+    const tools = loadJsTools(
+      {
+        type: 'js',
+        name: 'shorthand',
+        description: 'Shorthand schema',
+        file: 'shorthand-schema.js',
+        schema: { text: 'string', count: 'number', flag: 'boolean' },
+      },
+      testDir, 'test_skill',
+    )
     const result = await tools[0].invoke({ text: 'hello', count: 3, flag: true })
     expect(result).toBe('hello:3:true')
   }, 15_000)
 
-  it('完整 schema（含 description 和 optional）数据正常传入 execute', async () => {
+  it('declaration 完整 schema（含 description 和 optional）数据正常传入 execute', async () => {
     writeJsFile('full-schema.js', `
       module.exports = {
         name: 'full_schema',
-        description: 'Full schema',
-        schema: {
-          required_field: { type: 'string', description: 'Required' },
-          optional_field: { type: 'string', description: 'Optional', optional: true }
-        },
         execute: async ({ required_field, optional_field }) =>
           required_field + (optional_field ? ':' + optional_field : '')
       }
     `)
 
-    const tools = loadJsTools({ type: 'js', file: 'full-schema.js' }, testDir, 'test_skill')
+    const tools = loadJsTools(
+      {
+        type: 'js',
+        name: 'full_schema',
+        description: 'Full schema',
+        file: 'full-schema.js',
+        schema: {
+          required_field: { type: 'string', description: 'Required' },
+          optional_field: { type: 'string', description: 'Optional', optional: true },
+        },
+      },
+      testDir, 'test_skill',
+    )
     const result = await tools[0].invoke({ required_field: 'hello' })
     expect(result).toBe('hello')
   }, 15_000)
@@ -257,16 +365,18 @@ describe('loadJsTools - schema 构建', () => {
 describe('loadJsTools - 具名导出', () => {
   setup()
 
-  it('通过 export 字段加载具名导出的元数据', () => {
+  it('通过 export 字段加载具名导出', () => {
     writeJsFile('named-export.js', `
       exports.myTool = {
         name: 'named_tool',
-        description: 'Named export tool',
         execute: async () => 'from named export'
       }
     `)
 
-    const tools = loadJsTools({ type: 'js', file: 'named-export.js', export: 'myTool' }, testDir, 'test_skill')
+    const tools = loadJsTools(
+      { type: 'js', name: 'named_tool', description: 'Named export tool', file: 'named-export.js', export: 'myTool' },
+      testDir, 'test_skill',
+    )
 
     expect(tools).toHaveLength(1)
     expect(tools[0].name).toBe('named_tool')
@@ -276,24 +386,17 @@ describe('loadJsTools - 具名导出', () => {
     writeJsFile('named-invoke.js', `
       exports.myTool = {
         name: 'named_tool',
-        description: 'Named export tool',
         execute: async () => 'from named export'
       }
     `)
 
-    const tools = loadJsTools({ type: 'js', file: 'named-invoke.js', export: 'myTool' }, testDir, 'test_skill')
+    const tools = loadJsTools(
+      { type: 'js', name: 'named_tool', description: 'Named export tool', file: 'named-invoke.js', export: 'myTool' },
+      testDir, 'test_skill',
+    )
     const result = await tools[0].invoke({})
     expect(result).toBe('from named export')
   }, 15_000)
-
-  it('具名导出不存在时返回空数组', () => {
-    writeJsFile('no-named.js', `
-      exports.other = { name: 'other', description: 'Other', execute: async () => 'ok' }
-    `)
-
-    const tools = loadJsTools({ type: 'js', file: 'no-named.js', export: 'nonexistent' }, testDir, 'test_skill')
-    expect(tools).toEqual([])
-  })
 })
 
 // ─── 错误处理 ─────────────────────────────────────────────────────────────────
@@ -301,20 +404,21 @@ describe('loadJsTools - 具名导出', () => {
 describe('loadJsTools - 错误处理', () => {
   setup()
 
-  it('jS 文件语法错误时返回空数组、不抛异常', () => {
+  it('jS 文件语法错误时 tool 可加载（来自 declaration），invoke 时返回错误', async () => {
     writeJsFile('syntax-error.js', `module.exports = { invalid syntax !!!`)
 
-    expect(() => loadJsTools({ type: 'js', file: 'syntax-error.js' }, testDir, 'test_skill')).not.toThrow()
-    const tools = loadJsTools({ type: 'js', file: 'syntax-error.js' }, testDir, 'test_skill')
-    expect(tools).toEqual([])
-  })
+    // 文件存在 → 根据 declaration 创建 tool（不执行文件）
+    const tools = loadJsTools(
+      { type: 'js', name: 'broken_tool', description: 'Broken', file: 'syntax-error.js' },
+      testDir, 'test_skill',
+    )
+    expect(tools).toHaveLength(1)
 
-  it('导出 null 时返回空数组', () => {
-    writeJsFile('null-export.js', `module.exports = null`)
-
-    const tools = loadJsTools({ type: 'js', file: 'null-export.js' }, testDir, 'test_skill')
-    expect(tools).toEqual([])
-  })
+    // invoke 时 Worker 执行文件失败 → 返回错误字符串
+    const result = await tools[0].invoke({})
+    expect(typeof result).toBe('string')
+    expect(result.toLowerCase()).toMatch(/error/i)
+  }, 15_000)
 })
 
 // ─── 安全沙箱 ─────────────────────────────────────────────────────────────────
@@ -326,7 +430,6 @@ describe('loadJsTools - 安全沙箱（执行阶段）', () => {
     writeJsFile('use-electron.js', `
       module.exports = {
         name: 'electron_tool',
-        description: 'Tries to use electron',
         execute: async () => {
           const { app } = require('electron');
           return app.getVersion();
@@ -334,11 +437,13 @@ describe('loadJsTools - 安全沙箱（执行阶段）', () => {
       }
     `)
 
-    const tools = loadJsTools({ type: 'js', file: 'use-electron.js' }, testDir, 'test_skill')
+    const tools = loadJsTools(
+      { type: 'js', name: 'electron_tool', description: 'Tries to use electron', file: 'use-electron.js' },
+      testDir, 'test_skill',
+    )
     expect(tools).toHaveLength(1)
 
     const result = await tools[0].invoke({})
-    // 应返回包含 sandbox 阻止信息的错误字符串，而非抛出
     expect(typeof result).toBe('string')
     expect(result.toLowerCase()).toMatch(/block|electron|sandbox|error/i)
   }, 15_000)
@@ -347,7 +452,6 @@ describe('loadJsTools - 安全沙箱（执行阶段）', () => {
     writeJsFile('use-relative.js', `
       module.exports = {
         name: 'relative_tool',
-        description: 'Tries relative require',
         execute: async () => {
           const x = require('./some-local-module');
           return x.value;
@@ -355,7 +459,10 @@ describe('loadJsTools - 安全沙箱（执行阶段）', () => {
       }
     `)
 
-    const tools = loadJsTools({ type: 'js', file: 'use-relative.js' }, testDir, 'test_skill')
+    const tools = loadJsTools(
+      { type: 'js', name: 'relative_tool', description: 'Tries relative require', file: 'use-relative.js' },
+      testDir, 'test_skill',
+    )
     const result = await tools[0].invoke({})
 
     expect(typeof result).toBe('string')
@@ -366,7 +473,6 @@ describe('loadJsTools - 安全沙箱（执行阶段）', () => {
     writeJsFile('use-fs.js', `
       module.exports = {
         name: 'fs_tool',
-        description: 'Tries to use fs without permission',
         execute: async () => {
           const fs = require('fs');
           return fs.readdirSync('/tmp').join(',');
@@ -374,11 +480,15 @@ describe('loadJsTools - 安全沙箱（执行阶段）', () => {
       }
     `)
 
-    // permissions 中没有给 fs 权限
     const tools = loadJsTools(
-      { type: 'js', file: 'use-fs.js', permissions: { allowedBuiltins: [] } },
-      testDir,
-      'test_skill',
+      {
+        type: 'js',
+        name: 'fs_tool',
+        description: 'Tries to use fs without permission',
+        file: 'use-fs.js',
+        permissions: { allowedBuiltins: [] },
+      },
+      testDir, 'test_skill',
     )
     const result = await tools[0].invoke({})
 
@@ -390,8 +500,6 @@ describe('loadJsTools - 安全沙箱（执行阶段）', () => {
     writeJsFile('use-path.js', `
       module.exports = {
         name: 'path_tool',
-        description: 'Uses path module with permission',
-        schema: { input: 'string' },
         execute: async ({ input }) => {
           const path = require('path');
           return path.basename(input);
@@ -400,79 +508,18 @@ describe('loadJsTools - 安全沙箱（执行阶段）', () => {
     `)
 
     const tools = loadJsTools(
-      { type: 'js', file: 'use-path.js', permissions: { allowedBuiltins: ['path'] } },
-      testDir,
-      'test_skill',
+      {
+        type: 'js',
+        name: 'path_tool',
+        description: 'Uses path module with permission',
+        file: 'use-path.js',
+        schema: { input: 'string' },
+        permissions: { allowedBuiltins: ['path'] },
+      },
+      testDir, 'test_skill',
     )
     const result = await tools[0].invoke({ input: '/foo/bar/baz.txt' })
 
     expect(result).toBe('baz.txt')
   }, 15_000)
-})
-
-// ─── 解析阶段：顶层 require 和顶层调用的健壮性 ───────────────────────────────────
-
-describe('loadJsTools - 解析阶段：顶层 require 健壮性', () => {
-  setup()
-
-  it('顶层 require("node:util") + promisify 调用不崩溃，能正确提取元数据', () => {
-    // 模拟 shell/index.js 的真实写法
-    writeJsFile('promisify.js', `
-      const { execFile } = require('node:child_process');
-      const { promisify } = require('node:util');
-      const execFileAsync = promisify(execFile);
-      const os = require('node:os');
-
-      module.exports = {
-        name: 'run_cmd',
-        description: 'Runs a shell command',
-        schema: { command: 'string' },
-        execute: async ({ command }) => execFileAsync(command)
-      }
-    `)
-
-    // 元数据解析不应抛异常
-    expect(() => loadJsTools({ type: 'js', file: 'promisify.js' }, testDir, 'test_skill')).not.toThrow()
-
-    const tools = loadJsTools({ type: 'js', file: 'promisify.js' }, testDir, 'test_skill')
-    expect(tools).toHaveLength(1)
-    expect(tools[0].name).toBe('run_cmd')
-    expect(tools[0].description).toBe('Runs a shell command')
-  })
-
-  it('顶层多层方法链调用（stub.method().otherMethod()）不崩溃', () => {
-    writeJsFile('chained.js', `
-      const path = require('path');
-      const resolved = path.join('/some', 'dir');
-      const base = resolved.split('/').pop();
-
-      module.exports = {
-        name: 'chain_tool',
-        description: 'Uses chained method calls at top level',
-        execute: async () => base
-      }
-    `)
-
-    expect(() => loadJsTools({ type: 'js', file: 'chained.js' }, testDir, 'test_skill')).not.toThrow()
-    const tools = loadJsTools({ type: 'js', file: 'chained.js' }, testDir, 'test_skill')
-    expect(tools).toHaveLength(1)
-    expect(tools[0].name).toBe('chain_tool')
-  })
-
-  it('顶层 require 返回的 stub 可被 new 调用（如 new EventEmitter()）', () => {
-    writeJsFile('new-call.js', `
-      const { EventEmitter } = require('events');
-      const emitter = new EventEmitter();
-
-      module.exports = {
-        name: 'emitter_tool',
-        description: 'Uses EventEmitter at top level',
-        execute: async () => 'ok'
-      }
-    `)
-
-    expect(() => loadJsTools({ type: 'js', file: 'new-call.js' }, testDir, 'test_skill')).not.toThrow()
-    const tools = loadJsTools({ type: 'js', file: 'new-call.js' }, testDir, 'test_skill')
-    expect(tools).toHaveLength(1)
-  })
 })

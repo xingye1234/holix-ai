@@ -83,9 +83,9 @@ function buildTools(
       switch (decl.type) {
         case 'js': {
           const jsTools = loadJsTools(decl, skillDir, skillName, configFieldKeys)
-          const needsApproval = requiresApprovalForPermissions(decl.permissions)
+          const needsApproval = decl.dangerous === true || requiresApprovalForPermissions(decl.permissions)
           if (needsApproval) {
-            logger.info(`[skill-loader] js tool "${decl.file}" requires approval (risky permissions)`)
+            logger.info(`[skill-loader] js tool "${decl.name}" requires approval`)
             tools.push(...jsTools.map(t => wrapWithApproval(t, skillName)))
           }
           else {

@@ -1,54 +1,43 @@
 /**
- * JS Adapter：从 .js 文件加载 LangChain DynamicStructuredTool（沙箱版）
+ * JS Adapter：将 skill.json 中的 JS 工具声明转换为 LangChain DynamicStructuredTool
  *
  * 安全模型
  * ─────────────────────────────────────────────────────────────────
- * 加载阶段（主进程，vm 沙箱）：
- *   - 读取文件内容，在 vm.runInNewContext() 中执行
- *   - 上下文只包含无副作用的安全全局（JSON、Math、Date 等）
- *   - require / process / electron API 完全不可见
- *   - 只提取 tool 的名称、描述、schema（纯数据，无函数引用）
+ * 扫描阶段（无 JS 执行）：
+ *   - 仅读取 skill.json，从中取得工具的 name / description / schema
+ *   - 不执行任何 JS 文件，不引入任何副作用
+ *   - 脚本文件仅做存在性检查（warn），不执行
  *
  * 执行阶段（worker_threads + vm 双重隔离）：
  *   - 每次 invoke() 启动一个独立 Worker 线程
- *   - Worker 内再次用 vm.runInContext() 运行 execute()
- *   - 通过 skill.json 中的 permissions 精确控制可用的模块和 env key
+ *   - Worker 内用 vm.runInContext() 运行文件，按 `name` 字段找到对应的 execute()
+ *   - 通过 skill.json 的 permissions 精确控制可用模块和 env key
  *   - 超时 / 内存超限后 Worker 自动终止
  *
- * JS 文件格式规范（不变）：
+ * JS 脚本格式（skill.json 中 name 必须与此匹配）：
  * ```js
  * module.exports = {
- *   name: 'my_tool',
- *   description: '工具描述',
- *   schema: { input: { type: 'string', description: '输入' } },
+ *   name: 'my_tool',   // 与 skill.json 同名
  *   execute: async ({ input }) => `结果: ${input}`
  * }
- * // 或导出数组
+ * // 或导出数组（多工具共用一个文件）
  * module.exports = [tool1, tool2]
  * ```
  */
 
 import type { DynamicStructuredTool } from '@langchain/core/tools'
 import type { JsToolDeclaration, SchemaField } from '../type'
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync } from 'node:fs'
 import { join } from 'node:path'
-import process from 'node:process'
-import vm from 'node:vm'
 import { tool } from 'langchain'
 import z from 'zod'
 import { getSkillConfig } from '../../../database/skill-config'
 import { logger } from '../../../platform/logger'
 import { runInSandbox } from '../sandbox/executor'
 
-// ─── 纯数据元数据（仅用于注册 tool，不含 execute 函数引用）─────────────────────
-
-interface ToolMeta {
-  name: string
-  description: string
-  schema?: Record<string, SchemaField | string>
-}
-
 // ─── Schema 构建 ───────────────────────────────────────────────────────────────
+
+// ─── Schema 构建 ──────────────────────────────────────────────────────────────
 
 function buildZodSchema(schema?: Record<string, SchemaField | string>): z.ZodObject<any> {
   if (!schema || Object.keys(schema).length === 0)
@@ -83,184 +72,32 @@ function buildZodSchema(schema?: Record<string, SchemaField | string>): z.ZodObj
   return z.object(shape)
 }
 
-// ─── 加载阶段：vm 沙箱解析元数据（主进程，无副作用）─────────────────────────────
+// ─── 脚本路径解析 ─────────────────────────────────────────────────────────────
 
 /**
- * 递归可调用 Proxy stub：用于元数据解析阶段的 require 返回值。
- *
- * 解决 `const { promisify } = require('node:util')` 之类的顶层解构调用问题：
- * - 任何属性访问（如 `.promisify`）返回一个新 stub
- * - stub 本身也可被调用（`promisify(fn)` 返回新 stub，不抛异常）
- * - 这样解析阶段的顶层代码不会因为 "xxx is not a function" 崩溃
+ * 解析脚本文件的绝对路径。
+ * 先尝试与 skill.json 同级，再尝试 scripts/ 子目录。
+ * 若均不存在则返回 null。
  */
-function makeParseStub(): any {
-  // 使用普通函数（非箭头函数），以支持 new 调用（如 new EventEmitter()）
-  // eslint-disable-next-line prefer-arrow-callback
-  function stubFn(this: unknown, ..._args: unknown[]): any {
-    return makeParseStub()
-  }
-  return new Proxy(stubFn, {
-    get(_target, _prop: string | symbol) {
-      return makeParseStub()
-    },
-    apply(_target, _thisArg, _args) {
-      return makeParseStub()
-    },
-    construct(_target, _args) {
-      return makeParseStub()
-    },
-  })
-}
-
-/**
- * 在 vm 沙箱中解析 JS 文件，只提取元数据（name/description/schema）。
- * 不执行任何 execute() 函数，require / process 完全不可见。
- */
-function parseToolMeta(filePath: string, exportName: string): ToolMeta[] {
-  const code = readFileSync(filePath, 'utf-8')
-
-  const moduleExports: Record<string, any> = {}
-  const moduleObj = { exports: moduleExports }
-
-  const context = vm.createContext({
-    module: moduleObj,
-    exports: moduleExports,
-    // require 在元数据解析阶段返回递归 stub（避免顶层解构/调用报 "not a function"）
-    require: (_: string) => makeParseStub(),
-    process: Object.freeze({
-      platform: process.platform,
-      arch: process.arch,
-      version: process.version,
-      env: Object.freeze({}),
-    }),
-    // 安全 JS 全局
-    JSON,
-    Math,
-    Date,
-    Array,
-    Object,
-    String,
-    Number,
-    Boolean,
-    RegExp,
-    Error,
-    TypeError,
-    RangeError,
-    Promise,
-    Map,
-    Set,
-    Symbol,
-    parseInt: Number.parseInt,
-    parseFloat: Number.parseFloat,
-    isNaN: Number.isNaN,
-    isFinite: Number.isFinite,
-    console: { log: () => {}, info: () => {}, warn: () => {}, error: () => {} },
-    // 明确屏蔽危险全局
-    eval: undefined,
-    Function: undefined,
-    Buffer: undefined,
-    setTimeout: undefined,
-    setInterval: undefined,
-    setImmediate: undefined,
-  })
-
-  try {
-    vm.runInContext(code, context, {
-      filename: filePath,
-      timeout: 3_000,
-    })
-  }
-  catch (err: any) {
-    throw new Error(`Failed to parse skill file "${filePath}": ${err?.message}`)
-  }
-
-  const mod = moduleObj.exports
-  const target = exportName === 'default'
-    ? (mod?.default ?? mod)
-    : mod?.[exportName]
-
-  if (!target)
-    return []
-
-  const items: any[] = Array.isArray(target) ? target : [target]
-
-  return items
-    .filter((item) => {
-      if (!item || typeof item.name !== 'string' || !item.name.trim()) {
-        logger.warn(`[js-adapter] Skipping tool in "${filePath}": missing "name"`)
-        return false
-      }
-      if (typeof item.description !== 'string') {
-        logger.warn(`[js-adapter] Skipping tool "${item.name}" in "${filePath}": missing "description"`)
-        return false
-      }
-      return true
-    })
-    .map(item => ({
-      name: item.name as string,
-      description: item.description as string,
-      schema: item.schema as Record<string, SchemaField | string> | undefined,
-    }))
-}
-
-// ─── 执行阶段：为每个 tool 创建沙箱化的 LangChain tool ────────────────────────
-
-function metaToSandboxedTool(
-  meta: ToolMeta,
-  declaration: JsToolDeclaration,
-  skillDir: string,
-  skillName: string,
-  configFieldKeys: string[] = [],
-): DynamicStructuredTool {
-  const filePath = join(skillDir, declaration.file)
-  const exportName = declaration.export ?? 'default'
-  const permissions = declaration.permissions ?? {}
-  const zodSchema = buildZodSchema(meta.schema)
-
-  return tool(
-    async (args: Record<string, any>) => {
-      logger.info(`[js-adapter] Executing tool "${meta.name}" in sandbox`)
-
-      // 每次调用时从 KV 中读取最新配置，确保用户修改立即生效
-      const skillConfig = configFieldKeys.length > 0
-        ? getSkillConfig(skillName, configFieldKeys)
-        : {}
-
-      try {
-        const result = await runInSandbox({
-          filePath,
-          toolName: meta.name,
-          exportName,
-          args,
-          permissions,
-          skillConfig,
-        })
-
-        logger.info(`[js-adapter] Tool "${meta.name}" completed, result length: ${result.length}`)
-        return result
-      }
-      catch (err: any) {
-        const msg = err?.message ?? String(err)
-        logger.error(`[js-adapter] Tool "${meta.name}" sandbox error:`, err)
-        return `Error executing tool "${meta.name}": ${msg}`
-      }
-    },
-    {
-      name: meta.name,
-      description: meta.description,
-      schema: zodSchema,
-    },
-  ) as unknown as DynamicStructuredTool
+function resolveScriptPath(skillDir: string, file: string): string | null {
+  const direct = join(skillDir, file)
+  if (existsSync(direct))
+    return direct
+  const inScripts = join(skillDir, 'scripts', file)
+  if (existsSync(inScripts))
+    return inScripts
+  return null
 }
 
 // ─── 公共 API ──────────────────────────────────────────────────────────────────
 
 /**
- * 从 JS 文件加载 LangChain tools（沙箱版）
+ * 将 skill.json 中的一条 JsToolDeclaration 转换为 LangChain DynamicStructuredTool。
  *
- * 加载阶段在 vm 沙箱内解析元数据；执行阶段在独立 Worker 线程沙箱中运行。
+ * - 扫描阶段：仅检查文件是否存在，不执行任何 JS
+ * - 执行阶段：在 Worker + vm 双重沙箱中运行脚本
  *
- * @param declaration    JsToolDeclaration（来自 skill.json）
+ * @param declaration    JsToolDeclaration（来自 skill.json），包含 name/description/schema
  * @param skillDir       Skill 目录绝对路径
  * @param skillName      归属 skill 的名称，用于运行时读取用户配置
  * @param configFieldKeys manifest.config 中声明的字段 key 列表
@@ -271,36 +108,61 @@ export function loadJsTools(
   skillName: string,
   configFieldKeys: string[] = [],
 ): DynamicStructuredTool[] {
-  const filePath = join(skillDir, declaration.file)
+  const filePath = resolveScriptPath(skillDir, declaration.file)
 
-  if (!existsSync(filePath)) {
-    logger.warn(`[js-adapter] JS tool file not found: ${filePath}`)
+  if (!filePath) {
+    logger.warn(
+      `[js-adapter] Script not found: "${declaration.file}" `
+      + `(tried ${join(skillDir, declaration.file)} and ${join(skillDir, 'scripts', declaration.file)})`,
+    )
     return []
   }
 
-  let metas: ToolMeta[]
-
-  try {
-    metas = parseToolMeta(filePath, declaration.export ?? 'default')
-  }
-  catch (err: any) {
-    logger.error(`[js-adapter] Failed to parse tool metadata from "${filePath}":`, err)
-    return []
-  }
-
-  if (metas.length === 0) {
-    logger.warn(`[js-adapter] No valid tool definitions found in "${filePath}"`)
-    return []
-  }
-
+  const exportName = declaration.export ?? 'default'
   const permissions = declaration.permissions ?? {}
+  const zodSchema = buildZodSchema(declaration.schema)
+
+  const langchainTool = tool(
+    async (args: Record<string, any>) => {
+      logger.info(`[js-adapter] Executing tool "${declaration.name}" from "${filePath}"`)
+
+      // 每次调用时从 KV 中读取最新配置，确保用户修改立即生效
+      const skillConfig = configFieldKeys.length > 0
+        ? getSkillConfig(skillName, configFieldKeys)
+        : {}
+
+      try {
+        const result = await runInSandbox({
+          filePath,
+          toolName: declaration.name,
+          exportName,
+          args,
+          permissions,
+          skillConfig,
+        })
+
+        logger.info(`[js-adapter] Tool "${declaration.name}" completed, result length: ${result.length}`)
+        return result
+      }
+      catch (err: any) {
+        const msg = err?.message ?? String(err)
+        logger.error(`[js-adapter] Tool "${declaration.name}" sandbox error:`, err)
+        return `Error executing tool "${declaration.name}": ${msg}`
+      }
+    },
+    {
+      name: declaration.name,
+      description: declaration.description,
+      schema: zodSchema,
+    },
+  ) as unknown as DynamicStructuredTool
+
   const permSummary = permissions.allowedBuiltins?.length
     ? `allowedBuiltins=[${permissions.allowedBuiltins.join(',')}]`
     : 'no builtins'
-
   logger.info(
-    `[js-adapter] Loaded ${metas.length} tool(s) from "${filePath}" [sandbox: ${permSummary}]`,
+    `[js-adapter] Registered tool "${declaration.name}" from "${declaration.file}" [sandbox: ${permSummary}]`,
   )
 
-  return metas.map(meta => metaToSandboxedTool(meta, declaration, skillDir, skillName, configFieldKeys))
+  return [langchainTool]
 }

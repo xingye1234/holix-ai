@@ -246,7 +246,7 @@ describe('loadJsTools() — skillConfig 传入沙箱', () => {
     `)
 
     const tools = loadJsTools(
-      { type: 'js', file: 'tool.js' },
+      { type: 'js', name: 'my_tool', description: 'A test tool', file: 'tool.js' },
       dir,
       'my_skill',
       [],
@@ -279,7 +279,7 @@ describe('loadJsTools() — skillConfig 传入沙箱', () => {
     `)
 
     const tools = loadJsTools(
-      { type: 'js', file: 'tool.js' },
+      { type: 'js', name: 'cfg_tool', description: 'Uses config', file: 'tool.js' },
       dir,
       'cfg_skill',
       ['apiKey', 'model'],
@@ -312,7 +312,7 @@ describe('loadJsTools() — skillConfig 传入沙箱', () => {
       }
     `)
 
-    const tools = loadJsTools({ type: 'js', file: 'tool.js' }, dir, 'hot_skill', ['token'])
+    const tools = loadJsTools({ type: 'js', name: 'hot_tool', description: 'Hot reload test', file: 'tool.js' }, dir, 'hot_skill', ['token'])
 
     await tools[0].invoke({})
     await tools[0].invoke({})
