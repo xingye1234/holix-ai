@@ -78,6 +78,46 @@ export interface SkillManifest {
   disabled?: boolean
   /** Tool 声明列表 */
   tools?: ToolDeclaration[]
+  /**
+   * 用户可配置项声明。
+   * 配置值持久化存储在 ky 表（key: `skill.{name}.config.{field.key}`）。
+   * Skill tools 在运行时可通过 skillConfig 全局对象（JS 沙箱）或
+   * {{config.KEY}} 模板变量（command/script 类型）访问这些值。
+   */
+  config?: SkillConfigField[]
+}
+
+/**
+ * Skill 用户可配置项字段定义
+ *
+ * 示例（skill.json 中）：
+ * ```json
+ * "config": [
+ *   { "key": "apiKey", "label": "API Key", "type": "string", "secret": true, "required": true },
+ *   { "key": "model",  "label": "模型",     "type": "select",
+ *     "options": [{ "label": "GPT-4o", "value": "gpt-4o" }], "default": "gpt-4o" }
+ * ]
+ * ```
+ */
+export interface SkillConfigField {
+  /** 配置项 key（存储时拼接为 `skill.{skillName}.config.{key}`） */
+  key: string
+  /** 在设置界面显示的标签 */
+  label: string
+  /** 输入类型 */
+  type: 'string' | 'number' | 'boolean' | 'select'
+  /** 详细描述，显示在输入框下方 */
+  description?: string
+  /** 输入框占位文本（string 类型有效） */
+  placeholder?: string
+  /** 是否必填 */
+  required?: boolean
+  /** 是否为密钥（显示为密码框，不明文展示） */
+  secret?: boolean
+  /** 默认值 */
+  default?: string | number | boolean
+  /** select 类型的选项列表 */
+  options?: Array<{ label: string, value: string }>
 }
 
 // ─── Runtime Skill ────────────────────────────────────────────────────────────

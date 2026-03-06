@@ -36,6 +36,7 @@ import process from 'node:process'
 import vm from 'node:vm'
 import { tool } from 'langchain'
 import z from 'zod'
+import { getSkillConfig } from '../../../database/skill-config'
 import { logger } from '../../../platform/logger'
 import { runInSandbox } from '../sandbox/executor'
 
@@ -181,6 +182,8 @@ function metaToSandboxedTool(
   meta: ToolMeta,
   declaration: JsToolDeclaration,
   skillDir: string,
+  skillName: string,
+  configFieldKeys: string[] = [],
 ): DynamicStructuredTool {
   const filePath = join(skillDir, declaration.file)
   const exportName = declaration.export ?? 'default'
@@ -191,6 +194,11 @@ function metaToSandboxedTool(
     async (args: Record<string, any>) => {
       logger.info(`[js-adapter] Executing tool "${meta.name}" in sandbox`)
 
+      // 每次调用时从 KV 中读取最新配置，确保用户修改立即生效
+      const skillConfig = configFieldKeys.length > 0
+        ? getSkillConfig(skillName, configFieldKeys)
+        : {}
+
       try {
         const result = await runInSandbox({
           filePath,
@@ -198,6 +206,7 @@ function metaToSandboxedTool(
           exportName,
           args,
           permissions,
+          skillConfig,
         })
 
         logger.info(`[js-adapter] Tool "${meta.name}" completed, result length: ${result.length}`)
@@ -224,10 +233,17 @@ function metaToSandboxedTool(
  *
  * 加载阶段在 vm 沙箱内解析元数据；执行阶段在独立 Worker 线程沙箱中运行。
  *
- * @param declaration JsToolDeclaration（来自 skill.json）
- * @param skillDir    Skill 目录绝对路径
+ * @param declaration    JsToolDeclaration（来自 skill.json）
+ * @param skillDir       Skill 目录绝对路径
+ * @param skillName      归属 skill 的名称，用于运行时读取用户配置
+ * @param configFieldKeys manifest.config 中声明的字段 key 列表
  */
-export function loadJsTools(declaration: JsToolDeclaration, skillDir: string): DynamicStructuredTool[] {
+export function loadJsTools(
+  declaration: JsToolDeclaration,
+  skillDir: string,
+  skillName: string,
+  configFieldKeys: string[] = [],
+): DynamicStructuredTool[] {
   const filePath = join(skillDir, declaration.file)
 
   if (!existsSync(filePath)) {
@@ -259,5 +275,5 @@ export function loadJsTools(declaration: JsToolDeclaration, skillDir: string): D
     `[js-adapter] Loaded ${metas.length} tool(s) from "${filePath}" [sandbox: ${permSummary}]`,
   )
 
-  return metas.map(meta => metaToSandboxedTool(meta, declaration, skillDir))
+  return metas.map(meta => metaToSandboxedTool(meta, declaration, skillDir, skillName, configFieldKeys))
 }

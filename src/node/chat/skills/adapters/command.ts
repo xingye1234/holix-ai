@@ -26,6 +26,7 @@ import { exec } from 'node:child_process'
 import { promisify } from 'node:util'
 import { tool } from 'langchain'
 import z from 'zod'
+import { getSkillConfig } from '../../../database/skill-config'
 import { logger } from '../../../platform/logger'
 
 const execAsync = promisify(exec)
@@ -33,11 +34,20 @@ const execAsync = promisify(exec)
 const DEFAULT_TIMEOUT = 30_000
 
 /**
- * 模板替换：{{key}} → args[key]，{{skillDir}} → skillDir
+ * 模板替换：{{key}} → args[key]，{{skillDir}} → skillDir，{{config.KEY}} → configValues[KEY]
  */
-function renderTemplate(template: string, args: Record<string, any>, skillDir: string): string {
+function renderTemplate(
+  template: string,
+  args: Record<string, any>,
+  skillDir: string,
+  configValues: Record<string, unknown> = {},
+): string {
   return template
     .replace(/\{\{skillDir\}\}/g, skillDir)
+    .replace(/\{\{config\.([\w.]+)\}\}/g, (_, key) => {
+      const val = configValues[key]
+      return val !== undefined ? String(val) : ''
+    })
     .replace(/\{\{(\w+)\}\}/g, (_, key) => {
       const val = args[key]
       return val !== undefined ? String(val) : `{{${key}}}`
@@ -113,16 +123,28 @@ async function runCommand(
 
 /**
  * 从 CommandToolDeclaration 创建 LangChain tool
+ * @param skillName  归属 skill 的名称，用于运行时读取用户配置
+ * @param configFieldKeys  manifest.config 中声明的字段 key 列表
  */
-export function commandToTool(declaration: CommandToolDeclaration, skillDir: string): DynamicStructuredTool {
+export function commandToTool(
+  declaration: CommandToolDeclaration,
+  skillDir: string,
+  skillName: string,
+  configFieldKeys: string[] = [],
+): DynamicStructuredTool {
   const zodSchema = buildZodSchema(declaration.schema)
   const timeout = declaration.timeout ?? DEFAULT_TIMEOUT
 
   return tool(
     async (args: Record<string, any>) => {
-      const command = renderTemplate(declaration.command, args, skillDir)
+      // 每次调用时从 KV 中读取最新配置，确保用户修改立即生效
+      const configValues = configFieldKeys.length > 0
+        ? getSkillConfig(skillName, configFieldKeys)
+        : {}
+
+      const command = renderTemplate(declaration.command, args, skillDir, configValues)
       const cwd = declaration.cwd
-        ? renderTemplate(declaration.cwd, args, skillDir)
+        ? renderTemplate(declaration.cwd, args, skillDir, configValues)
         : skillDir
 
       logger.info(`[command-adapter] Executing: ${command}`, { cwd, name: declaration.name })
@@ -143,16 +165,27 @@ export function commandToTool(declaration: CommandToolDeclaration, skillDir: str
 /**
  * 从 ScriptToolDeclaration 创建 LangChain tool
  * Script 类型与 Command 类型相同，只是 key 字段名为 "script"
+ * @param skillName  归属 skill 的名称，用于运行时读取用户配置
+ * @param configFieldKeys  manifest.config 中声明的字段 key 列表
  */
-export function scriptToTool(declaration: ScriptToolDeclaration, skillDir: string): DynamicStructuredTool {
+export function scriptToTool(
+  declaration: ScriptToolDeclaration,
+  skillDir: string,
+  skillName: string,
+  configFieldKeys: string[] = [],
+): DynamicStructuredTool {
   const zodSchema = buildZodSchema(declaration.schema)
   const timeout = declaration.timeout ?? DEFAULT_TIMEOUT
 
   return tool(
     async (args: Record<string, any>) => {
-      const command = renderTemplate(declaration.script, args, skillDir)
+      const configValues = configFieldKeys.length > 0
+        ? getSkillConfig(skillName, configFieldKeys)
+        : {}
+
+      const command = renderTemplate(declaration.script, args, skillDir, configValues)
       const cwd = declaration.cwd
-        ? renderTemplate(declaration.cwd, args, skillDir)
+        ? renderTemplate(declaration.cwd, args, skillDir, configValues)
         : skillDir
 
       logger.info(`[command-adapter] Executing script: ${command}`, { cwd, name: declaration.name })

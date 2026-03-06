@@ -17,8 +17,10 @@ vi.mock('../../../platform/logger', () => ({
 }))
 
 // mock adapters，避免 langchain/electron 依赖链被拉入
+const mockLoadJsTools = vi.fn(() => [])
+
 vi.mock('../adapters/js', () => ({
-  loadJsTools: vi.fn(() => []),
+  loadJsTools: (...args: any[]) => mockLoadJsTools(...args),
 }))
 
 vi.mock('../adapters/command', () => ({
@@ -378,5 +380,56 @@ describe('scanSkillsDir', () => {
     expect(skills).toHaveLength(2)
     const names = skills.map(s => s.name).sort()
     expect(names).toEqual(['dir_skill', 'file_skill'])
+  })
+
+  // ─── config 字段（SkillConfigField）─────────────────────────────────────────
+
+  it('manifest 中的 config 字段被正确透传', () => {
+    makeSkillDir('config-skill', {
+      name: 'config_skill',
+      description: 'Has config fields',
+      config: [
+        { key: 'apiKey', type: 'string', label: 'API Key', required: true, secret: true },
+        { key: 'model', type: 'select', label: 'Model', options: [{ value: 'gpt-4', label: 'GPT-4' }] },
+      ],
+    })
+
+    const skills = scanSkillsDir(testRoot)
+    expect(skills).toHaveLength(1)
+    // config 字段不直接挂在 LoadedSkill 上，但 loader 不报错，正确加载
+    expect(skills[0].name).toBe('config_skill')
+  })
+
+  it('manifest 无 config 字段时正常加载', () => {
+    makeSkillDir('no-config-skill', {
+      name: 'no_config',
+      description: 'No config field declared',
+    })
+
+    const skills = scanSkillsDir(testRoot)
+    expect(skills[0].name).toBe('no_config')
+  })
+
+  it('config 字段中的 key 列表被正确传给 buildTools（通过 mock 验证）', () => {
+    mockLoadJsTools.mockClear()
+
+    makeSkillDir('js-config-skill', {
+      name: 'js_config',
+      description: 'JS skill with config',
+      config: [
+        { key: 'apiKey', type: 'password', label: 'API Key' },
+        { key: 'timeout', type: 'number', label: 'Timeout' },
+      ],
+      tools: [
+        { type: 'js', file: 'tool.js' },
+      ],
+    })
+
+    scanSkillsDir(testRoot)
+
+    // loadJsTools 应被调用，且第四个参数为 configFieldKeys
+    expect(mockLoadJsTools).toHaveBeenCalled()
+    const [, , , configFieldKeys] = mockLoadJsTools.mock.calls[0]
+    expect(configFieldKeys).toEqual(['apiKey', 'timeout'])
   })
 })

@@ -61,6 +61,7 @@ function validateManifest(raw: unknown, source: string): SkillManifest | null {
     prompt: typeof obj.prompt === 'string' ? obj.prompt : undefined,
     disabled: obj.disabled === true,
     tools: Array.isArray(obj.tools) ? (obj.tools as ToolDeclaration[]) : [],
+    config: Array.isArray(obj.config) ? obj.config as SkillManifest['config'] : undefined,
   }
 }
 
@@ -69,14 +70,19 @@ function validateManifest(raw: unknown, source: string): SkillManifest | null {
 /**
  * 根据工具声明列表构建 LangChain tools
  */
-function buildTools(declarations: ToolDeclaration[], skillDir: string, skillName: string): DynamicStructuredTool[] {
+function buildTools(
+  declarations: ToolDeclaration[],
+  skillDir: string,
+  skillName: string,
+  configFieldKeys: string[] = [],
+): DynamicStructuredTool[] {
   const tools: DynamicStructuredTool[] = []
 
   for (const decl of declarations) {
     try {
       switch (decl.type) {
         case 'js': {
-          const jsTools = loadJsTools(decl, skillDir)
+          const jsTools = loadJsTools(decl, skillDir, skillName, configFieldKeys)
           const needsApproval = requiresApprovalForPermissions(decl.permissions)
           if (needsApproval) {
             logger.info(`[skill-loader] js tool "${decl.file}" requires approval (risky permissions)`)
@@ -88,10 +94,10 @@ function buildTools(declarations: ToolDeclaration[], skillDir: string, skillName
           break
         }
         case 'command':
-          tools.push(wrapWithApproval(commandToTool(decl, skillDir), skillName))
+          tools.push(wrapWithApproval(commandToTool(decl, skillDir, skillName, configFieldKeys), skillName))
           break
         case 'script':
-          tools.push(wrapWithApproval(scriptToTool(decl, skillDir), skillName))
+          tools.push(wrapWithApproval(scriptToTool(decl, skillDir, skillName, configFieldKeys), skillName))
           break
         default:
           logger.warn(`[skill-loader] Unknown tool type: ${(decl as any).type}`)
@@ -140,7 +146,8 @@ function loadSkillFromJsonFile(manifestPath: string, skillDir: string): LoadedSk
       return null
     }
 
-    const tools = buildTools(manifest.tools ?? [], skillDir, manifest.name)
+    const configFieldKeys = (manifest.config ?? []).map(f => f.key)
+    const tools = buildTools(manifest.tools ?? [], skillDir, manifest.name, configFieldKeys)
 
     logger.info(
       `[skill-loader] Loaded skill from dir (json): ${manifest.name} (${tools.length} tools)`,

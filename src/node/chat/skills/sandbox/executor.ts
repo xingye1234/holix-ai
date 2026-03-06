@@ -57,6 +57,7 @@ const {
   allowedEnvKeys = [],
   hardcodedBlocked = [],
   safeBuiltins = [],
+  skillConfig = {},
 } = workerData;
 
 // ─── 沙箱 require ─────────────────────────────────────────────────────────────
@@ -171,6 +172,10 @@ function createSandboxedProcess(envKeys) {
       // 安全全局
       process: sandboxedProcess,
       console: sandboxConsole,
+
+      // Skill 用户配置（来自 skill.json 的 config 字段，由用户在设置页填写后注入）
+      // JS skill 工具可直接访问：const apiKey = skillConfig.apiKey
+      skillConfig: Object.freeze(Object.assign(Object.create(null), skillConfig)),
 
       // JS 内置
       JSON,
@@ -293,6 +298,8 @@ export interface SandboxRunOptions {
   exportName: string
   args: Record<string, any>
   permissions: SandboxPermissions
+  /** Skill 用户配置，注入为沙箱全局 `skillConfig` 对象 */
+  skillConfig?: Record<string, unknown>
 }
 
 /**
@@ -321,6 +328,7 @@ export function runInSandbox(options: SandboxRunOptions): Promise<string> {
         allowedEnvKeys: permissions.allowedEnvKeys,
         hardcodedBlocked: [...HARDCODED_BLOCKED],
         safeBuiltins: [...SAFE_BUILTINS],
+        skillConfig: options.skillConfig ?? {},
       },
       resourceLimits: {
         maxOldGenerationSizeMb: permissions.maxMemoryMb,

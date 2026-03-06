@@ -1,7 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { ChevronDown, ChevronRight, Clock, Code2, Info, Key, Lock, Package, Terminal, Wrench } from 'lucide-react'
+import { ChevronDown, ChevronRight, Clock, Code2, Info, Key, Lock, Package, Settings2, Terminal, Wrench } from 'lucide-react'
 import { useState } from 'react'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { trpcClient } from '@/lib/trpc-client'
 
@@ -169,13 +171,106 @@ function PermissionsPanel({ declarations }: { declarations: Declaration[] }) {
   )
 }
 
+// ─── Skill 配置表单 ──────────────────────────────────────────────────────────
+
+interface SkillConfigField {
+  key: string
+  type: 'string' | 'number' | 'boolean' | 'password' | 'select'
+  label: string
+  description?: string
+  default?: unknown
+  required?: boolean
+  secret?: boolean
+  options?: Array<{ value: string, label: string }>
+}
+
+function ConfigForm({
+  skillName,
+  fields,
+  values,
+}: {
+  skillName: string
+  fields: SkillConfigField[]
+  values: Record<string, unknown>
+}) {
+  const [localValues, setLocalValues] = useState<Record<string, string>>(() => {
+    const init: Record<string, string> = {}
+    for (const f of fields) {
+      const stored = values[f.key]
+      init[f.key] = stored !== undefined ? String(stored) : (f.default !== undefined ? String(f.default) : '')
+    }
+    return init
+  })
+
+  if (fields.length === 0)
+    return null
+
+  async function handleChange(key: string, value: string) {
+    setLocalValues(prev => ({ ...prev, [key]: value }))
+    await trpcClient.skill.setConfig.mutate({ skillName, key, value })
+  }
+
+  return (
+    <div>
+      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-1.5">
+        <Settings2 className="size-3" />
+        配置
+      </h4>
+      <div className="space-y-3">
+        {fields.map(field => (
+          <div key={field.key} className="space-y-1">
+            <Label className="text-xs font-medium">
+              {field.label}
+              {field.required && <span className="text-destructive ml-0.5">*</span>}
+            </Label>
+            {field.description && (
+              <p className="text-[11px] text-muted-foreground leading-snug">{field.description}</p>
+            )}
+            {field.type === 'boolean'
+              ? (
+                  <input
+                    type="checkbox"
+                    checked={localValues[field.key] === 'true'}
+                    onChange={e => handleChange(field.key, String(e.target.checked))}
+                    className="h-4 w-4 rounded border-input accent-primary"
+                  />
+                )
+              : field.type === 'select' && field.options
+                ? (
+                    <select
+                      value={localValues[field.key]}
+                      onChange={e => handleChange(field.key, e.target.value)}
+                      className="flex h-8 w-full rounded-md border border-input bg-background px-2 py-1 text-xs ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                    >
+                      {!field.required && <option value="">（未设置）</option>}
+                      {field.options.map(opt => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+                  )
+                : (
+                    <Input
+                      type={field.type === 'password' || field.secret ? 'password' : field.type === 'number' ? 'number' : 'text'}
+                      value={localValues[field.key]}
+                      placeholder={field.default !== undefined ? String(field.default) : ''}
+                      onChange={e => handleChange(field.key, e.target.value)}
+                      className="h-8 text-xs"
+                    />
+                  )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // ─── Skill 卡片 ──────────────────────────────────────────────────────────────
 
 type Skill = Awaited<ReturnType<typeof trpcClient.skill.list>>[number]
 
 function SkillCard({ skill }: { skill: Skill }) {
   const [expanded, setExpanded] = useState(false)
-  const hasDetails = skill.tools.length > 0 || skill.declarations.length > 0 || skill.prompt
+  const hasDetails = skill.tools.length > 0 || skill.declarations.length > 0 || skill.prompt || (skill.config?.length ?? 0) > 0
 
   return (
     <div className="rounded-lg border bg-card overflow-hidden">
@@ -254,6 +349,15 @@ function SkillCard({ skill }: { skill: Skill }) {
               </h4>
               <PermissionsPanel declarations={skill.declarations as Declaration[]} />
             </div>
+          )}
+
+          {/* 配置表单 */}
+          {(skill.config?.length ?? 0) > 0 && (
+            <ConfigForm
+              skillName={skill.name}
+              fields={skill.config as SkillConfigField[]}
+              values={skill.configValues ?? {}}
+            />
           )}
         </div>
       )}

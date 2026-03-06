@@ -1,8 +1,10 @@
 import type { SkillManifest } from '../chat/skills/type'
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import z from 'zod'
 import { skillManager } from '../chat/skills/manager'
 import { BUILTIN_SKILLS_PATH } from '../constant'
+import { deleteSkillConfig, getSkillConfig, setSkillConfigField } from '../database/skill-config'
 import { procedure, router } from './trpc'
 
 export const skillRouter = router({
@@ -10,7 +12,7 @@ export const skillRouter = router({
     return skillManager.listSkills().map((skill) => {
       const isBuiltin = skill.dir.startsWith(BUILTIN_SKILLS_PATH)
 
-      // 重读 skill.json 拿 permissions 等原始声明
+      // 重读 skill.json 拿 permissions、config 等原始声明
       let manifest: SkillManifest | null = null
       const manifestPath = join(skill.dir, 'skill.json')
       if (existsSync(manifestPath)) {
@@ -19,6 +21,12 @@ export const skillRouter = router({
         }
         catch {}
       }
+
+      const configFields = manifest?.config ?? []
+      const configFieldKeys = configFields.map(f => f.key)
+      const configValues = configFieldKeys.length > 0
+        ? getSkillConfig(skill.name, configFieldKeys)
+        : {}
 
       return {
         name: skill.name,
@@ -33,7 +41,29 @@ export const skillRouter = router({
         })),
         /** 原始工具声明（含 permissions） */
         declarations: manifest?.tools ?? [],
+        /** 配置字段声明列表（来自 manifest.config） */
+        config: configFields,
+        /** 当前已存储的配置值 */
+        configValues,
       }
     })
   }),
+
+  /** 写入单个配置字段 */
+  setConfig: procedure()
+    .input(z.object({
+      skillName: z.string(),
+      key: z.string(),
+      value: z.unknown(),
+    }))
+    .mutation(({ input }) => {
+      setSkillConfigField(input.skillName, input.key, input.value)
+    }),
+
+  /** 重置某个 skill 的所有配置 */
+  resetConfig: procedure()
+    .input(z.object({ skillName: z.string() }))
+    .mutation(({ input }) => {
+      deleteSkillConfig(input.skillName)
+    }),
 })
