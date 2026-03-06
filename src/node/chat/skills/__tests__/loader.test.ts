@@ -17,7 +17,7 @@ vi.mock('../../../platform/logger', () => ({
 }))
 
 // mock adapters，避免 langchain/electron 依赖链被拉入
-const mockLoadJsTools = vi.fn(() => [])
+const mockLoadJsTools = vi.fn((..._args: any[]): any[] => [])
 
 vi.mock('../adapters/js', () => ({
   loadJsTools: (...args: any[]) => mockLoadJsTools(...args),
@@ -429,7 +429,7 @@ describe('scanSkillsDir', () => {
 
     // loadJsTools 应被调用，且第四个参数为 configFieldKeys
     expect(mockLoadJsTools).toHaveBeenCalled()
-    const [, , , configFieldKeys] = mockLoadJsTools.mock.calls[0]
+    const [, , , configFieldKeys] = mockLoadJsTools.mock.calls[0] as unknown as [any, any, any, string[]]
     expect(configFieldKeys).toEqual(['apiKey', 'timeout'])
   })
 })

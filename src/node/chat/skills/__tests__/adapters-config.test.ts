@@ -26,10 +26,10 @@ vi.mock('../../../platform/logger', () => ({
 }))
 
 // getSkillConfig 可控返回
-const mockGetSkillConfig = vi.fn<[string, string[]], Record<string, unknown>>(() => ({}))
+const mockGetSkillConfig = vi.fn((_skillName: string, _fieldKeys: string[]): Record<string, unknown> => ({}))
 
 vi.mock('../../../database/skill-config', () => ({
-  getSkillConfig: (...args: [string, string[]]) => mockGetSkillConfig(...args),
+  getSkillConfig: (skillName: string, fieldKeys: string[]) => mockGetSkillConfig(skillName, fieldKeys),
   setSkillConfigField: vi.fn(),
   getSkillConfigField: vi.fn(),
   deleteSkillConfig: vi.fn(),
@@ -39,17 +39,20 @@ vi.mock('../../../database/skill-config', () => ({
 const capturedCommands: Array<{ command: string, cwd: string }> = []
 
 vi.mock('node:child_process', () => ({
-  exec: vi.fn((cmd: string, opts: any, cb: Function) => {
+  exec: vi.fn((cmd: string, opts: any, cb: (err: null, result: { stdout: string, stderr: string }) => void) => {
     capturedCommands.push({ command: cmd, cwd: opts?.cwd ?? '' })
     cb(null, { stdout: `executed: ${cmd}`, stderr: '' })
   }),
 }))
 
 // util.promisify：直接把回调版 exec 包成 promise
+type ExecCb = (err: Error | null, result: { stdout: string, stderr: string }) => void
+type ExecFn = (cmd: string, opts: any, cb: ExecCb) => void
+
 vi.mock('node:util', () => ({
-  promisify: (fn: Function) => (cmd: string, opts: any) =>
+  promisify: (fn: ExecFn) => (cmd: string, opts: any) =>
     new Promise((resolve, reject) => {
-      fn(cmd, opts, (err: any, result: any) => {
+      fn(cmd, opts, (err, result) => {
         if (err)
           reject(err)
         else
@@ -60,7 +63,7 @@ vi.mock('node:util', () => ({
 
 // langchain tool wrapper：将 fn 包成可 invoke 的 tool 对象
 vi.mock('langchain', () => ({
-  tool: (fn: Function, meta: any) => ({
+  tool: (fn: (args: any) => any, meta: any) => ({
     name: meta.name,
     description: meta.description,
     schema: meta.schema,
