@@ -57,7 +57,7 @@ interface ChatSession {
  * ChatManager - 管理多个并发的聊天会话
  * 每个会话独立处理，互不影响
  */
-class ChatManager {
+export class ChatManager {
   private sessions: Map<string, ChatSession> = new Map()
 
   constructor() {
