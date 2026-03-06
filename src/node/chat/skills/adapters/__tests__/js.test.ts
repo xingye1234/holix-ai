@@ -29,6 +29,14 @@ vi.mock('../../../../platform/logger', () => ({
   },
 }))
 
+// skill-config 的依赖链包含 Electron，必须 mock
+vi.mock('../../../../database/skill-config', () => ({
+  getSkillConfig: vi.fn(() => ({})),
+  setSkillConfigField: vi.fn(),
+  getSkillConfigField: vi.fn(),
+  deleteSkillConfig: vi.fn(),
+}))
+
 // ─── 辅助 ──────────────────────────────────────────────────────────────────────
 
 let testDir: string
@@ -53,7 +61,7 @@ describe('loadJsTools - 文件不存在', () => {
   setup()
 
   it('jS 文件不存在时返回空数组', () => {
-    const tools = loadJsTools({ type: 'js', file: 'nonexistent.js' }, testDir)
+    const tools = loadJsTools({ type: 'js', file: 'nonexistent.js' }, testDir, 'test_skill')
     expect(tools).toEqual([])
   })
 })
@@ -73,7 +81,7 @@ describe('loadJsTools - 默认导出（单个 tool）', () => {
       }
     `)
 
-    const tools = loadJsTools({ type: 'js', file: 'single.js' }, testDir)
+    const tools = loadJsTools({ type: 'js', file: 'single.js' }, testDir, 'test_skill')
 
     expect(tools).toHaveLength(1)
     expect(tools[0].name).toBe('echo_tool')
@@ -90,7 +98,7 @@ describe('loadJsTools - 默认导出（单个 tool）', () => {
       }
     `)
 
-    const tools = loadJsTools({ type: 'js', file: 'invoke.js' }, testDir)
+    const tools = loadJsTools({ type: 'js', file: 'invoke.js' }, testDir, 'test_skill')
     const result = await tools[0].invoke({ name: 'World' })
 
     expect(result).toBe('Hello, World!')
@@ -105,7 +113,7 @@ describe('loadJsTools - 默认导出（单个 tool）', () => {
       }
     `)
 
-    const tools = loadJsTools({ type: 'js', file: 'json-result.js' }, testDir)
+    const tools = loadJsTools({ type: 'js', file: 'json-result.js' }, testDir, 'test_skill')
     const result = await tools[0].invoke({})
 
     expect(result).toBe('{"status":"ok","count":42}')
@@ -120,7 +128,7 @@ describe('loadJsTools - 默认导出（单个 tool）', () => {
       }
     `)
 
-    const tools = loadJsTools({ type: 'js', file: 'throws.js' }, testDir)
+    const tools = loadJsTools({ type: 'js', file: 'throws.js' }, testDir, 'test_skill')
     const result = await tools[0].invoke({})
 
     expect(result).toContain('something went wrong')
@@ -142,7 +150,7 @@ describe('loadJsTools - 数组导出（多个 tools）', () => {
       ]
     `)
 
-    const tools = loadJsTools({ type: 'js', file: 'multi.js' }, testDir)
+    const tools = loadJsTools({ type: 'js', file: 'multi.js' }, testDir, 'test_skill')
 
     expect(tools).toHaveLength(3)
     expect(tools.map(t => t.name)).toEqual(['tool_one', 'tool_two', 'tool_three'])
@@ -157,7 +165,7 @@ describe('loadJsTools - 数组导出（多个 tools）', () => {
       ]
     `)
 
-    const tools = loadJsTools({ type: 'js', file: 'partial.js' }, testDir)
+    const tools = loadJsTools({ type: 'js', file: 'partial.js' }, testDir, 'test_skill')
 
     // 只有同时具备 name 和 description 的条目才会被加载
     expect(tools).toHaveLength(1)
@@ -172,7 +180,7 @@ describe('loadJsTools - 数组导出（多个 tools）', () => {
       }
     `)
 
-    const tools = loadJsTools({ type: 'js', file: 'no-exec.js' }, testDir)
+    const tools = loadJsTools({ type: 'js', file: 'no-exec.js' }, testDir, 'test_skill')
 
     // 元数据阶段不过滤缺少 execute 的 tool
     expect(tools).toHaveLength(1)
@@ -199,7 +207,7 @@ describe('loadJsTools - schema 构建', () => {
       }
     `)
 
-    const tools = loadJsTools({ type: 'js', file: 'no-schema.js' }, testDir)
+    const tools = loadJsTools({ type: 'js', file: 'no-schema.js' }, testDir, 'test_skill')
     const result = await tools[0].invoke({})
     expect(result).toBe('result')
   }, 15_000)
@@ -219,7 +227,7 @@ describe('loadJsTools - schema 构建', () => {
       }
     `)
 
-    const tools = loadJsTools({ type: 'js', file: 'shorthand-schema.js' }, testDir)
+    const tools = loadJsTools({ type: 'js', file: 'shorthand-schema.js' }, testDir, 'test_skill')
     const result = await tools[0].invoke({ text: 'hello', count: 3, flag: true })
     expect(result).toBe('hello:3:true')
   }, 15_000)
@@ -238,7 +246,7 @@ describe('loadJsTools - schema 构建', () => {
       }
     `)
 
-    const tools = loadJsTools({ type: 'js', file: 'full-schema.js' }, testDir)
+    const tools = loadJsTools({ type: 'js', file: 'full-schema.js' }, testDir, 'test_skill')
     const result = await tools[0].invoke({ required_field: 'hello' })
     expect(result).toBe('hello')
   }, 15_000)
@@ -258,7 +266,7 @@ describe('loadJsTools - 具名导出', () => {
       }
     `)
 
-    const tools = loadJsTools({ type: 'js', file: 'named-export.js', export: 'myTool' }, testDir)
+    const tools = loadJsTools({ type: 'js', file: 'named-export.js', export: 'myTool' }, testDir, 'test_skill')
 
     expect(tools).toHaveLength(1)
     expect(tools[0].name).toBe('named_tool')
@@ -273,7 +281,7 @@ describe('loadJsTools - 具名导出', () => {
       }
     `)
 
-    const tools = loadJsTools({ type: 'js', file: 'named-invoke.js', export: 'myTool' }, testDir)
+    const tools = loadJsTools({ type: 'js', file: 'named-invoke.js', export: 'myTool' }, testDir, 'test_skill')
     const result = await tools[0].invoke({})
     expect(result).toBe('from named export')
   }, 15_000)
@@ -283,7 +291,7 @@ describe('loadJsTools - 具名导出', () => {
       exports.other = { name: 'other', description: 'Other', execute: async () => 'ok' }
     `)
 
-    const tools = loadJsTools({ type: 'js', file: 'no-named.js', export: 'nonexistent' }, testDir)
+    const tools = loadJsTools({ type: 'js', file: 'no-named.js', export: 'nonexistent' }, testDir, 'test_skill')
     expect(tools).toEqual([])
   })
 })
@@ -296,15 +304,15 @@ describe('loadJsTools - 错误处理', () => {
   it('jS 文件语法错误时返回空数组、不抛异常', () => {
     writeJsFile('syntax-error.js', `module.exports = { invalid syntax !!!`)
 
-    expect(() => loadJsTools({ type: 'js', file: 'syntax-error.js' }, testDir)).not.toThrow()
-    const tools = loadJsTools({ type: 'js', file: 'syntax-error.js' }, testDir)
+    expect(() => loadJsTools({ type: 'js', file: 'syntax-error.js' }, testDir, 'test_skill')).not.toThrow()
+    const tools = loadJsTools({ type: 'js', file: 'syntax-error.js' }, testDir, 'test_skill')
     expect(tools).toEqual([])
   })
 
   it('导出 null 时返回空数组', () => {
     writeJsFile('null-export.js', `module.exports = null`)
 
-    const tools = loadJsTools({ type: 'js', file: 'null-export.js' }, testDir)
+    const tools = loadJsTools({ type: 'js', file: 'null-export.js' }, testDir, 'test_skill')
     expect(tools).toEqual([])
   })
 })
@@ -326,7 +334,7 @@ describe('loadJsTools - 安全沙箱（执行阶段）', () => {
       }
     `)
 
-    const tools = loadJsTools({ type: 'js', file: 'use-electron.js' }, testDir)
+    const tools = loadJsTools({ type: 'js', file: 'use-electron.js' }, testDir, 'test_skill')
     expect(tools).toHaveLength(1)
 
     const result = await tools[0].invoke({})
@@ -347,7 +355,7 @@ describe('loadJsTools - 安全沙箱（执行阶段）', () => {
       }
     `)
 
-    const tools = loadJsTools({ type: 'js', file: 'use-relative.js' }, testDir)
+    const tools = loadJsTools({ type: 'js', file: 'use-relative.js' }, testDir, 'test_skill')
     const result = await tools[0].invoke({})
 
     expect(typeof result).toBe('string')
@@ -370,6 +378,7 @@ describe('loadJsTools - 安全沙箱（执行阶段）', () => {
     const tools = loadJsTools(
       { type: 'js', file: 'use-fs.js', permissions: { allowedBuiltins: [] } },
       testDir,
+      'test_skill',
     )
     const result = await tools[0].invoke({})
 
@@ -393,6 +402,7 @@ describe('loadJsTools - 安全沙箱（执行阶段）', () => {
     const tools = loadJsTools(
       { type: 'js', file: 'use-path.js', permissions: { allowedBuiltins: ['path'] } },
       testDir,
+      'test_skill',
     )
     const result = await tools[0].invoke({ input: '/foo/bar/baz.txt' })
 

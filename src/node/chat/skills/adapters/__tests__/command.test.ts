@@ -16,6 +16,14 @@ vi.mock('../../../../platform/logger', () => ({
   },
 }))
 
+// skill-config 的依赖链包含 Electron，必须 mock
+vi.mock('../../../../database/skill-config', () => ({
+  getSkillConfig: vi.fn(() => ({})),
+  setSkillConfigField: vi.fn(),
+  getSkillConfigField: vi.fn(),
+  deleteSkillConfig: vi.fn(),
+}))
+
 // ─── 工具函数 ──────────────────────────────────────────────────────────────────
 
 let testDir: string
@@ -27,6 +35,7 @@ describe('commandToTool - 工具属性', () => {
     const t = commandToTool(
       { type: 'command', name: 'my_cmd', description: 'A command', command: 'echo hi' },
       '/tmp',
+      'my_skill',
     )
     expect(t.name).toBe('my_cmd')
   })
@@ -35,6 +44,7 @@ describe('commandToTool - 工具属性', () => {
     const t = commandToTool(
       { type: 'command', name: 'cmd', description: 'Run a thing', command: 'echo x' },
       '/tmp',
+      'my_skill',
     )
     expect(t.description).toBe('Run a thing')
   })
@@ -54,6 +64,7 @@ describe('commandToTool - 命令执行', () => {
     const t = commandToTool(
       { type: 'command', name: 'echo_cmd', description: 'Echo', command: 'echo hello' },
       testDir,
+      'my_skill',
     )
 
     const result = await t.invoke({})
@@ -70,6 +81,7 @@ describe('commandToTool - 命令执行', () => {
         schema: { message: { type: 'string', description: 'Message' } },
       },
       testDir,
+      'my_skill',
     )
 
     const result = await t.invoke({ message: 'hello-world' })
@@ -85,6 +97,7 @@ describe('commandToTool - 命令执行', () => {
         command: 'echo {{skillDir}}',
       },
       testDir,
+      'my_skill',
     )
 
     const result = await t.invoke({})
@@ -101,6 +114,7 @@ describe('commandToTool - 命令执行', () => {
         cwd: testDir,
       },
       '/other-dir',
+      'my_skill',
     )
 
     const result = await t.invoke({})
@@ -117,6 +131,7 @@ describe('commandToTool - 命令执行', () => {
         command: 'exit 1',
       },
       testDir,
+      'my_skill',
     )
 
     const result = await t.invoke({})
@@ -132,6 +147,7 @@ describe('commandToTool - 命令执行', () => {
         command: '__holix_nonexistent_cmd__',
       },
       testDir,
+      'my_skill',
     )
 
     const result = await t.invoke({})
@@ -147,6 +163,7 @@ describe('commandToTool - 命令执行', () => {
         command: 'echo out && echo err >&2',
       },
       testDir,
+      'my_skill',
     )
 
     const result = await t.invoke({})
@@ -168,6 +185,7 @@ describe('commandToTool - 命令执行', () => {
         },
       },
       testDir,
+      'my_skill',
     )
 
     const result = await t.invoke({ a: 'x', b: 'y', c: 'z' })
@@ -184,6 +202,7 @@ describe('commandToTool - 命令执行', () => {
         timeout: 200,
       },
       testDir,
+      'my_skill',
     )
 
     const result = await t.invoke({})
@@ -207,6 +226,7 @@ describe('scriptToTool - 属性与执行', () => {
     const t = scriptToTool(
       { type: 'script', name: 'my_script', description: 'My Script', script: 'echo hi' },
       testDir,
+      'my_skill',
     )
 
     expect(t.name).toBe('my_script')
@@ -225,6 +245,7 @@ describe('scriptToTool - 属性与执行', () => {
         script: `sh ${scriptPath}`,
       },
       testDir,
+      'my_skill',
     )
 
     const result = await t.invoke({})
@@ -240,6 +261,7 @@ describe('scriptToTool - 属性与执行', () => {
         script: 'echo {{skillDir}}',
       },
       testDir,
+      'my_skill',
     )
 
     const result = await t.invoke({})
@@ -256,6 +278,7 @@ describe('scriptToTool - 属性与执行', () => {
         schema: { input: { type: 'string', description: 'Input' } },
       },
       testDir,
+      'my_skill',
     )
 
     const result = await t.invoke({ input: 'test-value' })
