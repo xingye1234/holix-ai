@@ -4,7 +4,76 @@ import { tool } from 'langchain'
 import * as z from 'zod'
 import { logger } from '../../platform/logger'
 
-const CONTEXT7_BASE = 'https://context7.com/api/v2'
+const CONTEXT7_BASE = 'https://context7.com/api/v1'
+
+type JsonRecord = Record<string, any>
+
+function buildHeaders(apiKey: string): Record<string, string> {
+  return {
+    'Authorization': `Bearer ${apiKey}`,
+    'Content-Type': 'application/json',
+  }
+}
+
+async function parseJson(resp: Response): Promise<any> {
+  const text = await resp.text()
+  try {
+    return JSON.parse(text)
+  }
+  catch {
+    return text
+  }
+}
+
+function normalizeLibraries(payload: any): any[] {
+  if (Array.isArray(payload))
+    return payload
+
+  if (payload && typeof payload === 'object') {
+    if (Array.isArray(payload.results))
+      return payload.results
+
+    if (Array.isArray(payload.libraries))
+      return payload.libraries
+
+    if (Array.isArray(payload.data))
+      return payload.data
+  }
+
+  return []
+}
+
+function normalizeContext(payload: any): any[] {
+  if (Array.isArray(payload))
+    return payload
+
+  if (payload && typeof payload === 'object') {
+    const knownArrayFields = ['results', 'context', 'snippets', 'documents', 'docs', 'data']
+
+    for (const key of knownArrayFields) {
+      if (Array.isArray(payload[key]))
+        return payload[key]
+    }
+
+    if (typeof payload.content === 'string')
+      return [{ content: payload.content }]
+  }
+
+  if (typeof payload === 'string')
+    return [{ content: payload }]
+
+  return []
+}
+
+function extractLibraryId(library: any): string | undefined {
+  if (!library)
+    return undefined
+
+  if (typeof library === 'string')
+    return library
+
+  return library.id ?? library.libraryId ?? library.context7CompatibleLibraryID
+}
 
 export const context7Tool = tool(
   async ({ query, libraryName, limit = 5 }, config: { context: ChatContext }) => {
@@ -17,52 +86,53 @@ export const context7Tool = tool(
       throw new Error('Context7 API key is not configured.')
     }
 
-    // 1) Search libraries (GET /libs/search?libraryName=...&query=...)
-    const searchUrl = new URL(`${CONTEXT7_BASE}/libs/search`)
-    if (query)
-      searchUrl.searchParams.set('query', query)
-    if (libraryName)
-      searchUrl.searchParams.set('libraryName', libraryName)
-
-    const searchResp = await net.fetch(searchUrl.toString(), {
-      headers: {
-        Authorization: `Bearer ${API_KEY}`,
-      },
+    // 1) Resolve library by latest API (POST /resolve-library-id)
+    const resolveResp = await net.fetch(`${CONTEXT7_BASE}/resolve-library-id`, {
+      method: 'POST',
+      headers: buildHeaders(API_KEY),
+      body: JSON.stringify({
+        libraryName,
+        query,
+      } satisfies JsonRecord),
     })
 
-    if (!searchResp.ok) {
-      throw new Error(`Context7 library search failed: ${await searchResp.text()}`)
+    if (!resolveResp.ok) {
+      throw new Error(`Context7 resolve library failed: ${await resolveResp.text()}`)
     }
 
-    const searchJson = await searchResp.json()
-    const libraries = Array.isArray(searchJson.results) ? searchJson.results : (Array.isArray(searchJson) ? searchJson : [])
+    const resolveJson = await parseJson(resolveResp)
+    const libraries = normalizeLibraries(resolveJson)
 
     if (!libraries.length) {
       return { query, library: null, context: [] }
     }
 
     const library = libraries[0]
+    const libraryId = extractLibraryId(library)
 
-    // 2) Fetch context snippets (GET /context?libraryId=...&query=...&limit=...)
-    const ctxUrl = new URL(`${CONTEXT7_BASE}/context`)
-    if (query)
-      ctxUrl.searchParams.set('query', query)
-    ctxUrl.searchParams.set('libraryId', library.id ?? library)
-    ctxUrl.searchParams.set('limit', String(limit))
-
-    const ctxResp = await net.fetch(ctxUrl.toString(), {
-      headers: {
-        Authorization: `Bearer ${API_KEY}`,
-      },
-    })
-
-    if (!ctxResp.ok) {
-      logger.error('Context7 context fetch failed', { status: ctxResp.status, statusText: ctxResp.statusText })
-      throw new Error(`Context7 context fetch failed: ${await ctxResp.text()}`)
+    if (!libraryId) {
+      logger.error('Context7 resolve response missing library id', { resolveJson })
+      throw new Error('Context7 resolve response missing library id')
     }
 
-    const ctxJson = await ctxResp.json()
-    const context = Array.isArray(ctxJson.results) ? ctxJson.results : (Array.isArray(ctxJson) ? ctxJson : [])
+    // 2) Fetch docs/context by latest API (POST /get-library-docs)
+    const docsResp = await net.fetch(`${CONTEXT7_BASE}/get-library-docs`, {
+      method: 'POST',
+      headers: buildHeaders(API_KEY),
+      body: JSON.stringify({
+        context7CompatibleLibraryID: libraryId,
+        topic: query,
+        limit,
+      } satisfies JsonRecord),
+    })
+
+    if (!docsResp.ok) {
+      logger.error('Context7 docs fetch failed', { status: docsResp.status, statusText: docsResp.statusText })
+      throw new Error(`Context7 docs fetch failed: ${await docsResp.text()}`)
+    }
+
+    const docsJson = await parseJson(docsResp)
+    const context = normalizeContext(docsJson)
 
     logger.info('Context7 tool fetched context snippets', { count: context.length })
 
