@@ -1,38 +1,40 @@
 import { createFileRoute, Link, Outlet } from '@tanstack/react-router'
 import { Item, ItemContent, ItemTitle } from '@/components/ui/item'
 import { Separator } from '@/components/ui/separator'
+import { useI18n } from '@/i18n/provider'
 
 export const Route = createFileRoute('/setting')({
   component: AppLayoutComponent,
 })
 
-const settingList = [
-  {
-    name: '常规设置',
-    path: '/setting/general',
-  },
-  {
-    name: '供应商设置',
-    path: '/setting/provider',
-  },
-  {
-    name: 'Skills',
-    path: '/setting/skills',
-  },
-  {
-    name: '帮助与支持',
-    path: '/setting/help',
-  },
-]
-
 function AppLayoutComponent() {
+  const { t } = useI18n()
+
+  const settingList = [
+    {
+      name: t('settings.nav.general'),
+      path: '/setting/general',
+    },
+    {
+      name: t('settings.nav.provider'),
+      path: '/setting/provider',
+    },
+    {
+      name: t('settings.nav.skills'),
+      path: '/setting/skills',
+    },
+    {
+      name: t('settings.nav.help'),
+      path: '/setting/help',
+    },
+  ]
+
   return (
     <div className="w-full h-[calc(100vh - var(--app-header-height))] overflow-auto">
       <div className="w-full px-6 lg:px-8 py-6 max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold">Setting</h1>
+        <h1 className="text-3xl font-bold">{t('settings.title')}</h1>
         <span className="text-neutral-600 text-sm mt-2">
-          Manage your application settings here. Select a category from the
-          sidebar to get started.
+          {t('settings.desc')}
         </span>
         <Separator className="my-4" />
         <div className="flex w-full h-full gap-4">

@@ -9,6 +9,7 @@ import { registerCommandHandler } from '@/lib/command'
 import logger from './lib/logger'
 import { router } from './router'
 import { useToolApprovalStore } from './store/tool-approval'
+import { I18nProvider } from './i18n/provider'
 
 export default function App() {
   // 初始化所有数据
@@ -39,10 +40,12 @@ export default function App() {
   logger.info('App initialized and hooks set up.')
 
   return (
-    <ThemeProvider>
-      <RouterProvider router={router} defaultPreload="intent" />
-      <Toaster position="top-center" />
-      <ToolApprovalModal />
-    </ThemeProvider>
+    <I18nProvider>
+      <ThemeProvider>
+        <RouterProvider router={router} defaultPreload="intent" />
+        <Toaster position="top-center" />
+        <ToolApprovalModal />
+      </ThemeProvider>
+    </I18nProvider>
   )
 }

@@ -3,6 +3,7 @@
  * - 无内容时：显示跳动三点（"思考中"）
  */
 import { Brain } from 'lucide-react'
+import { useI18n } from '@/i18n/provider'
 import { cn } from '@/lib/utils'
 
 interface GeneratingIndicatorProps {
@@ -12,6 +13,7 @@ interface GeneratingIndicatorProps {
 }
 
 export function GeneratingIndicator({ isPending, className }: GeneratingIndicatorProps) {
+  const { t } = useI18n()
   return (
     <div className={cn('flex items-center gap-2.5 py-1', className)}>
       <Brain
@@ -28,7 +30,7 @@ export function GeneratingIndicator({ isPending, className }: GeneratingIndicato
         <span className="typing-dot bg-muted-foreground" />
       </div>
       <span className="text-xs text-muted-foreground select-none">
-        {isPending ? '思考中' : '生成中'}
+        {isPending ? t('generating.thinking') : t('generating.generating')}
       </span>
     </div>
   )

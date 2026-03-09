@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import process from 'node:process'
 import { defineConfig } from 'tsdown'
+import { scriptStringPlugin } from './build/script-string-plugin'
 
 const pkg = await readJson(join(process.cwd(), 'package.json'))
 const dependencies = Object.keys(pkg.dependencies || {})
@@ -50,6 +51,7 @@ export default defineConfig({
     'better-sqlite3',
   ],
   noExternal: uniqueDeps,
+  plugins: [scriptStringPlugin({ tsconfig: 'tsconfig.json', alias: { '@': './src' } }) as any],
   loader: {
     '.png': 'dataurl',
     '.jpg': 'dataurl',
