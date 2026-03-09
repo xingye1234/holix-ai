@@ -227,7 +227,27 @@ export const message = sqliteTable(
   }),
 )
 
+export const skillInvocationLog = sqliteTable(
+  'skill_invocation_log',
+  {
+    id: t.integer('id').primaryKey({ autoIncrement: true }),
+    skillName: t.text('skill_name').notNull(),
+    toolName: t.text('tool_name').notNull(),
+    args: t.text('args', { mode: 'json' }),
+    result: t.text('result'),
+    rejected: t.integer('rejected', { mode: 'boolean' }).notNull().default(false),
+    error: t.text('error'),
+    createdAt: t.integer('created_at').notNull().default(sql`(strftime('%s','now') * 1000)`),
+  },
+  table => ({
+    skillToolIdx: index('idx_skill_invocation_skill_tool').on(table.skillName, table.toolName),
+    createdAtIdx: index('idx_skill_invocation_created').on(table.createdAt),
+  }),
+)
+
 export type Chat = InferSelectModel<typeof chats>
 export type Message = InferSelectModel<typeof message>
+export type SkillInvocationLog = InferSelectModel<typeof skillInvocationLog>
 export type ChatInsert = InferInsertModel<typeof chats>
 export type MessageInsert = InferInsertModel<typeof message>
+export type SkillInvocationLogInsert = InferInsertModel<typeof skillInvocationLog>

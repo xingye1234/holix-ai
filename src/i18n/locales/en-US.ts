@@ -23,6 +23,7 @@ const enUS = {
       general: 'General',
       provider: 'Providers',
       skills: 'Skills',
+      skillLogs: 'Skill Logs',
       help: 'Help & Support',
     },
     general: {

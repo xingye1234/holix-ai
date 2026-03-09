@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import z from 'zod'
 import { skillManager } from '../chat/skills/manager'
 import { BUILTIN_SKILLS_PATH } from '../constant'
+import { listSkillInvocationLogs } from '../database/skill-invocation-log'
 import { deleteSkillConfig, getSkillConfig, setSkillConfigField } from '../database/skill-config'
 import { installSkillsFromGitHub } from './skill-installer'
 import { procedure, router } from './trpc'
@@ -66,6 +67,21 @@ export const skillRouter = router({
     .input(z.object({ skillName: z.string() }))
     .mutation(({ input }) => {
       deleteSkillConfig(input.skillName)
+    }),
+
+
+  invocationLogs: procedure()
+    .input(z.object({
+      limit: z.number().int().min(1).max(1000).optional(),
+      offset: z.number().int().min(0).optional(),
+      skillName: z.string().optional(),
+    }).optional())
+    .query(async ({ input }) => {
+      return await listSkillInvocationLogs({
+        limit: input?.limit,
+        offset: input?.offset,
+        skillName: input?.skillName,
+      })
     }),
 
   installFromGithub: procedure()

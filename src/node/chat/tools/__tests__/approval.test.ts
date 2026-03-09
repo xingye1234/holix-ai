@@ -58,6 +58,12 @@ vi.mock('../../../platform/logger', () => ({
   logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
 }))
 
+const mockRecordSkillInvocation = vi.hoisted(() => vi.fn())
+
+vi.mock('../../../database/skill-invocation-log', () => ({
+  recordSkillInvocation: (...args: unknown[]) => mockRecordSkillInvocation(...(args as Parameters<typeof mockRecordSkillInvocation>)),
+}))
+
 // ─── 辅助：构造一个简单的 DynamicStructuredTool ────────────────────────────────
 
 function makeDummyTool(
@@ -170,6 +176,11 @@ describe('wrapWithApproval - 需要用户审批', () => {
     expect(fn).not.toHaveBeenCalled()
     expect(result).toContain('拒绝')
     expect(result).toContain('denied_tool')
+    expect(mockRecordSkillInvocation).toHaveBeenCalledWith(expect.objectContaining({
+      skillName: 'my_skill',
+      toolName: 'denied_tool',
+      rejected: true,
+    }))
   })
 
   it('updateAwait 抛异常时视为拒绝，不执行 tool', async () => {
