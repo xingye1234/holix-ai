@@ -5,7 +5,7 @@
   "packageManager": "pnpm@10.19.0",
   "description": "Holix AI - An AI-powered chat application",
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "keywords": [],
   "main": "./.holix/main/main.mjs",
   "scripts": {
