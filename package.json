@@ -27,7 +27,8 @@
     "release": "pnpm build && pnpm package",
     "postinstall": "electron-builder install-app-deps",
     "rebuild:windows": "electron-rebuild -f -w better-sqlite3 --version=39.2.7 --arch=x64",
-    "rebuild:mac": "electron-rebuild -f -w better-sqlite3 --version=39.2.7 --arch=arm64"
+    "rebuild:mac": "electron-rebuild -f -w better-sqlite3 --version=39.2.7 --arch=arm64",
+    "test:skills": "vitest run -c vitest.skills.config.ts"
   },
   "dependencies": {
     "@holix/router": "^0.0.3",
