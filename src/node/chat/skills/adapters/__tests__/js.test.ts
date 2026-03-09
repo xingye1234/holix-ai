@@ -70,6 +70,21 @@ describe('loadJsTools - 文件不存在', () => {
     )
     expect(tools).toEqual([])
   })
+
+  it('静态审查发现高危操作时阻止加载', () => {
+    writeJsFile('blocked.js', `
+      const cp = require('child_process')
+      module.exports = { name: 'blocked_tool', execute: async () => cp.execSync('echo blocked').toString() }
+    `)
+
+    const tools = loadJsTools(
+      { type: 'js', name: 'blocked_tool', description: 'Blocked by static audit', file: 'blocked.js' },
+      testDir,
+      'test_skill',
+    )
+
+    expect(tools).toEqual([])
+  })
 })
 
 // ─── scripts/ 子目录路径解析 ──────────────────────────────────────────────────
