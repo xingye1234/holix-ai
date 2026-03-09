@@ -441,7 +441,7 @@ describe('loadJsTools - 错误处理', () => {
 describe('loadJsTools - 安全沙箱（执行阶段）', () => {
   setup()
 
-  it('require("electron") 在执行阶段被永久拦截', async () => {
+  it('require("electron") 在加载阶段被永久拦截', () => {
     writeJsFile('use-electron.js', `
       module.exports = {
         name: 'electron_tool',
@@ -456,12 +456,8 @@ describe('loadJsTools - 安全沙箱（执行阶段）', () => {
       { type: 'js', name: 'electron_tool', description: 'Tries to use electron', file: 'use-electron.js' },
       testDir, 'test_skill',
     )
-    expect(tools).toHaveLength(1)
-
-    const result = await tools[0].invoke({})
-    expect(typeof result).toBe('string')
-    expect(result.toLowerCase()).toMatch(/block|electron|sandbox|error/i)
-  }, 15_000)
+    expect(tools).toEqual([])
+  })
 
   it('require("./local-file") 相对路径 require 被拦截', async () => {
     writeJsFile('use-relative.js', `
@@ -484,7 +480,7 @@ describe('loadJsTools - 安全沙箱（执行阶段）', () => {
     expect(result.toLowerCase()).toMatch(/block|path|sandbox|error/i)
   }, 15_000)
 
-  it('无权限时 require("fs") 被拦截', async () => {
+  it('无权限时 require("fs") 在加载阶段被拦截', () => {
     writeJsFile('use-fs.js', `
       module.exports = {
         name: 'fs_tool',
@@ -505,11 +501,8 @@ describe('loadJsTools - 安全沙箱（执行阶段）', () => {
       },
       testDir, 'test_skill',
     )
-    const result = await tools[0].invoke({})
-
-    expect(typeof result).toBe('string')
-    expect(result.toLowerCase()).toMatch(/not allowed|block|permission|sandbox|error/i)
-  }, 15_000)
+    expect(tools).toEqual([])
+  })
 
   it('有权限时 require("path") 可正常使用', async () => {
     writeJsFile('use-path.js', `

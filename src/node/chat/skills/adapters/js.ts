@@ -119,7 +119,7 @@ export function loadJsTools(
     return []
   }
 
-  const audit = auditJsSource(filePath)
+  const audit = auditJsSource(filePath, declaration.permissions)
   if (!audit.safe) {
     logger.warn(
       `[js-adapter] Blocked tool "${declaration.name}" from "${filePath}" due to static audit issues:\n`
