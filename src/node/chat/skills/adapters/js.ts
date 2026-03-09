@@ -34,6 +34,7 @@ import z from 'zod'
 import { getSkillConfig } from '../../../database/skill-config'
 import { logger } from '../../../platform/logger'
 import { runInSandbox } from '../sandbox/executor'
+import { auditJsSource } from './source-audit'
 
 // ─── Schema 构建 ───────────────────────────────────────────────────────────────
 
@@ -114,6 +115,17 @@ export function loadJsTools(
     logger.warn(
       `[js-adapter] Script not found: "${declaration.file}" `
       + `(tried ${join(skillDir, declaration.file)} and ${join(skillDir, 'scripts', declaration.file)})`,
+    )
+    return []
+  }
+
+  const audit = auditJsSource(filePath)
+  if (!audit.safe) {
+    logger.warn(
+      `[js-adapter] Blocked tool "${declaration.name}" from "${filePath}" due to static audit issues:\n`
+      + audit.issues
+        .map(issue => `  - line ${issue.line}: ${issue.message}${issue.snippet ? ` (${issue.snippet})` : ''}`)
+        .join('\n'),
     )
     return []
   }
