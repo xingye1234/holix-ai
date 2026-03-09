@@ -17,6 +17,7 @@
       },
       "permissions": {
         "allowedBuiltins": ["node:child_process", "node:path", "node:os", "node:util", "child_process", "path", "os", "util"],
+        "allowedEnvKeys": ["SHELL", "COMSPEC", "PATH"],
         "timeout": 120000
       }
     },
@@ -28,6 +29,7 @@
       "schema": {},
       "permissions": {
         "allowedBuiltins": ["node:child_process", "node:path", "node:os", "node:util", "child_process", "path", "os", "util"],
+        "allowedEnvKeys": ["SHELL", "COMSPEC", "PATH"],
         "timeout": 120000
       }
     }
