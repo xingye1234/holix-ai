@@ -33,7 +33,7 @@ describe('built-in skills sandbox execution (production loader path)', () => {
     sandboxDir = path.join(sandboxRoot, 'workspace')
     mkdirSync(sandboxDir, { recursive: true })
 
-    for (const dirName of ['shell', 'file-system', 'code-reader']) {
+    for (const dirName of ['shell', 'file-system', 'code-reader', 'web-search']) {
       const skillDir = path.join(rootSkillsDir, dirName)
       const manifest = readManifest(skillDir)
       const declarations = (manifest.tools ?? []).filter((tool): tool is JsToolDeclaration => tool.type === 'js')
@@ -70,6 +70,15 @@ describe('built-in skills sandbox execution (production loader path)', () => {
     await expect(tools.read_code_file.invoke({ file_path: codeFile, start_line: 1, end_line: 2 })).resolves.toMatch(/1 │ const value = 42/)
     await expect(tools.search_in_files.invoke({ dir_path: sandboxDir, pattern: 'console.log', file_ext: '.ts' })).resolves.toMatch(/sample\.ts/)
     await expect(tools.find_files.invoke({ dir_path: sandboxDir, name_pattern: '.ts' })).resolves.toMatch(/sample\.ts/)
+  })
+
+
+  it('runs web-search tool validation path without token', async () => {
+    await expect(tools.web_search.invoke({ search_query: 'holix ai' })).resolves.toMatch(/未配置 apiToken/)
+  })
+
+  it('runs web-browser tool validation path without token', async () => {
+    await expect(tools.web_browser.invoke({ url: 'https://example.com' })).resolves.toMatch(/未配置 apiToken/)
   })
 
   it('runs shell tools via src/node/chat sandbox adapter', async () => {
