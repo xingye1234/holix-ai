@@ -1,8 +1,10 @@
 import type { JsToolDeclaration, SkillManifest } from '../type'
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+
+import { loadJsTools } from '../adapters/js'
 
 vi.mock('../../../platform/logger', () => ({
   logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
@@ -15,8 +17,6 @@ vi.mock('../../../database/skill-config', () => ({
   deleteSkillConfig: vi.fn(),
 }))
 
-import { loadJsTools } from '../adapters/js'
-
 function readManifest(skillDir: string): SkillManifest {
   return JSON.parse(readFileSync(path.join(skillDir, 'skill.json'), 'utf-8')) as SkillManifest
 }
@@ -25,6 +25,7 @@ describe('built-in skills sandbox execution (production loader path)', () => {
   const rootSkillsDir = path.resolve('skills')
   let sandboxRoot = ''
   let sandboxDir = ''
+  // eslint-disable-next-line prefer-const
   let tools: Record<string, ReturnType<typeof loadJsTools>[number]> = {}
 
   beforeAll(() => {
