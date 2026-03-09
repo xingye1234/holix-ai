@@ -12,6 +12,8 @@ export const messages = {
       title: '与 Holix AI 对话',
       inputPlaceholder: '请输入问题',
       createChatFailed: '创建聊天失败',
+      chatTitlePlaceholder: '聊天标题（可选，留空则自动生成）',
+      createChat: '创建聊天',
     },
     generating: {
       thinking: '思考中',
@@ -71,6 +73,8 @@ export const messages = {
       title: 'Chat with Holix AI',
       inputPlaceholder: 'Ask anything',
       createChatFailed: 'Failed to create chat',
+      chatTitlePlaceholder: 'Chat title (optional, auto-generated if empty)',
+      createChat: 'Create Chat',
     },
     generating: {
       thinking: 'Thinking',

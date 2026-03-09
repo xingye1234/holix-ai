@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 import { Editor } from '@/components/editor/editor'
 import ProviderModelSelector from '@/components/provider-model-selector'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { useI18n } from '@/i18n/provider'
 import { command } from '@/lib/command'
 import { getProvider } from '@/lib/provider'
@@ -26,6 +27,7 @@ function generateTitle(text: string) {
 
 function Index() {
   const [value, setValue] = useState('')
+  const [chatTitle, setChatTitle] = useState('')
   const [provider, setProvider] = useState<string>('')
   const [model, setModel] = useState<string>('')
   const chat = useChat()
@@ -46,13 +48,16 @@ function Index() {
 
   const estimatedTokens = useMemo(() => estimateTokens(value), [value])
 
+  // 只有标题时创建空会话（不发消息），有正文时正常发送
+  const hasTitle = chatTitle.trim().length > 0
+  const hasContent = value.trim().length > 0
+  const canSend = (hasTitle || hasContent) && !!model && !!provider
+
   const onSend = useCallback(() => {
-    if (value.trim().length === 0)
-      return
-    if (!model || !provider)
+    if (!canSend)
       return
 
-    const title = generateTitle(value);
+    const titleToUse = hasTitle ? chatTitle.trim() : generateTitle(value);
 
     (async () => {
       const providerConfig = await getProvider(provider)
@@ -68,19 +73,22 @@ function Index() {
         throw new Error(`Provider ${provider} is not configured`)
       }
 
-      const newChat = await chat.createChat({ provider, model, title })
+      const newChat = await chat.createChat({ provider, model, title: titleToUse })
 
       if (newChat) {
-        setTimeout(() => {
-          command('chat.message', {
-            chatId: newChat.uid,
-            content: value,
-          })
-          navigate({
-            to: '/chat/$id',
-            params: { id: newChat.uid },
-          })
-        }, 100)
+        navigate({
+          to: '/chat/$id',
+          params: { id: newChat.uid },
+        })
+        // 只有标题时不发消息，有正文时才发消息
+        if (hasContent) {
+          setTimeout(() => {
+            command('chat.message', {
+              chatId: newChat.uid,
+              content: value,
+            })
+          }, 100)
+        }
       }
     })()
       .catch((err) => {
@@ -89,13 +97,23 @@ function Index() {
       })
       .finally(() => {
         setValue('')
+        setChatTitle('')
       })
-  }, [value, model, provider, chat.createChat, t])
+  }, [canSend, hasTitle, hasContent, chatTitle, value, model, provider, chat.createChat, t])
 
   return (
     <div className="w-full flex justify-center items-center">
       <div className="w-full max-w-3xl p-4 flex flex-col gap-4">
         <h2 className="text-center font-bold text-xl">{t('home.title')}</h2>
+        <Input
+          value={chatTitle}
+          onChange={e => setChatTitle(e.target.value)}
+          placeholder={t('home.chatTitlePlaceholder')}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey)
+              onSend()
+          }}
+        />
         <Editor
           placeholder={t('home.inputPlaceholder')}
           ariaPlaceholder={t('home.inputPlaceholder')}
@@ -114,8 +132,8 @@ function Index() {
             <Coins className="w-4 h-4" />
             <span>{formatTokenCount(estimatedTokens)}</span>
           </div>
-          <Button className="ml-auto" onClick={onSend} disabled={!model || !provider || value.trim().length === 0}>
-            {t('common.send')}
+          <Button className="ml-auto" onClick={onSend} disabled={!canSend}>
+            {hasTitle && !hasContent ? t('home.createChat') : t('common.send')}
           </Button>
         </div>
       </div>
