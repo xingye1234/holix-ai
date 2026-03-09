@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { command } from '@/lib/command'
 import { getProvider } from '@/lib/provider'
 import { estimateTokens, formatTokenCount } from '@/share/token'
+import { useI18n } from '@/i18n/provider'
 import useChat from '@/store/chat'
 
 // 从 value 中提取标题：取前面部分内容
@@ -28,6 +29,7 @@ function Index() {
   const [provider, setProvider] = useState<string>('')
   const [model, setModel] = useState<string>('')
   const chat = useChat()
+  const { t } = useI18n()
   const navigate = useNavigate()
 
   const onTextChange = useCallback(
@@ -83,20 +85,20 @@ function Index() {
     })()
       .catch((err) => {
         console.error('Failed to create chat:', err)
-        toast.error(`创建聊天失败: ${err.message || err}`)
+        toast.error(`${t('home.createChatFailed')}: ${err.message || err}`)
       })
       .finally(() => {
         setValue('')
       })
-  }, [value, model, provider, chat.createChat])
+  }, [value, model, provider, chat.createChat, t])
 
   return (
     <div className="w-full flex justify-center items-center">
       <div className="w-full max-w-3xl p-4 flex flex-col gap-4">
-        <h2 className="text-center font-bold text-xl">Chat with Holix AI</h2>
+        <h2 className="text-center font-bold text-xl">{t('home.title')}</h2>
         <Editor
-          placeholder="请输入问题"
-          ariaPlaceholder="请输入问题"
+          placeholder={t('home.inputPlaceholder')}
+          ariaPlaceholder={t('home.inputPlaceholder')}
           rootClassName="min-h-[200px]"
           onError={(err) => {
             console.error(`editor:`, err ? err.message : 'unknown error')
@@ -113,7 +115,7 @@ function Index() {
             <span>{formatTokenCount(estimatedTokens)}</span>
           </div>
           <Button className="ml-auto" onClick={onSend} disabled={!model || !provider || value.trim().length === 0}>
-            发送
+            {t('common.send')}
           </Button>
         </div>
       </div>

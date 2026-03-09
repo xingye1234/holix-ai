@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
+import { useI18n } from '@/i18n/provider'
 import { getConfig, updateConfig } from '@/lib/config'
 
 export const Route = createFileRoute('/setting/general')({
@@ -28,7 +29,7 @@ function RouteComponent() {
   const [minimizeToTray, setMinimizeToTray] = useState(config.minimizeToTray ?? true)
   const [closeToTray, setCloseToTray] = useState(config.closeToTray ?? true)
   const [showNotifications, setShowNotifications] = useState(true)
-  const [language, setLanguage] = useState('zh-CN')
+  const { locale, setLocale, t } = useI18n()
   const { theme, setTheme } = useTheme()
   const [apiKey, setApiKey] = useState(config.context7ApiKey ?? '')
 
@@ -54,21 +55,20 @@ function RouteComponent() {
   return (
     <div className="p-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold">常规设置</h1>
-        <p className="text-muted-foreground mt-1">管理应用的基本设置和行为</p>
+        <h1 className="text-2xl font-bold">{t('settings.general.title')}</h1>
+        <p className="text-muted-foreground mt-1">{t('settings.general.subtitle')}</p>
       </div>
 
       <div className="max-w-2xl space-y-6">
-        {/* 外观设置 */}
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold">外观</h2>
+          <h2 className="text-lg font-semibold">{t('settings.general.appearance')}</h2>
 
           <div className="rounded-lg border p-4 space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <Label className="text-base">主题</Label>
+                <Label className="text-base">{t('settings.general.theme')}</Label>
                 <p className="text-sm text-muted-foreground mt-1">
-                  选择应用的外观主题
+                  {t('settings.general.themeDesc')}
                 </p>
               </div>
               <Select value={theme} onValueChange={v => setTheme(v as 'light' | 'dark' | 'system')}>
@@ -76,45 +76,42 @@ function RouteComponent() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="light">浅色</SelectItem>
-                  <SelectItem value="dark">深色</SelectItem>
-                  <SelectItem value="system">跟随系统</SelectItem>
+                  <SelectItem value="light">{t('settings.general.light')}</SelectItem>
+                  <SelectItem value="dark">{t('settings.general.dark')}</SelectItem>
+                  <SelectItem value="system">{t('settings.general.system')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="flex items-center justify-between">
               <div>
-                <Label className="text-base">语言</Label>
+                <Label className="text-base">{t('settings.general.language')}</Label>
                 <p className="text-sm text-muted-foreground mt-1">
-                  选择应用的显示语言
+                  {t('settings.general.languageDesc')}
                 </p>
               </div>
-              <Select value={language} onValueChange={setLanguage}>
+              <Select value={locale} onValueChange={v => setLocale(v as 'zh-CN' | 'en-US')}>
                 <SelectTrigger className="w-32">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="zh-CN">简体中文</SelectItem>
-                  <SelectItem value="zh-TW">繁體中文</SelectItem>
                   <SelectItem value="en-US">English</SelectItem>
-                  <SelectItem value="ja-JP">日本語</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
         </div>
 
-        {/* 启动设置 */}
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold">启动与关闭</h2>
+          <h2 className="text-lg font-semibold">{t('settings.general.startup')}</h2>
 
           <div className="rounded-lg border p-4 space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <Label className="text-base">开机自启动</Label>
+                <Label className="text-base">{t('settings.general.autoStart')}</Label>
                 <p className="text-sm text-muted-foreground mt-1">
-                  系统启动时自动打开应用
+                  {t('settings.general.autoStartDesc')}
                 </p>
               </div>
               <Switch checked={autoStart} onCheckedChange={handleAutoStartChange} />
@@ -122,9 +119,9 @@ function RouteComponent() {
 
             <div className="flex items-center justify-between">
               <div>
-                <Label className="text-base">最小化到托盘</Label>
+                <Label className="text-base">{t('settings.general.minimizeToTray')}</Label>
                 <p className="text-sm text-muted-foreground mt-1">
-                  点击最小化按钮时隐藏到系统托盘
+                  {t('settings.general.minimizeToTrayDesc')}
                 </p>
               </div>
               <Switch
@@ -135,9 +132,9 @@ function RouteComponent() {
 
             <div className="flex items-center justify-between">
               <div>
-                <Label className="text-base">关闭到托盘</Label>
+                <Label className="text-base">{t('settings.general.closeToTray')}</Label>
                 <p className="text-sm text-muted-foreground mt-1">
-                  点击关闭按钮时隐藏到系统托盘而不是退出
+                  {t('settings.general.closeToTrayDesc')}
                 </p>
               </div>
               <Switch checked={closeToTray} onCheckedChange={handleCloseToTrayChange} />
@@ -145,41 +142,39 @@ function RouteComponent() {
           </div>
         </div>
 
-        {/* context7 apikey 设置 */}
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold">Context7 设置</h2>
+          <h2 className="text-lg font-semibold">{t('settings.general.context7')}</h2>
           <div className="rounded-lg border p-4 space-y-4">
             <div className="flex flex-col gap-2">
-              <Label className="text-base">Context7 API Key</Label>
+              <Label className="text-base">{t('settings.general.context7ApiKey')}</Label>
               <div className="flex items-center gap-2">
                 <input
                   type="text"
                   className="border rounded px-3 py-2 text-sm flex-1"
-                  placeholder="请输入 Context7 API Key"
+                  placeholder={t('settings.general.context7ApiKeyPlaceholder')}
                   value={apiKey}
                   onChange={e => setApiKey(e.target.value)}
                 />
                 <Button variant="outline" size="sm" onClick={handleSaveApiKey}>
-                  保存
+                  {t('common.save')}
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                用于访问 Context7 服务的 API Key，仅本地保存。
+                {t('settings.general.context7ApiKeyDesc')}
               </p>
             </div>
           </div>
         </div>
 
-        {/* 通知设置 */}
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold">通知</h2>
+          <h2 className="text-lg font-semibold">{t('settings.general.notifications')}</h2>
 
           <div className="rounded-lg border p-4">
             <div className="flex items-center justify-between">
               <div>
-                <Label className="text-base">显示通知</Label>
+                <Label className="text-base">{t('settings.general.showNotifications')}</Label>
                 <p className="text-sm text-muted-foreground mt-1">
-                  接收系统消息和提示通知
+                  {t('settings.general.showNotificationsDesc')}
                 </p>
               </div>
               <Switch
@@ -190,28 +185,27 @@ function RouteComponent() {
           </div>
         </div>
 
-        {/* 数据与缓存 */}
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold">数据与存储</h2>
+          <h2 className="text-lg font-semibold">{t('settings.general.dataStorage')}</h2>
 
           <div className="rounded-lg border p-4 space-y-4">
             <div>
-              <Label className="text-base">清除缓存</Label>
+              <Label className="text-base">{t('settings.general.clearCache')}</Label>
               <p className="text-sm text-muted-foreground mt-1 mb-3">
-                清除应用缓存数据以释放磁盘空间
+                {t('settings.general.clearCacheDesc')}
               </p>
               <Button variant="outline" size="sm">
-                清除缓存
+                {t('settings.general.clearCache')}
               </Button>
             </div>
 
             <div className="border-t pt-4">
-              <Label className="text-base text-destructive">重置应用</Label>
+              <Label className="text-base text-destructive">{t('settings.general.resetApp')}</Label>
               <p className="text-sm text-muted-foreground mt-1 mb-3">
-                恢复所有设置到默认状态，此操作不可撤销
+                {t('settings.general.resetAppDesc')}
               </p>
               <Button variant="destructive" size="sm">
-                重置设置
+                {t('settings.general.resetSettings')}
               </Button>
             </div>
           </div>
