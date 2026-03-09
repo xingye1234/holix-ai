@@ -58,12 +58,58 @@ export interface SandboxPermissions {
   maxMemoryMb?: number
 }
 
+export interface NormalizedSandboxPermissions {
+  allowedBuiltins: string[]
+  allowedEnvKeys: string[]
+  timeout: number
+  maxMemoryMb: number
+}
+
 /** 默认沙箱权限（最严格模式） */
 export const DEFAULT_PERMISSIONS: Required<SandboxPermissions> = {
   allowedBuiltins: [],
   allowedEnvKeys: [],
   timeout: 10_000,
   maxMemoryMb: 64,
+}
+
+const MIN_TIMEOUT_MS = 100
+const MAX_TIMEOUT_MS = 5 * 60 * 1000
+const MIN_MEMORY_MB = 16
+const MAX_MEMORY_MB = 512
+
+function clampInteger(value: number, min: number, max: number, fallback: number): number {
+  if (!Number.isFinite(value))
+    return fallback
+  return Math.max(min, Math.min(max, Math.floor(value)))
+}
+
+function normalizeStringArray(values?: string[]): string[] {
+  if (!values?.length)
+    return []
+
+  return [...new Set(values
+    .map(v => typeof v === 'string' ? v.trim() : '')
+    .filter(Boolean))]
+}
+
+/**
+ * 将权限对象归一化为可直接执行的安全配置：
+ * - 去重/过滤空字符串
+ * - 钳制 timeout 与 maxMemoryMb 到合理范围
+ */
+export function normalizeSandboxPermissions(permissions?: SandboxPermissions): NormalizedSandboxPermissions {
+  const merged: Required<SandboxPermissions> = {
+    ...DEFAULT_PERMISSIONS,
+    ...permissions,
+  }
+
+  return {
+    allowedBuiltins: normalizeStringArray(merged.allowedBuiltins),
+    allowedEnvKeys: normalizeStringArray(merged.allowedEnvKeys),
+    timeout: clampInteger(merged.timeout, MIN_TIMEOUT_MS, MAX_TIMEOUT_MS, DEFAULT_PERMISSIONS.timeout),
+    maxMemoryMb: clampInteger(merged.maxMemoryMb, MIN_MEMORY_MB, MAX_MEMORY_MB, DEFAULT_PERMISSIONS.maxMemoryMb),
+  }
 }
 
 /**

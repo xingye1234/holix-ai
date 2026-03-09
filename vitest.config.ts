@@ -1,5 +1,6 @@
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vitest/config'
+import { scriptStringPlugin } from './build/script-string-plugin'
 
 const alias = { '@': new URL('./src', import.meta.url).pathname }
 
@@ -15,6 +16,7 @@ export default defineConfig({
     projects: [
       // ── Node 侧测试（Electron 进程逻辑）────────────────────────────────────
       {
+        plugins: [scriptStringPlugin({ tsconfig: 'tsconfig.json', alias }) as any],
         resolve: { alias },
         test: {
           name: 'node',
