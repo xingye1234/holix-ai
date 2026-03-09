@@ -6,10 +6,10 @@ import { toast } from 'sonner'
 import { Editor } from '@/components/editor/editor'
 import ProviderModelSelector from '@/components/provider-model-selector'
 import { Button } from '@/components/ui/button'
+import { useI18n } from '@/i18n/provider'
 import { command } from '@/lib/command'
 import { getProvider } from '@/lib/provider'
 import { estimateTokens, formatTokenCount } from '@/share/token'
-import { useI18n } from '@/i18n/provider'
 import useChat from '@/store/chat'
 
 // 从 value 中提取标题：取前面部分内容
