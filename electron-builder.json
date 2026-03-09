@@ -52,7 +52,10 @@
   "asar": true,
   "productName": "Holix AI",
   "mac": {
-    "target": "dmg",
+    "target": [
+      "dmg",
+      "zip"
+    ],
     "icon": "./public/favicon.icns",
     "artifactName": "holix-ai-${version}-${arch}.${ext}"
   },
