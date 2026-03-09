@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import logger from '@/lib/logger'
 import {
+  cleanupExpiredChats,
   createChat,
   deleteChat,
   getAllChats,
@@ -84,6 +85,11 @@ export const chatRouter = router({
 
   // 列出所有会话（无参数）
   list: procedure().query(async () => {
+    const expiredChatUids = await cleanupExpiredChats()
+    expiredChatUids.forEach((uid) => {
+      update('chat.deleted', { uid })
+    })
+
     return await getAllChats()
   }),
 

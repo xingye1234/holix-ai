@@ -5,7 +5,7 @@
 
 import type { Chat, ChatInsert, PendingMessage } from './schema/chat'
 
-import { eq, sql } from 'drizzle-orm'
+import { and, eq, inArray, isNotNull, lte, sql } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import { getDatabase, sqlite } from './connect'
 import { chats, message } from './schema/chat'
@@ -137,7 +137,16 @@ export async function updateChatTitle(
 export async function getChatByUid(chatUid: string): Promise<Chat | null> {
   const db = await getDatabase()
   const [chat] = await db.select().from(chats).where(eq(chats.uid, chatUid))
-  return chat || null
+
+  if (!chat)
+    return null
+
+  if (chat.expiresAt && chat.expiresAt <= Date.now()) {
+    await deleteChat(chatUid)
+    return null
+  }
+
+  return chat
 }
 
 /**
@@ -291,10 +300,39 @@ export async function updatePendingMessages(
 }
 
 /**
+ * 清理已过期会话
+ * @returns 被清理的会话 uid 列表
+ */
+export async function cleanupExpiredChats(now = Date.now()): Promise<string[]> {
+  const db = await getDatabase()
+  const expiredRows = await db
+    .select({ uid: chats.uid })
+    .from(chats)
+    .where(and(isNotNull(chats.expiresAt), lte(chats.expiresAt, now)))
+
+  if (expiredRows.length === 0)
+    return []
+
+  const expiredUids = expiredRows.map(row => row.uid)
+
+  sqlite
+    .prepare(`DELETE FROM message_fts WHERE chat_uid IN (${expiredUids.map(() => '?').join(',')})`)
+    .run(...expiredUids)
+
+  db.transaction((ctx) => {
+    ctx.delete(message).where(inArray(message.chatUid, expiredUids)).run()
+    ctx.delete(chats).where(inArray(chats.uid, expiredUids)).run()
+  })
+
+  return expiredUids
+}
+
+/**
  * 查询所有会话
  * @param options - 查询选项
  * @param options.includeArchived - 是否包含已归档的会话，默认为 false
  * @param options.orderBy - 排序方式，默认为 updatedAt 降序
+ * @param options.order - 排序顺序，默认为 desc
  * @returns 会话列表
  */
 export async function getAllChats(options?: {
@@ -303,6 +341,8 @@ export async function getAllChats(options?: {
   order?: 'asc' | 'desc'
 }): Promise<Chat[]> {
   const db = await getDatabase()
+
+  await cleanupExpiredChats()
 
   let query = db.select().from(chats)
 
