@@ -36,6 +36,7 @@ vi.mock('@/lib/logger', () => ({
 
 // ─── Mock 数据库操作 ─────────────────────────────────────────────────────────
 vi.mock('../../database/chat-operations', () => ({
+  cleanupExpiredChats: vi.fn(),
   createChat: vi.fn(),
   getAllChats: vi.fn(),
   getChatByUid: vi.fn(),
@@ -134,17 +135,21 @@ describe('chatRouter', () => {
   describe('list', () => {
     it('返回所有会话列表', async () => {
       const chats = [makeChat(), makeChat({ uid: 'chat-uid-002', title: 'Second Chat' })]
+      vi.mocked(chatOps.cleanupExpiredChats).mockResolvedValue([])
       vi.mocked(chatOps.getAllChats).mockResolvedValue(chats)
 
       const result = await caller.list()
 
+      expect(chatOps.cleanupExpiredChats).toHaveBeenCalled()
       expect(chatOps.getAllChats).toHaveBeenCalled()
       expect(result).toHaveLength(2)
     })
 
     it('空列表时返回 []', async () => {
+      vi.mocked(chatOps.cleanupExpiredChats).mockResolvedValue(['expired-1'])
       vi.mocked(chatOps.getAllChats).mockResolvedValue([])
       const result = await caller.list()
+      expect(update).toHaveBeenCalledWith('chat.deleted', { uid: 'expired-1' })
       expect(result).toEqual([])
     })
   })

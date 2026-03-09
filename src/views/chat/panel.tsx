@@ -1,9 +1,10 @@
 import type { Chat } from '@/node/database/schema/chat'
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
-import { Delete, Ellipsis, Pencil } from 'lucide-react'
-import { useCallback, useState } from 'react'
+import { Clock3, Delete, Ellipsis, Pencil } from 'lucide-react'
+import { useCallback, useMemo, useState } from 'react'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
+import { Calendar } from '@/components/ui/calendar'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -12,6 +13,20 @@ import { trpcClient } from '@/lib/trpc-client'
 import { cn } from '@/lib/utils'
 import useChat from '@/store/chat'
 
+function formatTimeValue(date: Date) {
+  const hours = `${date.getHours()}`.padStart(2, '0')
+  const minutes = `${date.getMinutes()}`.padStart(2, '0')
+  return `${hours}:${minutes}`
+}
+
+function formatExpiresLabel(expiresAt: number | null) {
+  if (!expiresAt)
+    return '永不过期'
+
+  const date = new Date(expiresAt)
+  return `${date.toLocaleDateString()} ${formatTimeValue(date)}`
+}
+
 export function ChatPanel(props: Chat) {
   const navigate = useNavigate()
   const location = useRouterState({ select: s => s.location.pathname })
@@ -19,7 +34,20 @@ export function ChatPanel(props: Chat) {
   const removeChat = useChat(state => state.removeChat)
   const updateChat = useChat(state => state.updateChat)
   const [isRenameOpen, setIsRenameOpen] = useState(false)
+  const [isExpiryOpen, setIsExpiryOpen] = useState(false)
   const [newTitle, setNewTitle] = useState(props.title)
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(() => {
+    if (!props.expiresAt)
+      return undefined
+    return new Date(props.expiresAt)
+  })
+  const [selectedTime, setSelectedTime] = useState(() => {
+    if (!props.expiresAt)
+      return '23:59'
+    return formatTimeValue(new Date(props.expiresAt))
+  })
+
+  const expiresLabel = useMemo(() => formatExpiresLabel(props.expiresAt), [props.expiresAt])
 
   const onDelete = useCallback(
     async () => {
@@ -54,6 +82,29 @@ export function ChatPanel(props: Chat) {
       console.error('Failed to rename chat:', error)
     }
   }, [newTitle, props.title, props.uid, updateChat])
+
+  const onSaveExpiry = useCallback(async () => {
+    let expiresAt: number | null = null
+
+    if (selectedDate) {
+      const [hours, minutes] = selectedTime.split(':').map(part => Number.parseInt(part, 10))
+      const date = new Date(selectedDate)
+      date.setHours(Number.isNaN(hours) ? 23 : hours, Number.isNaN(minutes) ? 59 : minutes, 0, 0)
+      expiresAt = date.getTime()
+    }
+
+    try {
+      await trpcClient.chat.update({
+        uid: props.uid,
+        expiresAt,
+      })
+      updateChat(props.uid, { expiresAt })
+      setIsExpiryOpen(false)
+    }
+    catch (error) {
+      console.error('Failed to update chat expiration:', error)
+    }
+  }, [props.uid, selectedDate, selectedTime, updateChat])
 
   const isActive = location === `/chat/${props.uid}`
 
@@ -106,6 +157,54 @@ export function ChatPanel(props: Chat) {
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setIsRenameOpen(false)}>取消</Button>
                   <Button onClick={onRename}>保存</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            <Dialog
+              open={isExpiryOpen}
+              onOpenChange={(open) => {
+                setIsExpiryOpen(open)
+                if (open) {
+                  const current = props.expiresAt ? new Date(props.expiresAt) : undefined
+                  setSelectedDate(current)
+                  setSelectedTime(current ? formatTimeValue(current) : '23:59')
+                }
+              }}
+            >
+              <DialogTrigger className="w-full flex justify-between items-center cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md p-2 text-sm">
+                <span>过期时间</span>
+                <div className="flex items-center gap-2 text-muted-foreground text-xs">
+                  <span>{expiresLabel}</span>
+                  <Clock3 size={14} className="mr-2" />
+                </div>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>设置会话过期时间</DialogTitle>
+                </DialogHeader>
+                <div className="py-2 flex flex-col gap-3">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={setSelectedDate}
+                    className="rounded-md border"
+                  />
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">时间</span>
+                    <Input
+                      type="time"
+                      value={selectedTime}
+                      onChange={e => setSelectedTime(e.target.value)}
+                      disabled={!selectedDate}
+                      className="w-36"
+                    />
+                    <Button variant="outline" size="sm" onClick={() => setSelectedDate(undefined)}>永不过期</Button>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setIsExpiryOpen(false)}>取消</Button>
+                  <Button onClick={onSaveExpiry}>保存</Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
