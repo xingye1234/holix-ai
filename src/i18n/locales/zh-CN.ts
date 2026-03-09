@@ -23,6 +23,7 @@ const zhCN = {
       general: '常规设置',
       provider: '供应商设置',
       skills: 'Skills',
+      skillLogs: '技能执行记录',
       help: '帮助与支持',
     },
     general: {

@@ -27,6 +27,7 @@ import { basename, extname, join } from 'node:path'
 import matter from 'gray-matter'
 import { logger } from '../../platform/logger'
 import { wrapWithApproval } from '../tools/approval'
+import { wrapWithSkillInvocationLog } from '../tools/skill-invocation'
 import { commandToTool, scriptToTool } from './adapters/command'
 import { loadJsTools } from './adapters/js'
 import { requiresApprovalForPermissions } from './sandbox/types'
@@ -86,19 +87,23 @@ function buildTools(
           const needsApproval = decl.dangerous === true || requiresApprovalForPermissions(decl.permissions)
           if (needsApproval) {
             logger.info(`[skill-loader] js tool "${decl.name}" requires approval`)
-            tools.push(...jsTools.map(t => wrapWithApproval(t, skillName)))
+            tools.push(...jsTools.map(t => wrapWithSkillInvocationLog(wrapWithApproval(t, skillName), skillName)))
           }
           else {
-            tools.push(...jsTools)
+            tools.push(...jsTools.map(t => wrapWithSkillInvocationLog(t, skillName)))
           }
           break
         }
-        case 'command':
-          tools.push(wrapWithApproval(commandToTool(decl, skillDir, skillName, configFieldKeys), skillName))
+        case 'command': {
+          const commandTool = wrapWithApproval(commandToTool(decl, skillDir, skillName, configFieldKeys), skillName)
+          tools.push(wrapWithSkillInvocationLog(commandTool, skillName))
           break
-        case 'script':
-          tools.push(wrapWithApproval(scriptToTool(decl, skillDir, skillName, configFieldKeys), skillName))
+        }
+        case 'script': {
+          const scriptTool = wrapWithApproval(scriptToTool(decl, skillDir, skillName, configFieldKeys), skillName)
+          tools.push(wrapWithSkillInvocationLog(scriptTool, skillName))
           break
+        }
         default:
           logger.warn(`[skill-loader] Unknown tool type: ${(decl as any).type}`)
       }

@@ -24,6 +24,10 @@ function AppLayoutComponent() {
       path: '/setting/skills',
     },
     {
+      name: t('settings.nav.skillLogs'),
+      path: '/setting/skill-logs',
+    },
+    {
       name: t('settings.nav.help'),
       path: '/setting/help',
     },

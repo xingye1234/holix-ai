@@ -7,6 +7,7 @@
 
 import type { DynamicStructuredTool } from '@langchain/core/tools'
 import { DynamicStructuredTool as DynamicStructuredToolImpl } from '@langchain/core/tools'
+import { recordSkillInvocation } from '../../database/skill-invocation-log'
 import { logger } from '../../platform/logger'
 import { updateAwait } from '../../platform/update'
 import { approvalState } from './approval-state'
@@ -76,6 +77,12 @@ export function wrapWithApproval(tool: DynamicStructuredTool, skillName: string)
 
       if (!approved) {
         logger.info(`[ToolApproval] Tool "${tool.name}" denied by user`)
+        recordSkillInvocation({
+          skillName,
+          toolName: tool.name,
+          args: input,
+          rejected: true,
+        })
         return `[操作被拒绝：用户拒绝了工具 "${tool.name}" 的执行请求。请告知用户可以手动执行此操作，或者使用其他不需要高权限的替代方式完成任务。]`
       }
 
