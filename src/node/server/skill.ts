@@ -5,6 +5,7 @@ import z from 'zod'
 import { skillManager } from '../chat/skills/manager'
 import { BUILTIN_SKILLS_PATH } from '../constant'
 import { deleteSkillConfig, getSkillConfig, setSkillConfigField } from '../database/skill-config'
+import { installSkillsFromGitHub } from './skill-installer'
 import { procedure, router } from './trpc'
 
 export const skillRouter = router({
@@ -65,5 +66,22 @@ export const skillRouter = router({
     .input(z.object({ skillName: z.string() }))
     .mutation(({ input }) => {
       deleteSkillConfig(input.skillName)
+    }),
+
+  installFromGithub: procedure()
+    .input(z.object({
+      source: z.string().min(1),
+      path: z.string().optional(),
+      ref: z.string().optional(),
+    }))
+    .mutation(({ input }) => {
+      const result = installSkillsFromGitHub({
+        source: input.source,
+        path: input.path,
+        ref: input.ref,
+        destinationDir: skillManager.getSkillsDir(),
+      })
+      skillManager.reload()
+      return result
     }),
 })

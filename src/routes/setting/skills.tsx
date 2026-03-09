@@ -1,7 +1,9 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { ChevronDown, ChevronRight, Clock, Code2, Info, Key, Lock, Package, Settings2, Terminal, Wrench } from 'lucide-react'
 import { useState } from 'react'
+import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
@@ -368,10 +370,40 @@ function SkillCard({ skill }: { skill: Skill }) {
 // ─── 页面 ────────────────────────────────────────────────────────────────────
 
 function RouteComponent() {
+  const router = useRouter()
   const { skills } = Route.useLoaderData()
+  const [source, setSource] = useState('https://github.com/antfu/skills')
+  const [path, setPath] = useState('')
+  const [ref, setRef] = useState('')
+  const [installing, setInstalling] = useState(false)
 
   const builtinSkills = skills.filter(s => s.isBuiltin)
   const userSkills = skills.filter(s => !s.isBuiltin)
+
+  async function handleInstallFromGithub() {
+    if (!source.trim()) {
+      toast.error('请先输入 GitHub 仓库地址')
+      return
+    }
+
+    setInstalling(true)
+    try {
+      const result = await trpcClient.skill.installFromGithub({
+        source: source.trim(),
+        path: path.trim() || undefined,
+        ref: ref.trim() || undefined,
+      })
+      toast.success(`已安装 ${result.installed.length} 个 skill：${result.installed.join(', ')}`)
+      await router.invalidate()
+    }
+    catch (error) {
+      const message = error instanceof Error ? error.message : '安装失败'
+      toast.error(message)
+    }
+    finally {
+      setInstalling(false)
+    }
+  }
 
   return (
     <div className="p-6">
@@ -391,6 +423,23 @@ function RouteComponent() {
           {' '}
           用户）。
         </p>
+      </div>
+
+      <div className="max-w-2xl rounded-lg border bg-card p-4 mb-6 space-y-3">
+        <h2 className="text-sm font-semibold">从 GitHub 安装 Skills</h2>
+        <p className="text-xs text-muted-foreground">
+          支持仓库 URL（如 https://github.com/antfu/skills）或 owner/repo（如 antfu/skills）。
+        </p>
+        <div className="space-y-2">
+          <Input value={source} onChange={e => setSource(e.target.value)} placeholder="https://github.com/owner/repo" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <Input value={path} onChange={e => setPath(e.target.value)} placeholder="skills（可选，默认 skills）" />
+            <Input value={ref} onChange={e => setRef(e.target.value)} placeholder="main（可选）" />
+          </div>
+          <Button onClick={handleInstallFromGithub} disabled={installing}>
+            {installing ? '安装中...' : '安装 Skill'}
+          </Button>
+        </div>
       </div>
 
       {skills.length === 0
