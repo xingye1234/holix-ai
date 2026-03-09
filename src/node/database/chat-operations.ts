@@ -76,7 +76,7 @@ export async function updateChatModel(
  */
 export async function updateChat(
   chatUid: string,
-  updates: Partial<Pick<Chat, 'provider' | 'model' | 'title' | 'status' | 'pinned' | 'archived'>>,
+  updates: Partial<Pick<Chat, 'provider' | 'model' | 'title' | 'status' | 'pinned' | 'archived' | 'expiresAt'>>,
 ): Promise<Chat> {
   const db = await getDatabase()
   await db

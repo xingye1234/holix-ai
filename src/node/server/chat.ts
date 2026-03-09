@@ -73,6 +73,7 @@ export const chatRouter = router({
         status: z.enum(['active', 'archived', 'error']).optional(),
         pinned: z.boolean().optional(),
         archived: z.boolean().optional(),
+        expiresAt: z.number().nullable().optional(),
       }),
     )
     .mutation(async ({ input }) => {
