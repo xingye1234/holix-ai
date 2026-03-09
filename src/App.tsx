@@ -6,10 +6,10 @@ import { Toaster } from '@/components/ui/sonner'
 import { useChatUpdates, useInitChats } from '@/hooks/chat'
 import { useMessageUpdates } from '@/hooks/message'
 import { registerCommandHandler } from '@/lib/command'
+import { I18nProvider } from './i18n/provider'
 import logger from './lib/logger'
 import { router } from './router'
 import { useToolApprovalStore } from './store/tool-approval'
-import { I18nProvider } from './i18n/provider'
 
 export default function App() {
   // 初始化所有数据
