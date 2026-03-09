@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import { Rolldown } from 'tsdown'
 
-type PluginLike = {
+interface PluginLike {
   name: string
   load?: (id: string) => Promise<string | null> | string | null
 }
@@ -59,7 +59,7 @@ export function scriptStringPlugin(options: ScriptStringPluginOptions = {}): Plu
       })
 
       const chunk = bundle.output.find(o => o.type === 'chunk' && o.isEntry)
-      if (!chunk || typeof chunk.code !== 'string')
+      if (!chunk || chunk.type !== 'chunk' || typeof chunk.code !== 'string')
         throw new Error(`[script-string-plugin] Failed to compile script: ${file}`)
 
       compiledCache.set(cacheKey, chunk.code)
