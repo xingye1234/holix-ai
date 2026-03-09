@@ -122,10 +122,10 @@ export function loadJsTools(
   const audit = auditJsSource(filePath, declaration.permissions)
   if (!audit.safe) {
     logger.warn(
-      `[js-adapter] Blocked tool "${declaration.name}" from "${filePath}" due to static audit issues:\n`
-      + audit.issues
-        .map(issue => `  - line ${issue.line}: ${issue.message}${issue.snippet ? ` (${issue.snippet})` : ''}`)
-        .join('\n'),
+      `[js-adapter] Blocked tool "${declaration.name}" from "${filePath}" due to static audit issues:\n${
+        audit.issues
+          .map(issue => `  - line ${issue.line}: ${issue.message}${issue.snippet ? ` (${issue.snippet})` : ''}`)
+          .join('\n')}`,
     )
     return []
   }

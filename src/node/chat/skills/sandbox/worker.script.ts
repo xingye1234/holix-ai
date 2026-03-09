@@ -53,7 +53,7 @@ function createSandboxedRequire(allowed: string[]) {
     if (
       moduleName.startsWith('.')
       || moduleName.startsWith('/')
-      || /^[A-Za-z]:[\\/]/.test(moduleName)
+      || /^[A-Z]:[\\/]/i.test(moduleName)
     ) {
       throw new Error(
         `[Skill Sandbox] require("${moduleName}") is blocked. Path-based require is not allowed in skill scripts.`,
@@ -170,8 +170,8 @@ function createSandboxedProcess(envKeys: string[]) {
       SharedArrayBuffer,
       DataView,
       Atomics,
-      parseInt,
-      parseFloat,
+      parseInt: Number.parseInt,
+      parseFloat: Number.parseFloat,
       isNaN,
       isFinite,
       encodeURIComponent,
