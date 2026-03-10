@@ -15,6 +15,13 @@
       "when": 1773047153277,
       "tag": "0001_odd_lila_cheney",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1773105563571,
+      "tag": "0002_tool_calls_on_message",
+      "breakpoints": true
     }
   ]
 }

@@ -1,7 +1,7 @@
 import type { InferInsertModel, InferSelectModel } from 'drizzle-orm'
 import { sql } from 'drizzle-orm'
 import * as t from 'drizzle-orm/sqlite-core'
-import { blob, index, integer, numeric, sqliteTableCreator, uniqueIndex } from 'drizzle-orm/sqlite-core'
+import { index, sqliteTableCreator, uniqueIndex } from 'drizzle-orm/sqlite-core'
 
 export const sqliteTable = sqliteTableCreator(name => name)
 
@@ -65,6 +65,18 @@ export interface PendingMessage {
 }
 
 export type DraftContent = DraftSegment[]
+
+export interface ToolCallTrace {
+  id: string
+  toolCallId?: string
+  toolName: string
+  toolArgs?: Record<string, unknown>
+  requestContent: string
+  resultContent?: string
+  status: 'called' | 'completed'
+  createdAt: number
+  updatedAt: number
+}
 
 export interface Workspace {
   type: 'directory' | 'file'
@@ -170,6 +182,9 @@ export const message = sqliteTable(
 
     /** streaming / 草稿内容 */
     draftContent: t.text('draft_content').$type<DraftContent>(),
+
+    /** 工具调用轨迹（用于持久化展示每一次 tool 调用） */
+    toolCalls: t.text('tool_calls').$type<ToolCallTrace[]>(),
 
     /** 消息状态 */
     status: t
