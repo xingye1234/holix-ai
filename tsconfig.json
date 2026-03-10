@@ -19,10 +19,16 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
-    "ignoreDeprecations": "6.0"
+    "ignoreDeprecations": "5.0"
   },
   "references": [
-    { "path": "./tsconfig.client.json" },
-    { "path": "./tsconfig.node.json" }
-  ]
+    {
+      "path": "./tsconfig.client.json"
+    },
+    {
+      "path": "./tsconfig.node.json"
+    }
+  ],
+  "files": [],
+  "include": []
 }

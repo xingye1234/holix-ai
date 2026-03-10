@@ -130,7 +130,7 @@ export async function searchMessagesBM25(options: SearchMessageOptions): Promise
           searchable, search_index_version AS searchIndexVersion,
           parent_uid AS parentUid, request_id AS requestId,
           stream_id AS streamId, tool_name AS toolName,
-          tool_payload AS toolPayload, error,
+          tool_payload AS toolPayload, tool_calls AS toolCalls, error,
           created_at AS createdAt, updated_at AS updatedAt
         FROM message
         WHERE searchable = 1 AND content IS NOT NULL
@@ -150,7 +150,7 @@ export async function searchMessagesBM25(options: SearchMessageOptions): Promise
           searchable, search_index_version AS searchIndexVersion,
           parent_uid AS parentUid, request_id AS requestId,
           stream_id AS streamId, tool_name AS toolName,
-          tool_payload AS toolPayload, error,
+          tool_payload AS toolPayload, tool_calls AS toolCalls, error,
           created_at AS createdAt, updated_at AS updatedAt
         FROM message
         WHERE searchable = 1 AND content IS NOT NULL
@@ -184,7 +184,7 @@ export async function searchMessagesBM25(options: SearchMessageOptions): Promise
         m.searchable, m.search_index_version AS searchIndexVersion,
         m.parent_uid AS parentUid, m.request_id AS requestId,
         m.stream_id AS streamId, m.tool_name AS toolName,
-        m.tool_payload AS toolPayload, m.error,
+        m.tool_payload AS toolPayload, m.tool_calls AS toolCalls, m.error,
         m.created_at AS createdAt, m.updated_at AS updatedAt
       FROM message_fts
       INNER JOIN message m ON message_fts.uid = m.uid
@@ -203,7 +203,7 @@ export async function searchMessagesBM25(options: SearchMessageOptions): Promise
         m.searchable, m.search_index_version AS searchIndexVersion,
         m.parent_uid AS parentUid, m.request_id AS requestId,
         m.stream_id AS streamId, m.tool_name AS toolName,
-        m.tool_payload AS toolPayload, m.error,
+        m.tool_payload AS toolPayload, m.tool_calls AS toolCalls, m.error,
         m.created_at AS createdAt, m.updated_at AS updatedAt
       FROM message_fts
       INNER JOIN message m ON message_fts.uid = m.uid
@@ -241,6 +241,7 @@ function mapRow(row: Record<string, any>): Message {
     streamId: row.streamId ?? null,
     toolName: row.toolName ?? null,
     toolPayload: row.toolPayload ? JSON.parse(row.toolPayload) : null,
+    toolCalls: row.toolCalls ? JSON.parse(row.toolCalls) : null,
     error: row.error ?? null,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,

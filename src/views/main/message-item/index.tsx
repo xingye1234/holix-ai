@@ -54,10 +54,35 @@ export const MessageItem = memo(({ id, index, onDelete }: MessageItemProps) => {
 
   /** 配对好的工具调用（请求 + 结果） */
   const toolCallPairs = useMemo(() => {
+    if (message.toolCalls?.length) {
+      return message.toolCalls.map((call) => {
+        const request = {
+          id: call.id,
+          content: call.requestContent,
+          phase: 'tool' as const,
+          source: 'model' as const,
+          createdAt: call.createdAt,
+          toolCallId: call.toolCallId,
+          toolName: call.toolName,
+          toolArgs: call.toolArgs,
+        }
+        const result = call.resultContent
+          ? {
+              id: `${call.id}-result`,
+              content: call.resultContent,
+              phase: 'tool' as const,
+              source: 'tool' as const,
+              createdAt: call.updatedAt,
+              toolCallId: call.toolCallId,
+            }
+          : undefined
+        return { request, result }
+      })
+    }
     if (!message.draftContent)
       return []
     return pairToolCallSegments(message.draftContent)
-  }, [message.draftContent])
+  }, [message.draftContent, message.toolCalls])
 
   const handleCancelGeneration = useCallback(() => {
     if (message.requestId) {

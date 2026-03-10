@@ -1,4 +1,4 @@
-import type { DraftContent, Message, MessageInsert } from './schema/chat'
+import type { DraftContent, Message, MessageInsert, ToolCallTrace } from './schema/chat'
 import { and, desc, eq, sql } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import { logger } from '../platform/logger'
@@ -86,6 +86,17 @@ function deserializeMessage(msg: Message): Message {
     }
   }
 
+  // 反序列化 toolCalls
+  if ((msg as any).toolCalls && typeof (msg as any).toolCalls === 'string') {
+    try {
+      (deserialized as any).toolCalls = JSON.parse((msg as any).toolCalls)
+    }
+    catch (error) {
+      console.error('Failed to parse toolCalls:', error);
+      (deserialized as any).toolCalls = null
+    }
+  }
+
   return deserialized
 }
 
@@ -108,6 +119,7 @@ export async function createMessage(params: {
   streamId?: string
   toolName?: string
   toolPayload?: Record<string, any>
+  toolCalls?: ToolCallTrace[]
 }): Promise<Message> {
   const db = await getDatabase()
   const uid = nanoid()
@@ -133,6 +145,9 @@ export async function createMessage(params: {
     toolName: params.toolName || null,
     toolPayload: params.toolPayload
       ? (JSON.stringify(params.toolPayload) as any)
+      : null,
+    toolCalls: params.toolCalls
+      ? (JSON.stringify(params.toolCalls) as any)
       : null,
     error: null,
     createdAt: now,
@@ -365,13 +380,16 @@ export async function updateMessage(
 ): Promise<void> {
   const db = await getDatabase()
 
-  // 序列化 draftContent 和 toolPayload
+  // 序列化 draftContent / toolPayload / toolCalls
   const serializedUpdates = { ...updates }
   if ('draftContent' in updates && updates.draftContent !== undefined && updates.draftContent !== null) {
     (serializedUpdates as any).draftContent = JSON.stringify(updates.draftContent)
   }
   if ('toolPayload' in updates && updates.toolPayload !== undefined && updates.toolPayload !== null) {
     (serializedUpdates as any).toolPayload = JSON.stringify(updates.toolPayload)
+  }
+  if ('toolCalls' in updates && (updates as any).toolCalls !== undefined && (updates as any).toolCalls !== null) {
+    (serializedUpdates as any).toolCalls = JSON.stringify((updates as any).toolCalls)
   }
 
   await db

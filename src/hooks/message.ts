@@ -1,3 +1,4 @@
+import type { DraftContent, ToolCallTrace } from '@/node/database/schema/chat'
 import { useCallback, useEffect, useRef } from 'react'
 import { onUpdate } from '@/lib/command'
 import logger from '@/lib/logger'
@@ -22,6 +23,8 @@ export function useMessageUpdates() {
       string,
       {
         content: string
+        draftContent: DraftContent
+        toolCalls: ToolCallTrace[] | null | undefined
       }
     >
   >(new Map())
@@ -34,6 +37,8 @@ export function useMessageUpdates() {
       // 避免在 done/error/aborted 终态到达后被 RAF 覆盖回 streaming
       updateMessage(messageUid, {
         content: value.content,
+        draftContent: value.draftContent,
+        toolCalls: value.toolCalls,
       })
     })
 
@@ -54,6 +59,8 @@ export function useMessageUpdates() {
     const unsubscribeStreaming = onUpdate('message.streaming', (payload) => {
       streamingBuffer.current.set(payload.messageUid, {
         content: payload.content,
+        draftContent: payload.draftContent,
+        toolCalls: payload.toolCalls,
       })
 
       if (rafId.current == null) {

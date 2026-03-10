@@ -25,6 +25,10 @@ const draftSegmentSchema = z.object({
   committed: z.boolean().optional(),
   delta: z.boolean().optional(),
   createdAt: z.number(),
+  toolCallId: z.string().optional(),
+  toolName: z.string().optional(),
+  toolArgs: z.record(z.string(), z.unknown()).optional(),
+  approvalStatus: z.enum(['pending', 'approved', 'denied']).optional(),
 })
 
 // 定义消息相关的 procedures
@@ -47,6 +51,17 @@ export const messageRouter = router({
         streamId: z.string().optional(),
         toolName: z.string().optional(),
         toolPayload: z.record(z.string(), z.any()).optional(),
+        toolCalls: z.array(z.object({
+          id: z.string(),
+          toolCallId: z.string().optional(),
+          toolName: z.string(),
+          toolArgs: z.record(z.string(), z.unknown()).optional(),
+          requestContent: z.string(),
+          resultContent: z.string().optional(),
+          status: z.enum(['called', 'completed']),
+          createdAt: z.number(),
+          updatedAt: z.number(),
+        })).optional(),
       }),
     )
     .mutation(async ({ input }) => {
@@ -67,6 +82,7 @@ export const messageRouter = router({
         streamId: input.streamId,
         toolName: input.toolName,
         toolPayload: input.toolPayload,
+        toolCalls: input.toolCalls,
       })
 
       return message
@@ -239,6 +255,18 @@ export const messageRouter = router({
           model: z.string().optional(),
           searchable: z.boolean().optional(),
           error: z.string().optional(),
+          draftContent: z.array(draftSegmentSchema).optional(),
+          toolCalls: z.array(z.object({
+            id: z.string(),
+            toolCallId: z.string().optional(),
+            toolName: z.string(),
+            toolArgs: z.record(z.string(), z.unknown()).optional(),
+            requestContent: z.string(),
+            resultContent: z.string().optional(),
+            status: z.enum(['called', 'completed']),
+            createdAt: z.number(),
+            updatedAt: z.number(),
+          })).optional(),
         }),
       }),
     )

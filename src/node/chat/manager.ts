@@ -1,7 +1,7 @@
 // biome-ignore assist/source/organizeImports: <explanation>
 import type { BaseChatModel } from '@langchain/core/language_models/chat_models'
 import type { AIMessage, AIMessageChunk, ToolMessage } from '@langchain/core/messages'
-import type { DraftContent, Message, Workspace } from '../database/schema/chat'
+import type { DraftContent, Message, ToolCallTrace, Workspace } from '../database/schema/chat'
 import type { ChatContext } from './context'
 import util from 'node:util'
 import { HumanMessage, SystemMessage } from '@langchain/core/messages'
@@ -224,7 +224,12 @@ export class ChatManager {
       update('message.updated', {
         chatUid,
         messageUid: assistantMessageUid,
-        updates: { status: 'done', content: fullContent },
+        updates: {
+          status: 'done',
+          content: fullContent,
+          draftContent: draftSegments,
+          toolCalls: this.buildToolCallTraces(draftSegments),
+        },
       })
 
       logger.info(
@@ -584,6 +589,8 @@ export class ChatManager {
       messageUid: assistantMessageUid,
       content: fullContent,
       delta,
+      draftContent: [...draftSegments],
+      toolCalls: this.buildToolCallTraces(draftSegments),
     })
   }
 
@@ -599,6 +606,35 @@ export class ChatManager {
       content: fullContent,
       status: 'done',
       draftContent: draftSegments.map(s => ({ ...s, committed: true })),
+      toolCalls: this.buildToolCallTraces(draftSegments),
+    })
+  }
+
+  private buildToolCallTraces(draftSegments: DraftContent): ToolCallTrace[] {
+    const requests = draftSegments
+      .filter(s => s.phase === 'tool' && s.source === 'model')
+      .sort((a, b) => a.createdAt - b.createdAt)
+
+    const resultMap = new Map<string, (typeof draftSegments)[number]>()
+    for (const segment of draftSegments) {
+      if (segment.phase === 'tool' && segment.source === 'tool' && segment.toolCallId) {
+        resultMap.set(segment.toolCallId, segment)
+      }
+    }
+
+    return requests.map((request) => {
+      const result = request.toolCallId ? resultMap.get(request.toolCallId) : undefined
+      return {
+        id: request.id,
+        toolCallId: request.toolCallId,
+        toolName: request.toolName ?? 'tool',
+        toolArgs: request.toolArgs,
+        requestContent: request.content,
+        resultContent: result?.content,
+        status: result ? 'completed' : 'called',
+        createdAt: request.createdAt,
+        updatedAt: result?.createdAt ?? request.createdAt,
+      }
     })
   }
 

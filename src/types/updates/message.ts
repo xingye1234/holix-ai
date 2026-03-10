@@ -27,6 +27,8 @@ export type MessageStreamingEnvelope = EventEnvelope<
     messageUid: string
     content: string // 累积的完整内容
     delta: string // 本次增量内容
+    draftContent: DraftSegment[]
+    toolCalls: Message['toolCalls']
   }
 >
 
