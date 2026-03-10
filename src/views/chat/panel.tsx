@@ -106,19 +106,17 @@ export function ChatPanel(props: Chat) {
     }
   }, [props.uid, selectedDate, selectedTime, updateChat])
 
-  const isActive = location === `/chat/${props.uid}`
-
   return (
     <Link
       to="/chat/$id"
       params={{ id: props.uid }}
       className={cn(
         'flex items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition-all select-none cursor-pointer no-drag',
-        'border',
-        isActive
-          ? 'bg-accent border-border/60 text-accent-foreground'
-          : 'bg-transparent border-transparent hover:bg-accent/50',
+        'hover:bg-accent/50',
       )}
+      activeProps={{
+        className: 'bg-accent text-accent-foreground',
+      }}
       aria-label={`Open chat: ${props.title}`}
     >
       <div className="flex w-full items-center justify-between gap-2 min-w-0">

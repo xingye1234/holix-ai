@@ -1,26 +1,11 @@
-import type { ReactNode } from 'react'
-import { useNavigate } from '@tanstack/react-router'
+import { Link } from '@tanstack/react-router'
 import { Search, SquarePen, Wrench, X } from 'lucide-react'
 import { useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import useChat from '@/store/chat'
 
-function MenuItem(props: { icon: ReactNode, label: string, onClick: () => void }) {
-  return (
-    <Button
-      variant="ghost"
-      className="h-9 w-full justify-start gap-2 rounded-md px-2 text-sm font-normal text-foreground/90 hover:bg-muted"
-      onClick={props.onClick}
-    >
-      <span className="text-muted-foreground">{props.icon}</span>
-      <span>{props.label}</span>
-    </Button>
-  )
-}
-
 export function AsideChatHeader() {
-  const navigate = useNavigate()
   const searchQuery = useChat(state => state.searchQuery)
   const setSearchQuery = useChat(state => state.setSearchQuery)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -52,8 +37,26 @@ export function AsideChatHeader() {
       </div>
 
       <div className="space-y-0.5">
-        <MenuItem icon={<SquarePen className="h-4 w-4" />} label="新聊天" onClick={() => navigate({ to: '/' })} />
-        <MenuItem icon={<Wrench className="h-4 w-4" />} label="技能" onClick={() => navigate({ to: '/skill-store' })} />
+        <Link
+          to="/"
+          className="h-9 w-full flex items-center justify-start gap-2 rounded-md px-2 text-sm font-normal text-foreground/90 hover:bg-muted hover:text-foreground"
+          activeProps={{
+            className: 'bg-accent text-accent-foreground',
+          }}
+        >
+          <SquarePen className="h-4 w-4 text-muted-foreground" />
+          <span>新聊天</span>
+        </Link>
+        <Link
+          to="/skill-store"
+          className="h-9 w-full flex items-center justify-start gap-2 rounded-md px-2 text-sm font-normal text-foreground/90 hover:bg-muted hover:text-foreground"
+          activeProps={{
+            className: 'bg-accent text-accent-foreground',
+          }}
+        >
+          <Wrench className="h-4 w-4 text-muted-foreground" />
+          <span>技能</span>
+        </Link>
       </div>
     </header>
   )
