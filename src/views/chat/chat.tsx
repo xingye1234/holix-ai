@@ -21,7 +21,7 @@ export function AsideChatSidebar() {
   }, [chats, searchQuery])
 
   return (
-    <nav className="w-full py-2 h-[calc(100vh-var(--app-header-height)-50px-10px)] overflow-auto">
+    <nav className="w-full py-2 flex-1 overflow-auto">
       <ul className="w-full space-y-2">
         {filteredChats.sort((a, b) => b.updatedAt - a.updatedAt).map((chat) => {
           return (
