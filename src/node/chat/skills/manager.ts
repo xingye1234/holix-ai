@@ -15,6 +15,7 @@ import type { LoadedSkill } from './type'
 import { existsSync, mkdirSync, watch } from 'node:fs'
 import { APP_DATA_PATH, BUILTIN_SKILLS_PATH } from '../../constant'
 import { logger } from '../../platform/logger'
+import { getExternalSkillsDirs } from './external-dirs'
 import { getSkillsDir, scanSkillsDir } from './loader'
 
 class SkillManager {
@@ -59,11 +60,23 @@ class SkillManager {
       logger.debug(`[SkillManager] Built-in skills dir not found (not compiled yet?): ${this.builtinSkillsDir}`)
     }
 
-    // 2. 加载用户 skills（同名时覆盖内置 skill）
+    // 2. 加载其他产品的 skills（如 ~/.claude/skills）
+    for (const externalDir of getExternalSkillsDirs()) {
+      const externalSkills = scanSkillsDir(externalDir)
+      for (const skill of externalSkills) {
+        if (this.skills.has(skill.name)) {
+          logger.info(`[SkillManager] External skill "${skill.name}" overrides existing skill`)
+        }
+        this.skills.set(skill.name, skill)
+      }
+      logger.info(`[SkillManager] Loaded ${externalSkills.length} external skill(s) from ${externalDir}`)
+    }
+
+    // 3. 加载用户 skills（同名时覆盖外部/内置）
     const userSkills = scanSkillsDir(this.skillsDir)
     for (const skill of userSkills) {
       if (this.skills.has(skill.name)) {
-        logger.info(`[SkillManager] User skill "${skill.name}" overrides built-in skill`)
+        logger.info(`[SkillManager] User skill "${skill.name}" overrides existing skill`)
       }
       this.skills.set(skill.name, skill)
     }

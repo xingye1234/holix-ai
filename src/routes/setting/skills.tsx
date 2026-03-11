@@ -429,6 +429,8 @@ function RouteComponent() {
         <h2 className="text-sm font-semibold">从 GitHub 安装 Skills</h2>
         <p className="text-xs text-muted-foreground">
           支持仓库 URL（如 https://github.com/antfu/skills）或 owner/repo（如 antfu/skills）。
+          也支持扫描来自其他产品的 skills 说明文件（如 SKILL.md / AGENTS.md / CLAUDE.md 等），
+          并会自动读取本机目录（如 ~/.claude/skills）中的兼容 skills，在下方查看 skill 详情。
         </p>
         <div className="space-y-2">
           <Input value={source} onChange={e => setSource(e.target.value)} placeholder="https://github.com/owner/repo" />

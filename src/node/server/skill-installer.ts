@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs'
+import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { basename, join } from 'node:path'
 
@@ -52,8 +52,20 @@ export function parseGitHubSource(source: string): ParsedSource {
 }
 
 export function collectSkillDirs(targetDir: string): string[] {
-  const skillJson = join(targetDir, 'skill.json')
-  if (existsSync(skillJson)) {
+  const hasSupportedSkillFile = (dir: string) => {
+    return [
+      'skill.json',
+      'SKILL.md',
+      'AGENTS.md',
+      'CLAUDE.md',
+      'GEMINI.md',
+      'GROK.md',
+      'QWEN.md',
+      'copilot-instructions.md',
+    ].some(file => existsSync(join(dir, file)))
+  }
+
+  if (hasSupportedSkillFile(targetDir)) {
     return [targetDir]
   }
 
@@ -63,8 +75,76 @@ export function collectSkillDirs(targetDir: string): string[] {
       if (!statSync(dir).isDirectory())
         return false
 
-      return existsSync(join(dir, 'skill.json'))
+      return hasSupportedSkillFile(dir)
     })
+}
+
+function toSkillName(dir: string): string {
+  return basename(dir)
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-_]/g, '-')
+    .replace(/-+/g, '-')
+}
+
+function pickPromptSourceFile(skillDir: string): string | null {
+  const candidates = [
+    'SKILL.md',
+    'AGENTS.md',
+    'CLAUDE.md',
+    'GEMINI.md',
+    'GROK.md',
+    'QWEN.md',
+    'copilot-instructions.md',
+  ]
+
+  for (const file of candidates) {
+    const full = join(skillDir, file)
+    if (existsSync(full)) {
+      return full
+    }
+  }
+
+  return null
+}
+
+function toDescription(prompt: string, fallback: string): string {
+  const firstMeaningfulLine = prompt
+    .split('\n')
+    .map(line => line.trim())
+    .find(line => line.length > 0 && line !== '---' && !line.endsWith(':'))
+
+  if (!firstMeaningfulLine) {
+    return fallback
+  }
+
+  return firstMeaningfulLine.replace(/^#+\s*/, '').slice(0, 120) || fallback
+}
+
+function ensureSkillManifest(skillDir: string): { name: string } {
+  const manifestPath = join(skillDir, 'skill.json')
+  if (existsSync(manifestPath)) {
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8')) as { name?: string }
+    return { name: manifest.name?.trim() || basename(skillDir) }
+  }
+
+  const promptSource = pickPromptSourceFile(skillDir)
+  if (!promptSource) {
+    throw new Error(`未找到可识别的技能文件: ${skillDir}`)
+  }
+
+  const skillName = toSkillName(skillDir)
+  const prompt = readFileSync(promptSource, 'utf-8').trim()
+  const generated = {
+    name: skillName,
+    version: '1.0.0',
+    description: toDescription(prompt, `Imported from ${basename(promptSource)}`),
+    prompt,
+  }
+
+  writeFileSync(manifestPath, JSON.stringify(generated, null, 2))
+  return { name: skillName }
 }
 
 export function installSkillsFromGitHub(options: InstallOptions): InstallResult {
@@ -86,15 +166,13 @@ export function installSkillsFromGitHub(options: InstallOptions): InstallResult 
 
     const skillDirs = collectSkillDirs(sourceRoot)
     if (skillDirs.length === 0) {
-      throw new Error(`在 ${relativePath} 下未找到包含 skill.json 的技能目录`)
+      throw new Error(`在 ${relativePath} 下未找到可识别的技能目录（skill.json/SKILL.md/AGENTS.md/CLAUDE.md 等）`)
     }
 
     const installed: string[] = []
 
     for (const dir of skillDirs) {
-      const manifestPath = join(dir, 'skill.json')
-      const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8')) as { name?: string }
-      const skillName = manifest.name?.trim() || basename(dir)
+      const { name: skillName } = ensureSkillManifest(dir)
       const dest = join(options.destinationDir, skillName)
 
       if (existsSync(dest)) {
