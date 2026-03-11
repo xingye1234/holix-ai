@@ -1,9 +1,10 @@
 import { createFileRoute, useRouter } from '@tanstack/react-router'
-import { ChevronDown, ChevronRight, Clock, Code2, Info, Key, Lock, Package, Settings2, Terminal, Wrench } from 'lucide-react'
+import { ChevronDown, ChevronRight, Clock, Code2, FolderTree, Info, Key, Lock, Package, Settings2, Terminal, Wrench } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
@@ -270,9 +271,22 @@ function ConfigForm({
 
 type Skill = Awaited<ReturnType<typeof trpcClient.skill.list>>[number]
 
+const SOURCE_LABEL_MAP: Record<string, string> = {
+  'builtin': '内置',
+  'external': '外部目录',
+  '.holixai': '.holixai',
+  '.holix': '.holix',
+  '.codex': '.codex',
+  '.claude': '.claude',
+  '.cursor': '.cursor',
+  '.gemini': '.gemini',
+  '.qwen': '.qwen',
+  '.kiro': '.kiro',
+}
+
 function SkillCard({ skill }: { skill: Skill }) {
   const [expanded, setExpanded] = useState(false)
-  const hasDetails = skill.tools.length > 0 || skill.declarations.length > 0 || skill.prompt || (skill.config?.length ?? 0) > 0
+  const hasDetails = skill.tools.length > 0 || skill.declarations.length > 0 || skill.prompt || (skill.config?.length ?? 0) > 0 || skill.availableResourceDirs.length > 0 || skill.allDirEntries.length > 0
 
   return (
     <div className="rounded-lg border bg-card overflow-hidden">
@@ -292,9 +306,7 @@ function SkillCard({ skill }: { skill: Skill }) {
               v
               {skill.version}
             </span>
-            {skill.isBuiltin && (
-              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">内置</Badge>
-            )}
+            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{SOURCE_LABEL_MAP[skill.sourceLabel] ?? skill.sourceLabel}</Badge>
             {skill.toolCount > 0 && (
               <Badge variant="outline" className="text-[10px] px-1.5 py-0">
                 {skill.toolCount}
@@ -304,6 +316,10 @@ function SkillCard({ skill }: { skill: Skill }) {
             )}
           </div>
           <p className="text-sm text-muted-foreground mt-1 leading-snug">{skill.description}</p>
+          <p className="text-[11px] text-muted-foreground mt-1 font-mono break-all">
+            来源路径：
+            {skill.relativeSourcePath || skill.sourcePath}
+          </p>
         </div>
 
         {hasDetails && (
@@ -337,8 +353,64 @@ function SkillCard({ skill }: { skill: Skill }) {
                 系统提示词扩展
               </h4>
               <pre className="text-xs text-muted-foreground whitespace-pre-wrap rounded-md border bg-muted/40 px-3 py-2 leading-relaxed font-mono">
-                {skill.prompt}
+                {skill.promptPreview ?? skill.prompt}
               </pre>
+            </div>
+          )}
+
+          {/* 来源与资源目录 */}
+          <div>
+            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 flex items-center gap-1.5">
+              <FolderTree className="size-3" />
+              来源与目录
+            </h4>
+            <div className="space-y-2 text-xs">
+              <p className="text-muted-foreground">
+                来源：
+                <span className="font-medium text-foreground">{SOURCE_LABEL_MAP[skill.sourceLabel] ?? skill.sourceLabel}</span>
+              </p>
+              <p className="text-muted-foreground break-all font-mono">{skill.sourcePath}</p>
+              {skill.availableResourceDirs.length > 0 && (
+                <div>
+                  <p className="text-muted-foreground mb-1">符合 skill 规范的资源目录</p>
+                  <div className="flex flex-wrap gap-1">
+                    {skill.availableResourceDirs.map(dir => (
+                      <Badge key={dir} variant="outline" className="text-[10px] px-1.5 py-0">{dir}</Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {skill.allDirEntries.length > 0 && (
+                <div>
+                  <p className="text-muted-foreground mb-1">其他目录（若存在）</p>
+                  <div className="flex flex-wrap gap-1">
+                    {skill.allDirEntries.map(dir => (
+                      <Badge key={dir} variant="outline" className="text-[10px] px-1.5 py-0">{dir}</Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {skill.prompt && (
+            <div>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-7 text-xs">查看完整提示词</Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-3xl max-h-[80vh] overflow-auto">
+                  <DialogHeader>
+                    <DialogTitle>
+                      {skill.name}
+                      {' '}
+                      提示词
+                    </DialogTitle>
+                    <DialogDescription>完整系统提示词内容</DialogDescription>
+                  </DialogHeader>
+                  <pre className="text-xs whitespace-pre-wrap rounded-md border bg-muted/40 px-3 py-2 leading-relaxed font-mono">{skill.prompt}</pre>
+                </DialogContent>
+              </Dialog>
             </div>
           )}
 

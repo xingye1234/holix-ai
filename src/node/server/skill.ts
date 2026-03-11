@@ -1,13 +1,46 @@
 import type { SkillManifest } from '../chat/skills/type'
-import { existsSync, readFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
+import { join, relative } from 'node:path'
+import process from 'node:process'
 import z from 'zod'
 import { skillManager } from '../chat/skills/manager'
 import { BUILTIN_SKILLS_PATH } from '../constant'
-import { listSkillInvocationLogs } from '../database/skill-invocation-log'
 import { deleteSkillConfig, getSkillConfig, setSkillConfigField } from '../database/skill-config'
+import { listSkillInvocationLogs } from '../database/skill-invocation-log'
 import { installSkillsFromGitHub } from './skill-installer'
 import { procedure, router } from './trpc'
+
+function inferSkillSourceLabel(skillDir: string, isBuiltin: boolean): string {
+  if (isBuiltin)
+    return 'builtin'
+
+  if (skillDir.includes('/.holixai/'))
+    return '.holixai'
+  if (skillDir.includes('/.holix/'))
+    return '.holix'
+  if (skillDir.includes('/.codex/'))
+    return '.codex'
+  if (skillDir.includes('/.claude/'))
+    return '.claude'
+  if (skillDir.includes('/.cursor/'))
+    return '.cursor'
+  if (skillDir.includes('/.gemini/'))
+    return '.gemini'
+  if (skillDir.includes('/.qwen/'))
+    return '.qwen'
+  if (skillDir.includes('/.kiro/'))
+    return '.kiro'
+
+  return 'external'
+}
+
+function listResourceDirs(skillDir: string): string[] {
+  const candidates = ['scripts', 'references', 'assets', 'tests']
+  return candidates.filter((dirName) => {
+    const fullPath = join(skillDir, dirName)
+    return existsSync(fullPath) && statSync(fullPath).isDirectory()
+  })
+}
 
 export const skillRouter = router({
   list: procedure().query(() => {
@@ -30,12 +63,37 @@ export const skillRouter = router({
         ? getSkillConfig(skill.name, configFieldKeys)
         : {}
 
+      const sourceLabel = inferSkillSourceLabel(skill.dir, isBuiltin)
+      const sourcePath = skill.dir
+      const relativeSourcePath = relative(process.cwd(), sourcePath)
+      const promptPreview = skill.prompt
+        ? (skill.prompt.length > 240 ? `${skill.prompt.slice(0, 240)}...` : skill.prompt)
+        : null
+      const availableResourceDirs = listResourceDirs(skill.dir)
+      const allDirEntries = (() => {
+        try {
+          return readdirSync(skill.dir).filter((entry) => {
+            const fullPath = join(skill.dir, entry)
+            return existsSync(fullPath) && statSync(fullPath).isDirectory()
+          }).sort()
+        }
+        catch {
+          return []
+        }
+      })()
+
       return {
         name: skill.name,
         version: skill.version,
         description: skill.description,
         prompt: skill.prompt ?? null,
         isBuiltin,
+        sourceLabel,
+        sourcePath,
+        relativeSourcePath,
+        availableResourceDirs,
+        allDirEntries,
+        promptPreview,
         toolCount: skill.tools.length,
         tools: skill.tools.map(t => ({
           name: t.name,
@@ -68,7 +126,6 @@ export const skillRouter = router({
     .mutation(({ input }) => {
       deleteSkillConfig(input.skillName)
     }),
-
 
   invocationLogs: procedure()
     .input(z.object({
