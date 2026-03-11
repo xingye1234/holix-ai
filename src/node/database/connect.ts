@@ -37,7 +37,9 @@ const dbPath = databaseUrl // 确保 databaseUrl 是本地 sqlite 文件路径
 
 logger.info(`[Database] Using database file at path: ${dbPath}`)
 
-export const sqlite: ReturnType<typeof Database> = new Database(fileURLToPath(dbPath), unpacked
+const resolvedDbPath = dbPath.startsWith('file:') ? fileURLToPath(dbPath) : dbPath
+
+export const sqlite: ReturnType<typeof Database> = new Database(resolvedDbPath, unpacked
   ? {
       nativeBinding: unpacked || undefined,
     }

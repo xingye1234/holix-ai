@@ -52,6 +52,15 @@ vi.mock('../../tools/approval-state', () => ({
   },
 }))
 
+// mock approval / skill-invocation 避免 skill-invocation-log → connect → Electron 依赖链
+vi.mock('../../tools/approval', () => ({
+  wrapWithApproval: vi.fn((tool: unknown) => tool),
+}))
+
+vi.mock('../../tools/skill-invocation', () => ({
+  wrapWithSkillInvocationLog: vi.fn((tool: unknown) => tool),
+}))
+
 // mock constant - SkillManager 通过 APP_DATA_PATH 构建技能目录
 // 我们在每个测试中通过 SkillManager 内部的 skillsDir 来控制
 vi.mock('../../../constant', () => ({
