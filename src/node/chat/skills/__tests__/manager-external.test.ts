@@ -5,8 +5,10 @@ describe('getExternalSkillsDirs', () => {
     vi.resetModules()
 
     const existing = new Set([
+      '/home/test/.config/agents/skills',
       '/home/test/.claude/skills',
       '/home/test/.qwen/skills',
+      '/home/test/.config/opencode/skills',
       '/custom/skills-a',
     ])
 
@@ -26,8 +28,10 @@ describe('getExternalSkillsDirs', () => {
 
     const { getExternalSkillsDirs } = await import('../external-dirs')
     expect(getExternalSkillsDirs()).toEqual([
+      '/home/test/.config/agents/skills',
       '/home/test/.claude/skills',
       '/home/test/.qwen/skills',
+      '/home/test/.config/opencode/skills',
       '/custom/skills-a',
     ])
 
