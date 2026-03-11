@@ -6,6 +6,7 @@ import process from 'node:process'
 export function getExternalSkillsDirs(): string[] {
   const home = homedir()
   const defaults = [
+    join(home, '.config', 'agents', 'skills'),
     join(home, '.codex', 'skills'),
     join(home, '.holix', 'skills'),
     join(home, '.claude', 'skills'),
