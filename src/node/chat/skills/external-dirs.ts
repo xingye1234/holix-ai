@@ -1,13 +1,13 @@
 import { existsSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
+import process from 'node:process'
 
 export function getExternalSkillsDirs(): string[] {
   const home = homedir()
   const defaults = [
-    join(home, '.config', 'agents', 'skills'),
-    join(home, '.gemini', 'antigravity', 'skills'),
-    join(home, '.augment', 'skills'),
+    join(home, '.codex', 'skills'),
+    join(home, '.holix', 'skills'),
     join(home, '.claude', 'skills'),
     join(home, '.openclaw', 'skills'),
     join(home, '.agents', 'skills'),
