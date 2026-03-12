@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
+import { useI18n } from '@/i18n/provider'
 import { trpcClient } from '@/lib/trpc-client'
 
 export const Route = createFileRoute('/setting/skills')({
@@ -451,6 +452,7 @@ function SkillCard({ skill }: { skill: Skill }) {
 function RouteComponent() {
   const router = useRouter()
   const { skills } = Route.useLoaderData()
+  const { t } = useI18n()
   const [source, setSource] = useState('https://github.com/antfu/skills')
   const [path, setPath] = useState('')
   const [ref, setRef] = useState('')
@@ -461,7 +463,7 @@ function RouteComponent() {
 
   async function handleInstallFromGithub() {
     if (!source.trim()) {
-      toast.error('请先输入 GitHub 仓库地址')
+      toast.error(t('settings.skills.install.errorNoRepo'))
       return
     }
 
@@ -472,11 +474,11 @@ function RouteComponent() {
         path: path.trim() || undefined,
         ref: ref.trim() || undefined,
       })
-      toast.success(`已安装 ${result.installed.length} 个 skill：${result.installed.join(', ')}`)
+      toast.success(t('settings.skills.install.successInstalled', { count: result.installed.length, names: result.installed.join(', ') }))
       await router.invalidate()
     }
     catch (error) {
-      const message = error instanceof Error ? error.message : '安装失败'
+      const message = error instanceof Error ? error.message : t('settings.skills.install.errorInstall')
       toast.error(message)
     }
     finally {
@@ -487,38 +489,26 @@ function RouteComponent() {
   return (
     <div className="p-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold">Skills</h1>
+        <h1 className="text-2xl font-bold">{t('settings.skills.title')}</h1>
         <p className="text-muted-foreground mt-1">
-          查看当前已加载的所有 Skills 及其工具能力、权限配置。
-          共
-          {' '}
-          <strong>{skills.length}</strong>
-          {' '}
-          个 Skill（
-          {builtinSkills.length}
-          {' '}
-          内置 /
-          {userSkills.length}
-          {' '}
-          用户）。
+          {t('settings.skills.description')}
+          {t('settings.skills.count', { total: skills.length, builtin: builtinSkills.length, user: userSkills.length })}
         </p>
       </div>
 
       <div className="max-w-2xl rounded-lg border bg-card p-4 mb-6 space-y-3">
-        <h2 className="text-sm font-semibold">从 GitHub 安装 Skills</h2>
+        <h2 className="text-sm font-semibold">{t('settings.skills.install.title')}</h2>
         <p className="text-xs text-muted-foreground">
-          支持仓库 URL（如 https://github.com/antfu/skills）或 owner/repo（如 antfu/skills）。
-          也支持扫描来自其他产品的 skills 说明文件（如 SKILL.md / AGENTS.md / CLAUDE.md 等），
-          并会自动读取本机目录（如 ~/.claude/skills）中的兼容 skills，在下方查看 skill 详情。
+          {t('settings.skills.install.description')}
         </p>
         <div className="space-y-2">
-          <Input value={source} onChange={e => setSource(e.target.value)} placeholder="https://github.com/owner/repo" />
+          <Input value={source} onChange={e => setSource(e.target.value)} placeholder={t('settings.skills.install.repoPlaceholder')} />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <Input value={path} onChange={e => setPath(e.target.value)} placeholder="skills（可选，默认 skills）" />
-            <Input value={ref} onChange={e => setRef(e.target.value)} placeholder="main（可选）" />
+            <Input value={path} onChange={e => setPath(e.target.value)} placeholder={t('settings.skills.install.pathPlaceholder')} />
+            <Input value={ref} onChange={e => setRef(e.target.value)} placeholder={t('settings.skills.install.refPlaceholder')} />
           </div>
           <Button onClick={handleInstallFromGithub} disabled={installing}>
-            {installing ? '安装中...' : '安装 Skill'}
+            {installing ? t('settings.skills.install.installing') : t('settings.skills.install.button')}
           </Button>
         </div>
       </div>
@@ -527,7 +517,7 @@ function RouteComponent() {
         ? (
             <div className="flex flex-col items-center justify-center py-16 text-muted-foreground gap-2">
               <Package className="size-10 opacity-30" />
-              <p className="text-sm">暂无加载的 Skills</p>
+              <p className="text-sm">{t('settings.skills.empty')}</p>
             </div>
           )
         : (
@@ -536,7 +526,7 @@ function RouteComponent() {
               {builtinSkills.length > 0 && (
                 <div className="space-y-3">
                   <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                    内置 Skills
+                    {t('settings.skills.builtin')}
                   </h2>
                   {builtinSkills.map(skill => (
                     <SkillCard key={skill.name} skill={skill} />
@@ -552,7 +542,7 @@ function RouteComponent() {
               {userSkills.length > 0 && (
                 <div className="space-y-3">
                   <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                    用户 Skills
+                    {t('settings.skills.user')}
                   </h2>
                   {userSkills.map(skill => (
                     <SkillCard key={skill.name} skill={skill} />
