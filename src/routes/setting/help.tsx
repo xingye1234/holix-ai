@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
 import { Separator } from '@/components/ui/separator'
 import useUpdate from '@/hooks/update'
+import { useI18n } from '@/i18n/provider'
 import { checkForUpdates, getAppVersion, installUpdateAndQuit, openExternal, toggleDevTools } from '@/lib/system'
 
 export const Route = createFileRoute('/setting/help')({
@@ -23,6 +24,7 @@ const RELEASE_NOTES_URL = 'https://raw.githubusercontent.com/zhaogongchengsi/hol
 function ReleaseNotesDialog({ version }: { version: string | null }) {
   const [status, setStatus] = useState<NotesStatus>('idle')
   const [content, setContent] = useState<string | null>(null)
+  const { t } = useI18n()
 
   const fetchNotes = useCallback(async () => {
     if (status === 'loading' || status === 'loaded')
@@ -45,17 +47,16 @@ function ReleaseNotesDialog({ version }: { version: string | null }) {
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
           <FileText className="mr-1.5" size={14} />
-          查看更新详情
+          {t('settings.help.update.viewDetails')}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[75vh] flex flex-col gap-0 p-0">
         <DialogHeader className="px-6 pt-6 pb-4 border-b shrink-0">
           <DialogTitle>
-            更新详情
+            {t('settings.help.update.detailsTitle')}
             {version && (
               <span className="ml-2 text-sm font-normal text-muted-foreground">
-                v
-                {version}
+                v{version}
               </span>
             )}
           </DialogTitle>
@@ -66,15 +67,15 @@ function ReleaseNotesDialog({ version }: { version: string | null }) {
             ? (
                 <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
                   <RefreshCw className="mr-2 animate-spin" size={16} />
-                  加载中...
+                  {t('settings.help.update.loading')}
                 </div>
               )
             : status === 'error'
               ? (
                   <div className="flex flex-col items-center gap-3 py-12 text-sm text-muted-foreground">
-                    <p>加载更新说明失败，请检查网络连接。</p>
+                    <p>{t('settings.help.update.loadError')}</p>
                     <Button variant="outline" size="sm" onClick={() => { setStatus('idle'); fetchNotes() }}>
-                      重试
+                      {t('settings.help.update.retry')}
                     </Button>
                   </div>
                 )
@@ -95,6 +96,7 @@ function RouteComponent() {
   const [downloadProgress, setDownloadProgress] = useState(0)
   const [updateVersion, setUpdateVersion] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const { t } = useI18n()
 
   useEffect(() => {
     getAppVersion()
@@ -113,19 +115,19 @@ function RouteComponent() {
   useUpdate('update.available', useCallback((payload) => {
     setUpdateStatus('available')
     setUpdateVersion(payload.info?.version ?? null)
-    toast.info(`发现新版本 ${payload.info?.version ?? ''}，开始下载...`)
-  }, []))
+    toast.info(t('settings.help.toast.newVersionFound', { version: payload.info?.version ?? '' }))
+  }, [t]))
 
   useUpdate('update.not-available', useCallback(() => {
     setUpdateStatus('not-available')
-    toast.success('当前已是最新版本！')
-  }, []))
+    toast.success(t('settings.help.toast.upToDate'))
+  }, [t]))
 
   useUpdate('update.error', useCallback((payload) => {
     setUpdateStatus('error')
     setErrorMessage(payload.message)
-    toast.error(`更新出错：${payload.message}`)
-  }, []))
+    toast.error(t('settings.help.toast.updateError', { message: payload.message }))
+  }, [t]))
 
   useUpdate('download.progress', useCallback((payload) => {
     setUpdateStatus('downloading')
@@ -135,8 +137,8 @@ function RouteComponent() {
   useUpdate('update.downloaded', useCallback(() => {
     setUpdateStatus('downloaded')
     setDownloadProgress(100)
-    toast.success('更新已下载完成，可以立即安装。')
-  }, []))
+    toast.success(t('settings.help.toast.downloadComplete'))
+  }, [t]))
 
   const handleCheckUpdate = useCallback(() => {
     setUpdateStatus('checking')
@@ -153,10 +155,10 @@ function RouteComponent() {
   const handleOpenDevTools = () => {
     toggleDevTools()
       .then(() => {
-        toast.success('开发者控制台已切换')
+        toast.success(t('settings.help.toast.devToolsToggled'))
       })
       .catch(() => {
-        toast.error('打开控制台失败')
+        toast.error(t('settings.help.toast.devToolsError'))
       })
   }
 
@@ -164,7 +166,7 @@ function RouteComponent() {
     openExternal(url)
       .catch((error) => {
         console.error('Failed to open external link:', error)
-        toast.error('打开链接失败')
+        toast.error(t('settings.help.toast.linkError'))
       })
   }
 
@@ -177,20 +179,20 @@ function RouteComponent() {
   return (
     <div className="p-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold">帮助与支持</h1>
-        <p className="text-muted-foreground mt-1">应用工具和支持选项</p>
+        <h1 className="text-2xl font-bold">{t('settings.help.title')}</h1>
+        <p className="text-muted-foreground mt-1">{t('settings.help.subtitle')}</p>
       </div>
 
       <div className="max-w-2xl space-y-6">
         {/* 应用更新 */}
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold">应用更新</h2>
+          <h2 className="text-lg font-semibold">{t('settings.help.update.title')}</h2>
 
           <div className="rounded-lg border p-4 space-y-4">
             <div>
-              <Label className="text-base">检查更新</Label>
+              <Label className="text-base">{t('settings.help.update.checkUpdate')}</Label>
               <p className="text-sm text-muted-foreground mt-1">
-                检查并获取应用的最新版本
+                {t('settings.help.update.description')}
               </p>
             </div>
 
@@ -203,7 +205,7 @@ function RouteComponent() {
                   disabled={isBusy}
                 >
                   <RefreshCw className={`mr-1.5 ${isChecking ? 'animate-spin' : ''}`} size={16} />
-                  {isChecking ? '检查中...' : '检查更新'}
+                  {isChecking ? t('settings.help.update.checking') : t('settings.help.update.checkUpdate')}
                 </Button>
               )}
               {isDownloaded && (
@@ -212,20 +214,20 @@ function RouteComponent() {
                   variant="default"
                   onClick={handleInstallUpdate}
                 >
-                  安装并重启
+                  {t('settings.help.update.installAndRestart')}
                 </Button>
               )}
               {/* 查看更新详情按钮：有新版本时展示 */}
               {hasUpdate && <ReleaseNotesDialog version={updateVersion} />}
 
               <span className="text-sm text-muted-foreground">
-                当前版本:
+                {t('settings.help.update.currentVersion')}
                 {' '}
                 {version}
               </span>
               {updateVersion && (
                 <span className="text-sm text-primary font-medium">
-                  → 新版本: v
+                  {t('settings.help.update.newVersion')}
                   {updateVersion}
                 </span>
               )}
@@ -234,7 +236,7 @@ function RouteComponent() {
             {(isDownloading || isDownloaded) && (
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
-                  <span>{isDownloaded ? '下载完成' : '正在下载...'}</span>
+                  <span>{isDownloaded ? t('settings.help.update.downloaded') : t('settings.help.update.downloading')}</span>
                   <span>
                     {downloadProgress}
                     %
@@ -245,7 +247,7 @@ function RouteComponent() {
             )}
 
             {updateStatus === 'not-available' && (
-              <p className="text-sm text-muted-foreground">当前已是最新版本。</p>
+              <p className="text-sm text-muted-foreground">{t('settings.help.update.upToDate')}</p>
             )}
 
             {updateStatus === 'error' && errorMessage && (
@@ -256,19 +258,19 @@ function RouteComponent() {
 
         {/* 开发者工具 */}
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold">开发者工具</h2>
+          <h2 className="text-lg font-semibold">{t('settings.help.devTools.title')}</h2>
 
           <div className="rounded-lg border p-4 space-y-4">
             <div>
-              <Label className="text-base">开发者控制台</Label>
+              <Label className="text-base">{t('settings.help.devTools.console')}</Label>
               <p className="text-sm text-muted-foreground mt-1">
-                打开开发者工具用于调试和检查应用
+                {t('settings.help.devTools.description')}
               </p>
             </div>
 
             <Button variant="outline" size="sm" onClick={handleOpenDevTools}>
               <Terminal className="mr-1.5" size={16} />
-              打开控制台
+              {t('settings.help.devTools.openConsole')}
             </Button>
           </div>
         </div>
@@ -277,19 +279,19 @@ function RouteComponent() {
 
         {/* 关于信息 */}
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold">关于</h2>
+          <h2 className="text-lg font-semibold">{t('settings.help.about.title')}</h2>
 
           <div className="rounded-lg border p-4 space-y-3">
             <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">应用名称</span>
+              <span className="text-sm text-muted-foreground">{t('settings.help.about.appName')}</span>
               <span className="text-sm font-medium">Holix AI</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">版本号</span>
+              <span className="text-sm text-muted-foreground">{t('settings.help.about.version')}</span>
               <span className="text-sm font-medium">{version}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">许可证</span>
+              <span className="text-sm text-muted-foreground">{t('settings.help.about.license')}</span>
               <span className="text-sm font-medium">MIT</span>
             </div>
           </div>
@@ -297,13 +299,13 @@ function RouteComponent() {
 
         {/* 帮助资源 */}
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold">帮助资源</h2>
+          <h2 className="text-lg font-semibold">{t('settings.help.resources.title')}</h2>
 
           <div className="rounded-lg border p-4 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <HelpCircle size={16} className="text-muted-foreground" />
-                <span className="text-sm">使用文档</span>
+                <span className="text-sm">{t('settings.help.resources.docs')}</span>
               </div>
               <Button
                 variant="ghost"
@@ -319,7 +321,7 @@ function RouteComponent() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <HelpCircle size={16} className="text-muted-foreground" />
-                <span className="text-sm">问题反馈</span>
+                <span className="text-sm">{t('settings.help.resources.feedback')}</span>
               </div>
               <Button
                 variant="ghost"
@@ -335,7 +337,7 @@ function RouteComponent() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <HelpCircle size={16} className="text-muted-foreground" />
-                <span className="text-sm">GitHub 仓库</span>
+                <span className="text-sm">{t('settings.help.resources.github')}</span>
               </div>
               <Button
                 variant="ghost"
