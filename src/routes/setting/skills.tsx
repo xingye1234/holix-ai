@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
+import { useI18n } from '@/i18n/provider'
 import { trpcClient } from '@/lib/trpc-client'
 
 export const Route = createFileRoute('/setting/skills')({
@@ -91,6 +92,7 @@ interface Declaration {
 }
 
 function PermissionsPanel({ declarations }: { declarations: Declaration[] }) {
+  const { t } = useI18n()
   const jsDecs = declarations.filter(d => d.type === 'js')
   if (!jsDecs.length)
     return null
@@ -117,10 +119,10 @@ function PermissionsPanel({ declarations }: { declarations: Declaration[] }) {
             <div>
               <div className="flex items-center gap-1.5 text-muted-foreground mb-1.5">
                 <Lock className="size-3" />
-                <span>允许调用的模块</span>
+                <span>{t('settings.skills.permissions.allowedModules')}</span>
               </div>
               {builtins.length === 0
-                ? <span className="text-muted-foreground italic">无（完全隔离）</span>
+                ? <span className="text-muted-foreground italic">{t('settings.skills.permissions.noModules')}</span>
                 : (
                     <div className="flex flex-wrap gap-1">
                       {builtins.map(m => (
@@ -140,7 +142,7 @@ function PermissionsPanel({ declarations }: { declarations: Declaration[] }) {
               <div>
                 <div className="flex items-center gap-1.5 text-muted-foreground mb-1.5">
                   <Key className="size-3" />
-                  <span>可读取的环境变量</span>
+                  <span>{t('settings.skills.permissions.envKeys')}</span>
                 </div>
                 <div className="flex flex-wrap gap-1">
                   {envKeys.map(k => (
@@ -156,13 +158,13 @@ function PermissionsPanel({ declarations }: { declarations: Declaration[] }) {
             <div className="flex items-center gap-4 text-muted-foreground">
               <span className="flex items-center gap-1">
                 <Clock className="size-3" />
-                超时
+                {t('settings.skills.permissions.timeout')}
                 {' '}
                 {timeout >= 1000 ? `${timeout / 1000}s` : `${timeout}ms`}
               </span>
               <span className="flex items-center gap-1">
                 <Terminal className="size-3" />
-                内存上限
+                {t('settings.skills.permissions.memoryLimit')}
                 {' '}
                 {mem}
                 MB
@@ -197,6 +199,7 @@ function ConfigForm({
   fields: SkillConfigField[]
   values: Record<string, unknown>
 }) {
+  const { t } = useI18n()
   const [localValues, setLocalValues] = useState<Record<string, string>>(() => {
     const init: Record<string, string> = {}
     for (const f of fields) {
@@ -218,7 +221,7 @@ function ConfigForm({
     <div>
       <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-1.5">
         <Settings2 className="size-3" />
-        配置
+        {t('settings.skills.card.config')}
       </h4>
       <div className="space-y-3">
         {fields.map(field => (
@@ -246,7 +249,7 @@ function ConfigForm({
                       onChange={e => handleChange(field.key, e.target.value)}
                       className="flex h-8 w-full rounded-md border border-input bg-background px-2 py-1 text-xs ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                     >
-                      {!field.required && <option value="">（未设置）</option>}
+                      {!field.required && <option value="">{t('settings.skills.card.unset')}</option>}
                       {field.options.map(opt => (
                         <option key={opt.value} value={opt.value}>{opt.label}</option>
                       ))}
@@ -286,8 +289,15 @@ const SOURCE_LABEL_MAP: Record<string, string> = {
 }
 
 function SkillCard({ skill }: { skill: Skill }) {
+  const { t } = useI18n()
   const [expanded, setExpanded] = useState(false)
   const hasDetails = skill.tools.length > 0 || skill.declarations.length > 0 || skill.prompt || (skill.config?.length ?? 0) > 0 || skill.availableResourceDirs.length > 0 || skill.allDirEntries.length > 0
+
+  const getSourceLabel = (sourceLabel: string) => {
+    if (sourceLabel === 'builtin') return t('settings.skills.sourceLabels.builtin')
+    if (sourceLabel === 'external') return t('settings.skills.sourceLabels.external')
+    return sourceLabel
+  }
 
   return (
     <div className="rounded-lg border bg-card overflow-hidden">
@@ -307,18 +317,16 @@ function SkillCard({ skill }: { skill: Skill }) {
               v
               {skill.version}
             </span>
-            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{SOURCE_LABEL_MAP[skill.sourceLabel] ?? skill.sourceLabel}</Badge>
+            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{getSourceLabel(skill.sourceLabel)}</Badge>
             {skill.toolCount > 0 && (
               <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                {skill.toolCount}
-                {' '}
-                个工具
+                {t('settings.skills.card.toolCount', { count: skill.toolCount })}
               </Badge>
             )}
           </div>
           <p className="text-sm text-muted-foreground mt-1 leading-snug">{skill.description}</p>
           <p className="text-[11px] text-muted-foreground mt-1 font-mono break-all">
-            来源路径：
+            {t('settings.skills.card.sourcePath')}
             {skill.relativeSourcePath || skill.sourcePath}
           </p>
         </div>
@@ -338,7 +346,7 @@ function SkillCard({ skill }: { skill: Skill }) {
             <div>
               <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 flex items-center gap-1.5">
                 <Wrench className="size-3" />
-                工具能力
+                {t('settings.skills.card.toolsCapability')}
               </h4>
               <div className="divide-y">
                 {skill.tools.map(t => <ToolRow key={t.name} tool={t} />)}
@@ -351,7 +359,7 @@ function SkillCard({ skill }: { skill: Skill }) {
             <div>
               <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 flex items-center gap-1.5">
                 <Info className="size-3" />
-                系统提示词扩展
+                {t('settings.skills.card.systemPrompt')}
               </h4>
               <div className="rounded-md border bg-muted/40 px-3 py-2">
                 <MarkdownRenderer
@@ -367,17 +375,17 @@ function SkillCard({ skill }: { skill: Skill }) {
           <div>
             <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 flex items-center gap-1.5">
               <FolderTree className="size-3" />
-              来源与目录
+              {t('settings.skills.card.sourceAndDirs')}
             </h4>
             <div className="space-y-2 text-xs">
               <p className="text-muted-foreground">
-                来源：
-                <span className="font-medium text-foreground">{SOURCE_LABEL_MAP[skill.sourceLabel] ?? skill.sourceLabel}</span>
+                {t('settings.skills.card.source')}
+                <span className="font-medium text-foreground">{getSourceLabel(skill.sourceLabel)}</span>
               </p>
               <p className="text-muted-foreground break-all font-mono">{skill.sourcePath}</p>
               {skill.availableResourceDirs.length > 0 && (
                 <div>
-                  <p className="text-muted-foreground mb-1">符合 skill 规范的资源目录</p>
+                  <p className="text-muted-foreground mb-1">{t('settings.skills.card.resourceDirs')}</p>
                   <div className="flex flex-wrap gap-1">
                     {skill.availableResourceDirs.map(dir => (
                       <Badge key={dir} variant="outline" className="text-[10px] px-1.5 py-0">{dir}</Badge>
@@ -387,7 +395,7 @@ function SkillCard({ skill }: { skill: Skill }) {
               )}
               {skill.allDirEntries.length > 0 && (
                 <div>
-                  <p className="text-muted-foreground mb-1">其他目录（若存在）</p>
+                  <p className="text-muted-foreground mb-1">{t('settings.skills.card.otherDirs')}</p>
                   <div className="flex flex-wrap gap-1">
                     {skill.allDirEntries.map(dir => (
                       <Badge key={dir} variant="outline" className="text-[10px] px-1.5 py-0">{dir}</Badge>
@@ -402,16 +410,16 @@ function SkillCard({ skill }: { skill: Skill }) {
             <div>
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-7 text-xs">查看完整提示词</Button>
+                  <Button variant="outline" size="sm" className="h-7 text-xs">{t('settings.skills.card.viewFullPrompt')}</Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-3xl max-h-[80vh] overflow-auto">
                   <DialogHeader>
                     <DialogTitle>
                       {skill.name}
                       {' '}
-                      提示词
+                      {t('settings.skills.card.promptTitle')}
                     </DialogTitle>
-                    <DialogDescription>完整系统提示词内容</DialogDescription>
+                    <DialogDescription>{t('settings.skills.card.promptDescription')}</DialogDescription>
                   </DialogHeader>
                   <div className="rounded-md border bg-muted/40 px-4 py-3">
                     <MarkdownRenderer content={skill.prompt} className="text-sm" />
@@ -426,7 +434,7 @@ function SkillCard({ skill }: { skill: Skill }) {
             <div>
               <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 flex items-center gap-1.5">
                 <Lock className="size-3" />
-                沙箱权限
+                {t('settings.skills.card.sandboxPermissions')}
               </h4>
               <PermissionsPanel declarations={skill.declarations as Declaration[]} />
             </div>
@@ -451,6 +459,7 @@ function SkillCard({ skill }: { skill: Skill }) {
 function RouteComponent() {
   const router = useRouter()
   const { skills } = Route.useLoaderData()
+  const { t } = useI18n()
   const [source, setSource] = useState('https://github.com/antfu/skills')
   const [path, setPath] = useState('')
   const [ref, setRef] = useState('')
@@ -461,7 +470,7 @@ function RouteComponent() {
 
   async function handleInstallFromGithub() {
     if (!source.trim()) {
-      toast.error('请先输入 GitHub 仓库地址')
+      toast.error(t('settings.skills.install.errorNoRepo'))
       return
     }
 
@@ -472,11 +481,11 @@ function RouteComponent() {
         path: path.trim() || undefined,
         ref: ref.trim() || undefined,
       })
-      toast.success(`已安装 ${result.installed.length} 个 skill：${result.installed.join(', ')}`)
+      toast.success(t('settings.skills.install.successInstalled', { count: result.installed.length, names: result.installed.join(', ') }))
       await router.invalidate()
     }
     catch (error) {
-      const message = error instanceof Error ? error.message : '安装失败'
+      const message = error instanceof Error ? error.message : t('settings.skills.install.errorInstall')
       toast.error(message)
     }
     finally {
@@ -487,38 +496,26 @@ function RouteComponent() {
   return (
     <div className="p-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold">Skills</h1>
+        <h1 className="text-2xl font-bold">{t('settings.skills.title')}</h1>
         <p className="text-muted-foreground mt-1">
-          查看当前已加载的所有 Skills 及其工具能力、权限配置。
-          共
-          {' '}
-          <strong>{skills.length}</strong>
-          {' '}
-          个 Skill（
-          {builtinSkills.length}
-          {' '}
-          内置 /
-          {userSkills.length}
-          {' '}
-          用户）。
+          {t('settings.skills.description')}
+          {t('settings.skills.count', { total: skills.length, builtin: builtinSkills.length, user: userSkills.length })}
         </p>
       </div>
 
       <div className="max-w-2xl rounded-lg border bg-card p-4 mb-6 space-y-3">
-        <h2 className="text-sm font-semibold">从 GitHub 安装 Skills</h2>
+        <h2 className="text-sm font-semibold">{t('settings.skills.install.title')}</h2>
         <p className="text-xs text-muted-foreground">
-          支持仓库 URL（如 https://github.com/antfu/skills）或 owner/repo（如 antfu/skills）。
-          也支持扫描来自其他产品的 skills 说明文件（如 SKILL.md / AGENTS.md / CLAUDE.md 等），
-          并会自动读取本机目录（如 ~/.claude/skills）中的兼容 skills，在下方查看 skill 详情。
+          {t('settings.skills.install.description')}
         </p>
         <div className="space-y-2">
-          <Input value={source} onChange={e => setSource(e.target.value)} placeholder="https://github.com/owner/repo" />
+          <Input value={source} onChange={e => setSource(e.target.value)} placeholder={t('settings.skills.install.repoPlaceholder')} />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <Input value={path} onChange={e => setPath(e.target.value)} placeholder="skills（可选，默认 skills）" />
-            <Input value={ref} onChange={e => setRef(e.target.value)} placeholder="main（可选）" />
+            <Input value={path} onChange={e => setPath(e.target.value)} placeholder={t('settings.skills.install.pathPlaceholder')} />
+            <Input value={ref} onChange={e => setRef(e.target.value)} placeholder={t('settings.skills.install.refPlaceholder')} />
           </div>
           <Button onClick={handleInstallFromGithub} disabled={installing}>
-            {installing ? '安装中...' : '安装 Skill'}
+            {installing ? t('settings.skills.install.installing') : t('settings.skills.install.button')}
           </Button>
         </div>
       </div>
@@ -527,7 +524,7 @@ function RouteComponent() {
         ? (
             <div className="flex flex-col items-center justify-center py-16 text-muted-foreground gap-2">
               <Package className="size-10 opacity-30" />
-              <p className="text-sm">暂无加载的 Skills</p>
+              <p className="text-sm">{t('settings.skills.empty')}</p>
             </div>
           )
         : (
@@ -536,7 +533,7 @@ function RouteComponent() {
               {builtinSkills.length > 0 && (
                 <div className="space-y-3">
                   <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                    内置 Skills
+                    {t('settings.skills.builtin')}
                   </h2>
                   {builtinSkills.map(skill => (
                     <SkillCard key={skill.name} skill={skill} />
@@ -552,7 +549,7 @@ function RouteComponent() {
               {userSkills.length > 0 && (
                 <div className="space-y-3">
                   <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                    用户 Skills
+                    {t('settings.skills.user')}
                   </h2>
                   {userSkills.map(skill => (
                     <SkillCard key={skill.name} skill={skill} />

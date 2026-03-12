@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Switch } from '@/components/ui/switch'
 import { TagInput } from '@/components/ui/tag-input'
+import { useI18n } from '@/i18n/provider'
 import {
   addProvider,
   getDefaultProvider,
@@ -29,6 +30,7 @@ export const Route = createFileRoute('/setting/provider')({
 })
 
 function RouteComponent() {
+  const { t } = useI18n()
   const { providers: initialProviders, defaultProvider: initialDefaultProvider } = Route.useLoaderData()
   const [providers, setProviders] = useState<AIProvider[]>(initialProviders)
   const [defaultProviderState, setDefaultProviderState] = useState(initialDefaultProvider || providers[0]?.name || '')
@@ -66,13 +68,13 @@ function RouteComponent() {
     try {
       await setDefaultProvider(name)
       setDefaultProviderState(name)
-      toast.success('已设为默认供应商')
+      toast.success(t('settings.provider.toast.setDefaultSuccess'))
     }
     catch (error) {
       console.error('Failed to set default provider:', error)
-      toast.error('设置默认供应商失败')
+      toast.error(t('settings.provider.toast.setDefaultError'))
     }
-  }, [])
+  }, [t])
 
   const handleAddProvider = useCallback(async () => {
     try {
@@ -90,18 +92,18 @@ function RouteComponent() {
         avatar: '🤖',
       })
 
-      toast.success('供应商添加成功')
+      toast.success(t('settings.provider.toast.addSuccess'))
     }
     catch (error) {
       console.error('Failed to add provider:', error)
-      toast.error(`添加失败：${(error as Error).message}`)
+      toast.error(t('settings.provider.toast.addError', { message: (error as Error).message }))
     }
-  }, [newProvider])
+  }, [newProvider, t])
 
   if (providers.length === 0) {
     return (
       <div className="p-6">
-        <p className="text-muted-foreground">暂无可用的 AI 供应商</p>
+        <p className="text-muted-foreground">{t('settings.provider.noProviders')}</p>
       </div>
     )
   }
@@ -110,12 +112,12 @@ function RouteComponent() {
     <div className="p-6">
       <div className="mb-6 flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold">AI 供应商配置</h1>
-          <p className="text-muted-foreground mt-1">配置和管理您的 AI 模型供应商</p>
+          <h1 className="text-2xl font-bold">{t('settings.provider.title')}</h1>
+          <p className="text-muted-foreground mt-1">{t('settings.provider.description')}</p>
         </div>
         <Button size="sm" onClick={() => setIsDialogOpen(true)}>
           <Plus className="mr-1.5" size={16} />
-          新增
+          {t('settings.provider.addButton')}
         </Button>
       </div>
 
@@ -137,7 +139,7 @@ function RouteComponent() {
                   <div className="flex items-center gap-2">
                     <h3 className="font-semibold leading-none tracking-tight">{provider.name}</h3>
                     {defaultProviderState === provider.name && (
-                      <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">默认</Badge>
+                      <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">{t('settings.provider.defaultBadge')}</Badge>
                     )}
                   </div>
                 </div>
@@ -149,7 +151,7 @@ function RouteComponent() {
                     size="icon"
                     className="h-8 w-8 text-muted-foreground hover:text-foreground"
                     onClick={() => handleSetDefault(provider.name)}
-                    title="设为默认"
+                    title={t('settings.provider.setDefaultTitle')}
                   >
                     <Star size={16} />
                   </Button>
@@ -180,12 +182,12 @@ function RouteComponent() {
                     type="password"
                     value={provider.apiKey}
                     onChange={e => handleUpdateProvider(provider.name, 'apiKey', e.target.value)}
-                    placeholder="输入您的 API Key"
+                    placeholder={t('settings.provider.apiKeyPlaceholder')}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor={`models-${provider.name}`}>支持的模型</Label>
+                  <Label htmlFor={`models-${provider.name}`}>{t('settings.provider.modelsLabel')}</Label>
                   <TagInput
                     value={provider.models}
                     onChange={models => handleUpdateProvider(provider.name, 'models', models)}
@@ -196,11 +198,11 @@ function RouteComponent() {
             <div className="flex items-center p-6 pt-0 mt-auto">
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="destructive" size="sm" className="w-full">删除供应商</Button>
+                  <Button variant="destructive" size="sm" className="w-full">{t('settings.provider.deleteButton')}</Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-80">
                   <div className="space-y-4">
-                    <p className="text-sm">您确定要删除此供应商吗？此操作无法撤销。</p>
+                    <p className="text-sm">{t('settings.provider.deleteConfirmation')}</p>
                     <div className="flex justify-end gap-2">
                       <Button
                         variant="destructive"
@@ -216,15 +218,15 @@ function RouteComponent() {
                                 await setDefaultProvider(remaining[0].name)
                               }
 
-                              toast.success('供应商删除成功')
+                              toast.success(t('settings.provider.toast.deleteSuccess'))
                             })
                             .catch((error) => {
                               console.error('Failed to delete provider:', error)
-                              toast.error(`删除失败：${(error as Error).message}`)
+                              toast.error(t('settings.provider.toast.deleteError', { message: (error as Error).message }))
                             })
                         }}
                       >
-                        确认删除
+                        {t('settings.provider.confirmDelete')}
                       </Button>
                     </div>
                   </div>
@@ -239,33 +241,33 @@ function RouteComponent() {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>添加新供应商</DialogTitle>
+            <DialogTitle>{t('settings.provider.addDialog.title')}</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="new-name" className="text-right">
-                名称
+                {t('settings.provider.addDialog.nameLabel')}
               </Label>
               <Input
                 id="new-name"
                 value={newProvider.name}
                 onChange={e => setNewProvider({ ...newProvider, name: e.target.value })}
                 className="col-span-3"
-                placeholder="OpenAI"
+                placeholder={t('settings.provider.addDialog.namePlaceholder')}
               />
             </div>
 
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="new-avatar" className="text-right">
-                头像
+                {t('settings.provider.addDialog.avatarLabel')}
               </Label>
               <Input
                 id="new-avatar"
                 value={newProvider.avatar}
                 onChange={e => setNewProvider({ ...newProvider, avatar: e.target.value })}
                 className="col-span-3"
-                placeholder="🤖"
+                placeholder={t('settings.provider.addDialog.avatarPlaceholder')}
                 maxLength={2}
               />
             </div>
@@ -299,7 +301,7 @@ function RouteComponent() {
 
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="new-models" className="text-right">
-                模型列表
+                {t('settings.provider.addDialog.modelsLabel')}
               </Label>
               <div className="col-span-3">
                 <TagInput
@@ -312,10 +314,10 @@ function RouteComponent() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-              取消
+              {t('settings.provider.addDialog.cancelButton')}
             </Button>
             <Button onClick={handleAddProvider} disabled={!newProvider.name || !newProvider.baseUrl}>
-              添加
+              {t('settings.provider.addDialog.addButton')}
             </Button>
           </DialogFooter>
         </DialogContent>
