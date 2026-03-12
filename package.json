@@ -28,7 +28,12 @@
     "postinstall": "electron-builder install-app-deps",
     "rebuild:windows": "electron-rebuild -f -w better-sqlite3 --version=39.2.7 --arch=x64",
     "rebuild:mac": "electron-rebuild -f -w better-sqlite3 --version=39.2.7 --arch=arm64",
-    "test:skills": "vitest run -c vitest.skills.config.ts"
+    "test:skills": "vitest run -c vitest.skills.config.ts",
+    "changelog": "node scripts/generate-changelog.js",
+    "release-notes": "node scripts/generate-release-notes.js",
+    "version:patch": "node scripts/bump-version.js patch",
+    "version:minor": "node scripts/bump-version.js minor",
+    "version:major": "node scripts/bump-version.js major"
   },
   "dependencies": {
     "@holix/router": "^0.0.3",
@@ -123,6 +128,8 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.2",
     "concurrently": "^9.2.1",
+    "conventional-changelog-cli": "^5.0.0",
+    "conventional-changelog-conventionalcommits": "^9.3.0",
     "drizzle-kit": "^0.31.8",
     "electron": "^39.2.7",
     "electron-builder": "^26.0.12",

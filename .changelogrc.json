@@ -1,0 +1,20 @@
+{
+  "types": [
+    { "type": "feat", "section": "✨ Features" },
+    { "type": "fix", "section": "🐛 Bug Fixes" },
+    { "type": "perf", "section": "⚡ Performance" },
+    { "type": "refactor", "section": "♻️ Refactoring" },
+    { "type": "docs", "section": "📝 Documentation" },
+    { "type": "style", "section": "💄 Styles" },
+    { "type": "test", "section": "✅ Tests" },
+    { "type": "build", "section": "🏗️ Build System" },
+    { "type": "ci", "section": "👷 CI/CD" },
+    { "type": "chore", "section": "🔧 Chores", "hidden": true }
+  ],
+  "releaseCommitMessageFormat": "chore: release v{{currentTag}}",
+  "issuePrefixes": ["#"],
+  "issueUrlFormat": "https://github.com/zhaogongchengsi/holix-ai/issues/{{id}}",
+  "commitUrlFormat": "https://github.com/zhaogongchengsi/holix-ai/commit/{{hash}}",
+  "compareUrlFormat": "https://github.com/zhaogongchengsi/holix-ai/compare/{{previousTag}}...{{currentTag}}",
+  "userUrlFormat": "https://github.com/{{user}}"
+}
