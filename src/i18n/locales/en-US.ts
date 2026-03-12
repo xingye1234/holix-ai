@@ -120,6 +120,7 @@ const enUS = {
         promptDescription: 'Complete system prompt content',
         sandboxPermissions: 'Sandbox Permissions',
         config: 'Configuration',
+        unset: '(Not set)',
       },
       permissions: {
         allowedModules: 'Allowed modules',

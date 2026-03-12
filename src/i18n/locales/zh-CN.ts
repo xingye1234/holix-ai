@@ -120,6 +120,7 @@ const zhCN = {
         promptDescription: '完整系统提示词内容',
         sandboxPermissions: '沙箱权限',
         config: '配置',
+        unset: '（未设置）',
       },
       permissions: {
         allowedModules: '允许调用的模块',
