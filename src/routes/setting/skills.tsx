@@ -2,6 +2,7 @@ import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { ChevronDown, ChevronRight, Clock, Code2, FolderTree, Info, Key, Lock, Package, Settings2, Terminal, Wrench } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
+import { MarkdownRenderer } from '@/components/markdown/markdown-renderer'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
@@ -352,9 +353,13 @@ function SkillCard({ skill }: { skill: Skill }) {
                 <Info className="size-3" />
                 系统提示词扩展
               </h4>
-              <pre className="text-xs text-muted-foreground whitespace-pre-wrap rounded-md border bg-muted/40 px-3 py-2 leading-relaxed font-mono">
-                {skill.promptPreview ?? skill.prompt}
-              </pre>
+              <div className="rounded-md border bg-muted/40 px-3 py-2">
+                <MarkdownRenderer
+                  content={skill.promptPreview ?? skill.prompt}
+                  compact
+                  className="text-xs"
+                />
+              </div>
             </div>
           )}
 
@@ -408,7 +413,9 @@ function SkillCard({ skill }: { skill: Skill }) {
                     </DialogTitle>
                     <DialogDescription>完整系统提示词内容</DialogDescription>
                   </DialogHeader>
-                  <pre className="text-xs whitespace-pre-wrap rounded-md border bg-muted/40 px-3 py-2 leading-relaxed font-mono">{skill.prompt}</pre>
+                  <div className="rounded-md border bg-muted/40 px-4 py-3">
+                    <MarkdownRenderer content={skill.prompt} className="text-sm" />
+                  </div>
                 </DialogContent>
               </Dialog>
             </div>

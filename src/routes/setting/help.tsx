@@ -1,8 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { ExternalLink, HelpCircle, RefreshCw, Terminal } from 'lucide-react'
+import { ExternalLink, FileText, HelpCircle, RefreshCw, Terminal } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
+import { MarkdownRenderer } from '@/components/markdown/markdown-renderer'
 import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
 import { Separator } from '@/components/ui/separator'
@@ -14,6 +16,78 @@ export const Route = createFileRoute('/setting/help')({
 })
 
 type UpdateStatus = 'idle' | 'checking' | 'available' | 'not-available' | 'downloading' | 'downloaded' | 'error'
+type NotesStatus = 'idle' | 'loading' | 'loaded' | 'error'
+
+const RELEASE_NOTES_URL = 'https://raw.githubusercontent.com/zhaogongchengsi/holix-ai/main/RELEASE_NOTES.md'
+
+function ReleaseNotesDialog({ version }: { version: string | null }) {
+  const [status, setStatus] = useState<NotesStatus>('idle')
+  const [content, setContent] = useState<string | null>(null)
+
+  const fetchNotes = useCallback(async () => {
+    if (status === 'loading' || status === 'loaded')
+      return
+    setStatus('loading')
+    try {
+      const res = await fetch(RELEASE_NOTES_URL)
+      if (!res.ok)
+        throw new Error(`HTTP ${res.status}`)
+      setContent(await res.text())
+      setStatus('loaded')
+    }
+    catch {
+      setStatus('error')
+    }
+  }, [status])
+
+  return (
+    <Dialog onOpenChange={(open) => { if (open) fetchNotes() }}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm">
+          <FileText className="mr-1.5" size={14} />
+          查看更新详情
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-2xl max-h-[75vh] flex flex-col gap-0 p-0">
+        <DialogHeader className="px-6 pt-6 pb-4 border-b shrink-0">
+          <DialogTitle>
+            更新详情
+            {version && (
+              <span className="ml-2 text-sm font-normal text-muted-foreground">
+                v
+                {version}
+              </span>
+            )}
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="flex-1 overflow-y-auto px-6 py-4">
+          {status === 'idle' || status === 'loading'
+            ? (
+                <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
+                  <RefreshCw className="mr-2 animate-spin" size={16} />
+                  加载中...
+                </div>
+              )
+            : status === 'error'
+              ? (
+                  <div className="flex flex-col items-center gap-3 py-12 text-sm text-muted-foreground">
+                    <p>加载更新说明失败，请检查网络连接。</p>
+                    <Button variant="outline" size="sm" onClick={() => { setStatus('idle'); fetchNotes() }}>
+                      重试
+                    </Button>
+                  </div>
+                )
+              : content
+                ? (
+                    <MarkdownRenderer content={content} />
+                  )
+                : null}
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
 
 function RouteComponent() {
   const [version, setVersion] = useState('加载中...')
@@ -98,6 +172,7 @@ function RouteComponent() {
   const isDownloading = updateStatus === 'downloading'
   const isDownloaded = updateStatus === 'downloaded'
   const isBusy = isChecking || updateStatus === 'available' || isDownloading
+  const hasUpdate = updateVersion !== null
 
   return (
     <div className="p-6">
@@ -140,6 +215,9 @@ function RouteComponent() {
                   安装并重启
                 </Button>
               )}
+              {/* 查看更新详情按钮：有新版本时展示 */}
+              {hasUpdate && <ReleaseNotesDialog version={updateVersion} />}
+
               <span className="text-sm text-muted-foreground">
                 当前版本:
                 {' '}
@@ -147,9 +225,7 @@ function RouteComponent() {
               </span>
               {updateVersion && (
                 <span className="text-sm text-primary font-medium">
-                  → 新版本:
-                  {' '}
-                  v
+                  → 新版本: v
                   {updateVersion}
                 </span>
               )}
