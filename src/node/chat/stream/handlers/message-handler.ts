@@ -5,10 +5,10 @@
 
 import type { AIMessageChunk, ToolMessage } from '@langchain/core/messages'
 import type { StreamContext, StreamState } from '../stream-state'
-import { BaseStreamHandler } from './base-handler'
-import { contentExtractor } from '../../message/content-extractor'
-import { logger } from '../../../platform/logger'
 import util from 'node:util'
+import { logger } from '../../../platform/logger'
+import { contentExtractor } from '../../message/content-extractor'
+import { BaseStreamHandler } from './base-handler'
 
 /**
  * Messages 模式处理器
@@ -67,8 +67,12 @@ export class MessageHandler extends BaseStreamHandler {
 
   /**
    * 处理工具消息
+   *
+   * 注意：messages 模式下的工具消息只做日志记录，不修改 state。
+   * 实际的工具调用和结果会在 updates 模式的 agent/tools 节点中处理，
+   * 避免重复记录到 draftSegments。
    */
-  private handleToolMessage(toolMsg: ToolMessage, state: StreamState, context: StreamContext): void {
+  private handleToolMessage(toolMsg: ToolMessage, _state: StreamState, _context: StreamContext): void {
     const len = typeof toolMsg.content === 'string'
       ? toolMsg.content.length
       : JSON.stringify(toolMsg.content).length
