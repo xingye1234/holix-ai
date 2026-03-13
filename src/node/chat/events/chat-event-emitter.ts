@@ -5,32 +5,32 @@
 
 import type { Message } from '../../database/schema/chat'
 import type { MessageStreamingEvent, MessageUpdateEvent } from '../message/message-types'
-import { update } from '../../platform/update'
 import { logger } from '../../platform/logger'
+import { update } from '../../platform/update'
 
 /**
  * 聊天事件类型
  */
-export type ChatEventType =
-  | 'message.created'
-  | 'message.updated'
-  | 'message.streaming'
-  | 'message.deleted'
-  | 'chat.created'
-  | 'chat.updated'
-  | 'chat.deleted'
+export type ChatEventType
+  = | 'message.created'
+    | 'message.updated'
+    | 'message.streaming'
+    | 'message.deleted'
+    | 'chat.created'
+    | 'chat.updated'
+    | 'chat.deleted'
 
 /**
  * 聊天事件数据
  */
-export type ChatEventData =
-  | { type: 'message.created', chatUid: string, message: Message }
-  | { type: 'message.updated', data: MessageUpdateEvent }
-  | { type: 'message.streaming', data: MessageStreamingEvent }
-  | { type: 'message.deleted', chatUid: string, messageUid: string }
-  | { type: 'chat.created', chatUid: string }
-  | { type: 'chat.updated', chatUid: string, updates: Record<string, any> }
-  | { type: 'chat.deleted', uid: string }
+export type ChatEventData
+  = | { type: 'message.created', chatUid: string, message: Message }
+    | { type: 'message.updated', data: MessageUpdateEvent }
+    | { type: 'message.streaming', data: MessageStreamingEvent }
+    | { type: 'message.deleted', chatUid: string, messageUid: string }
+    | { type: 'chat.created', chatUid: string }
+    | { type: 'chat.updated', chatUid: string, updates: Record<string, any> }
+    | { type: 'chat.deleted', uid: string }
 
 /**
  * 聊天事件发射器
