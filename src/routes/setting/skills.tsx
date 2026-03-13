@@ -463,10 +463,6 @@ function RouteComponent() {
   const router = useRouter()
   const { skills, config } = Route.useLoaderData()
   const { t } = useI18n()
-  const [source, setSource] = useState('https://github.com/antfu/skills')
-  const [path, setPath] = useState('')
-  const [ref, setRef] = useState('')
-  const [installing, setInstalling] = useState(false)
   const [contextStrategy, setContextStrategy] = useState<'eager' | 'lazy'>(config.skillsContextStrategy ?? 'eager')
 
   const builtinSkills = skills.filter(s => s.isBuiltin)
@@ -477,31 +473,6 @@ function RouteComponent() {
     await updateConfig('skillsContextStrategy', value)
     toast.success('Skills 上下文策略已更新，将在下次对话时生效')
   }, [])
-
-  async function handleInstallFromGithub() {
-    if (!source.trim()) {
-      toast.error(t('settings.skills.install.errorNoRepo'))
-      return
-    }
-
-    setInstalling(true)
-    try {
-      const result = await trpcClient.skill.installFromGithub({
-        source: source.trim(),
-        path: path.trim() || undefined,
-        ref: ref.trim() || undefined,
-      })
-      toast.success(t('settings.skills.install.successInstalled', { count: result.installed.length, names: result.installed.join(', ') }))
-      await router.invalidate()
-    }
-    catch (error) {
-      const message = error instanceof Error ? error.message : t('settings.skills.install.errorInstall')
-      toast.error(message)
-    }
-    finally {
-      setInstalling(false)
-    }
-  }
 
   return (
     <div className="p-6">
@@ -514,31 +485,36 @@ function RouteComponent() {
       </div>
 
       {/* Skills 上下文策略配置 */}
-      <div className="max-w-2xl rounded-lg border bg-card p-4 mb-6">
-        <div className="flex items-start gap-3">
-          <div className="mt-0.5 shrink-0 rounded-md border p-1.5 bg-background">
-            <Zap className="size-4 text-muted-foreground" />
+      <div className="max-w-2xl rounded-lg border bg-card p-5 mb-6">
+        <div className="space-y-4">
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 shrink-0 rounded-md border p-1.5 bg-background">
+              <Zap className="size-4 text-muted-foreground" />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-sm font-semibold">Skills 上下文策略</h2>
+              <p className="text-xs text-muted-foreground mt-1">
+                控制 AI 在聊天时如何感知 skills 信息
+              </p>
+            </div>
           </div>
-          <div className="flex-1">
-            <h2 className="text-sm font-semibold mb-1">Skills 上下文策略</h2>
-            <p className="text-xs text-muted-foreground mb-3">
-              控制 AI 在聊天时如何感知 skills 信息
-            </p>
+
+          <div className="space-y-3 pl-11">
             <div className="flex items-center gap-3">
-              <Label className="text-sm">加载方式：</Label>
+              <Label className="text-sm min-w-[70px]">加载方式</Label>
               <Select value={contextStrategy} onValueChange={handleContextStrategyChange}>
-                <SelectTrigger className="w-48">
+                <SelectTrigger className="w-[200px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="eager">
-                    <div className="flex flex-col">
+                    <div className="flex flex-col py-1">
                       <span className="font-medium">急迫加载</span>
                       <span className="text-xs text-muted-foreground">AI 直接看到所有 skills 的完整信息</span>
                     </div>
                   </SelectItem>
                   <SelectItem value="lazy">
-                    <div className="flex flex-col">
+                    <div className="flex flex-col py-1">
                       <span className="font-medium">渐进式加载</span>
                       <span className="text-xs text-muted-foreground">AI 先看摘要，需要时再查看详情</span>
                     </div>
@@ -546,28 +522,12 @@ function RouteComponent() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="mt-3 text-xs text-muted-foreground space-y-1">
+
+            <div className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground space-y-1.5">
               <p>• <strong>急迫加载</strong>：AI 在聊天开始时就能看到所有 skills 的完整提示词，可以直接使用</p>
               <p>• <strong>渐进式加载</strong>：AI 只看到 skills 的名称和描述，需要时通过工具查看详情，节省 token</p>
             </div>
           </div>
-        </div>
-      </div>
-
-      <div className="max-w-2xl rounded-lg border bg-card p-4 mb-6 space-y-3">
-        <h2 className="text-sm font-semibold">{t('settings.skills.install.title')}</h2>
-        <p className="text-xs text-muted-foreground">
-          {t('settings.skills.install.description')}
-        </p>
-        <div className="space-y-2">
-          <Input value={source} onChange={e => setSource(e.target.value)} placeholder={t('settings.skills.install.repoPlaceholder')} />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <Input value={path} onChange={e => setPath(e.target.value)} placeholder={t('settings.skills.install.pathPlaceholder')} />
-            <Input value={ref} onChange={e => setRef(e.target.value)} placeholder={t('settings.skills.install.refPlaceholder')} />
-          </div>
-          <Button onClick={handleInstallFromGithub} disabled={installing}>
-            {installing ? t('settings.skills.install.installing') : t('settings.skills.install.button')}
-          </Button>
         </div>
       </div>
 
