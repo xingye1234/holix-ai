@@ -24,6 +24,8 @@
 - ✅ `src/node/chat/tools/tool-call-tracker.ts` - 工具调用追踪器
 - ✅ `src/node/chat/tools/tool-registry.ts` - 工具注册表（支持渐进式加载）
 - ✅ 单元测试（21 个测试，100% 通过）
+- ✅ 类型错误修复（logger.trace, DynamicStructuredTool 导入）
+- ✅ Update 事件类型扩展（message.deleted, chat.created）
 
 ---
 
@@ -38,7 +40,8 @@
 ### 测试覆盖
 - ContentExtractor：13 个测试 ✅
 - ToolCallTracker：8 个测试 ✅
-- **总计**：21 个测试，全部通过
+- 所有 chat 模块测试：120 个测试 ✅
+- **总计**：120 个测试，全部通过
 
 ### 代码行数
 - 类型定义：~200 行
@@ -166,6 +169,11 @@ const registry = new ToolRegistry({
 ## 📝 提交历史
 
 ```bash
+659a376 docs: document update event type extensions
+12d266a fix(types): extend update event types for chat events
+833dbe2 docs: document type error fixes
+0231418 fix(chat): fix type errors in new modules
+507303a docs: add refactor progress tracking
 b0ea507 refactor(chat): add bottom-layer services with tests
 9701049 refactor(chat): add type definitions and event emitter
 20f2458 docs: analyze skills progressive disclosure mechanism
