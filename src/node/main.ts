@@ -255,14 +255,24 @@ app.on('window-all-closed', async () => {
 app.on('activate', () => {
   logger.info('[Main] Application activated', lifecycle.getPhase(), AppWindow.getAllWindows().length)
 
-  if (lifecycle.getPhase() === LifecyclePhase.RUNNING && AppWindow.getAllWindows().length === 0) {
-    starting()
-      .then(() => {
-        logger.info('[Main] Application activated and window created.')
-      })
-      .catch((err) => {
-        logger.error('[Main] Failed to activate application:', err)
-      })
+  if (lifecycle.getPhase() === LifecyclePhase.RUNNING) {
+    // 如果有窗口但被隐藏了，显示它
+    if (window && !window.isVisible()) {
+      window.show()
+      logger.info('[Main] Window was hidden, now showing.')
+      return
+    }
+
+    // 如果没有窗口，创建新窗口
+    if (AppWindow.getAllWindows().length === 0) {
+      starting()
+        .then(() => {
+          logger.info('[Main] Application activated and window created.')
+        })
+        .catch((err) => {
+          logger.error('[Main] Failed to activate application:', err)
+        })
+    }
   }
 })
 
