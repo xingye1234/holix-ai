@@ -2,9 +2,9 @@
  * StreamProcessor 单元测试
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { StreamProcessor } from '../stream-processor'
 import type { DraftContent } from '../../../database/schema/chat'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { StreamProcessor } from '../stream-processor'
 
 // Mock dependencies
 vi.mock('../../../platform/logger', () => ({
@@ -28,7 +28,7 @@ vi.mock('../../tools/tool-call-tracker', () => ({
   },
 }))
 
-describe('StreamProcessor', () => {
+describe('streamProcessor', () => {
   let processor: StreamProcessor
   let mockThrottledDbUpdate: any
 

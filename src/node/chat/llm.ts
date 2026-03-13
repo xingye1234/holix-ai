@@ -3,12 +3,12 @@
  * This file is kept for backward compatibility.
  */
 
-// Re-export everything from the new modular structure
-export type { LlmConfig, LlmProvider } from './llm/types'
-export { createLlm } from './llm/factory'
 export {
   createAnthropicAdapter,
-  createOpenAIAdapter,
   createGeminiAdapter,
   createOllamaAdapter,
+  createOpenAIAdapter,
 } from './llm/adapters'
+export { createLlm } from './llm/factory'
+// Re-export everything from the new modular structure
+export type { LlmConfig, LlmProvider } from './llm/types'

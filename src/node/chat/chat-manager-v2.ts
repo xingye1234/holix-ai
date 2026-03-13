@@ -5,9 +5,9 @@
 
 import type { BaseChatModel } from '@langchain/core/language_models/chat_models'
 import type { Message, Workspace } from '../database/schema/chat'
+import { logger } from '../platform/logger'
 import { ChatSession } from './session/chat-session'
 import { skillManager } from './skills'
-import { logger } from '../platform/logger'
 
 /**
  * 会话启动参数
@@ -89,7 +89,7 @@ export class SimplifiedChatManager {
    */
   abortChatSessions(chatUid: string): number {
     let count = 0
-    for (const [requestId, session] of this.sessions.entries()) {
+    for (const [_, session] of this.sessions.entries()) {
       if (session.getConfig().chatUid === chatUid) {
         session.abort()
         count++

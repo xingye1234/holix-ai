@@ -15,7 +15,7 @@ export interface StreamHandler {
    * @param state 流状态（可变）
    * @param context 流上下文（只读）
    */
-  handle(chunk: unknown, state: StreamState, context: StreamContext): void
+  handle: (chunk: unknown, state: StreamState, context: StreamContext) => void
 
   /**
    * 处理器名称（用于日志）

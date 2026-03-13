@@ -4,12 +4,12 @@
  */
 
 import type { DynamicStructuredTool } from '@langchain/core/tools'
+import { configStore } from '../../platform/config'
 import { logger } from '../../platform/logger'
 import { skillManager } from '../skills/manager'
-import { configStore } from '../../platform/config'
-import { buildLoadSkillTool, reloadSkillsTool } from './skills'
 import { chatKeywordSearchTool, chatTimeSearchTool } from './chat'
 import { context7Tool } from './context7'
+import { buildLoadSkillTool, reloadSkillsTool } from './skills'
 import { systemEnvTool, systemPlatformTool, systemTimeTool, systemTimezoneTool } from './system'
 
 /**
@@ -135,7 +135,8 @@ export class ToolRegistry {
       if (skill) {
         tools.push(...skill.tools)
         logger.debug(`[ToolRegistry] Loaded core skill: ${skillName} (${skill.tools.length} tools)`)
-      } else {
+      }
+      else {
         logger.warn(`[ToolRegistry] Core skill not found: ${skillName}`)
       }
     }

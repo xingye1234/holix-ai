@@ -2,9 +2,9 @@
  * ToolCallTracker 单元测试
  */
 
-import { describe, it, expect, vi } from 'vitest'
-import { ToolCallTracker } from '../tool-call-tracker'
 import type { DraftContent } from '../../../database/schema/chat'
+import { describe, expect, it, vi } from 'vitest'
+import { ToolCallTracker } from '../tool-call-tracker'
 
 // Mock logger to avoid Electron dependency
 vi.mock('../../../platform/logger', () => ({
@@ -16,7 +16,7 @@ vi.mock('../../../platform/logger', () => ({
   },
 }))
 
-describe('ToolCallTracker', () => {
+describe('toolCallTracker', () => {
   const tracker = new ToolCallTracker()
 
   describe('buildToolCallTraces', () => {
