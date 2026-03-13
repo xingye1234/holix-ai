@@ -7,8 +7,8 @@ import { onCommand } from '../platform/commands'
 import { logger } from '../platform/logger'
 import { providerStore } from '../platform/provider'
 import { update } from '../platform/update'
-import { createLlm } from './llm'
 import { simplifiedChatManager } from './chat-manager-v2'
+import { createLlm } from './llm'
 
 export function initChat() {
   // 监听聊天消息发送
@@ -38,7 +38,10 @@ export function initChat() {
     await updateLastMessagePreview(chatId, content)
 
     const updatedChat = await getChatByUid(chatId)
-    update('chat.updated', updatedChat!)
+    update('chat.updated', {
+      chatUid: chatId,
+      updates: { lastMessagePreview: content },
+    })
 
     // 获取供应商配置
     const providers = providerStore.get('providers')
