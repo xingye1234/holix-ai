@@ -44,6 +44,13 @@ const mockSkillManager = vi.hoisted(() => {
       '[Skill: skill1]\nSkill 1 prompt',
       '[Skill: skill2]\nSkill 2 prompt',
     ]),
+    getSkillsSummary: vi.fn(() => [
+      { name: 'skill1', description: 'Skill 1 description' },
+      { name: 'skill2', description: 'Skill 2 description' },
+      { name: 'core-skill-1', description: 'Core skill 1 description' },
+      { name: 'core-skill-2', description: 'Core skill 2 description' },
+      { name: 'optional-skill', description: 'Optional skill description' },
+    ]),
   }
 })
 
@@ -219,8 +226,14 @@ describe('toolRegistry', () => {
       const registry = new ToolRegistry({ strategy: 'lazy' })
       const prompts = registry.getSkillSystemPrompts()
 
-      expect(prompts).toEqual([])
+      // Lazy mode should return skills summary, not empty array
+      expect(prompts.length).toBe(1)
+      expect(prompts[0]).toContain('Available Skills')
+      expect(prompts[0]).toContain('skill1: Skill 1 description')
+      expect(prompts[0]).toContain('skill2: Skill 2 description')
+      expect(prompts[0]).toContain('load_skill')
       expect(mockSkillManager.getSystemPrompts).not.toHaveBeenCalled()
+      expect(mockSkillManager.getSkillsSummary).toHaveBeenCalled()
     })
   })
 
@@ -411,8 +424,9 @@ describe('toolRegistry', () => {
 
       // eager should load all prompts
       expect(eagerPrompts.length).toBe(2)
-      // lazy should load no prompts
-      expect(lazyPrompts.length).toBe(0)
+      // lazy should load skills summary (1 prompt with all skills listed)
+      expect(lazyPrompts.length).toBe(1)
+      expect(lazyPrompts[0]).toContain('Available Skills')
       // smart should load only core prompts
       expect(smartPrompts.length).toBe(1)
     })
