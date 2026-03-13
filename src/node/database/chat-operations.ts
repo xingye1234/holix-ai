@@ -7,6 +7,7 @@ import type { Chat, ChatInsert, PendingMessage } from './schema/chat'
 
 import { and, eq, inArray, isNotNull, lte, sql } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
+import { deserializeChat, serializeChat } from './chat-serializer'
 import { getDatabase, sqlite } from './connect'
 import { chats, message } from './schema/chat'
 
@@ -40,14 +41,14 @@ export async function createChat(params: {
     lastSeq: 0,
     lastMessagePreview: null,
     pendingMessages: null,
-    prompts: JSON.stringify([]) as any,
+    prompts: '[]' as any,
     workspace: null,
   }
 
   await db.insert(chats).values(insert)
 
-  const [chat] = await db.select().from(chats).where(eq(chats.uid, uid))
-  return chat
+  const [rawChat] = await db.select().from(chats).where(eq(chats.uid, uid))
+  return deserializeChat(rawChat)
 }
 
 /**
@@ -87,8 +88,8 @@ export async function updateChat(
     })
     .where(eq(chats.uid, chatUid))
 
-  const [chat] = await db.select().from(chats).where(eq(chats.uid, chatUid))
-  return chat
+  const [rawChat] = await db.select().from(chats).where(eq(chats.uid, chatUid))
+  return deserializeChat(rawChat)
 }
 
 /**
@@ -136,17 +137,17 @@ export async function updateChatTitle(
  */
 export async function getChatByUid(chatUid: string): Promise<Chat | null> {
   const db = await getDatabase()
-  const [chat] = await db.select().from(chats).where(eq(chats.uid, chatUid))
+  const [rawChat] = await db.select().from(chats).where(eq(chats.uid, chatUid))
 
-  if (!chat)
+  if (!rawChat)
     return null
 
-  if (chat.expiresAt && chat.expiresAt <= Date.now()) {
+  if (rawChat.expiresAt && rawChat.expiresAt <= Date.now()) {
     await deleteChat(chatUid)
     return null
   }
 
-  return chat
+  return deserializeChat(rawChat)
 }
 
 /**
@@ -251,8 +252,8 @@ export async function updateChatPrompts(
     })
     .where(eq(chats.uid, chatUid))
 
-  const [chat] = await db.select().from(chats).where(eq(chats.uid, chatUid))
-  return chat
+  const [rawChat] = await db.select().from(chats).where(eq(chats.uid, chatUid))
+  return deserializeChat(rawChat)
 }
 
 /**
@@ -273,8 +274,8 @@ export async function updateChatWorkspace(
     })
     .where(eq(chats.uid, chatUid))
 
-  const [chat] = await db.select().from(chats).where(eq(chats.uid, chatUid))
-  return chat
+  const [rawChat] = await db.select().from(chats).where(eq(chats.uid, chatUid))
+  return deserializeChat(rawChat)
 }
 
 /**
@@ -295,8 +296,8 @@ export async function updatePendingMessages(
     })
     .where(eq(chats.uid, chatUid))
 
-  const [chat] = await db.select().from(chats).where(eq(chats.uid, chatUid))
-  return chat
+  const [rawChat] = await db.select().from(chats).where(eq(chats.uid, chatUid))
+  return deserializeChat(rawChat)
 }
 
 /**
@@ -362,6 +363,6 @@ export async function getAllChats(options?: {
     query = query.orderBy(sql`${chats[orderBy]} ASC`) as any
   }
 
-  const result = await query
-  return result
+  const rawChats = await query
+  return rawChats.map(deserializeChat)
 }

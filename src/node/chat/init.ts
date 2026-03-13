@@ -68,7 +68,7 @@ export function initChat() {
     // 获取最近的上下文消息（例如最近 10 条）
     const contextMessages = await getLatestMessages(chatId, 10)
 
-    const systemMessages = typeof chat.prompts === 'string' ? JSON.parse(chat.prompts) : (chat.prompts || [])
+    const systemMessages = chat.prompts || []
 
     // 使用 ChatManager 启动会话（异步处理，不阻塞）
     const requestId = await simplifiedChatManager.startSession({
@@ -77,7 +77,7 @@ export function initChat() {
       userMessageContent: content,
       contextMessages,
       systemMessages,
-      workspace: typeof updatedChat?.workspace === 'string' ? JSON.parse(updatedChat.workspace) : (updatedChat?.workspace || []),
+      workspace: updatedChat?.workspace || [],
     })
 
     logger.info(

@@ -32,11 +32,7 @@ function Component() {
   // 配合 immer 和 shallow selector，chat 对象引用只在真正变化时更新
   const contextValue = useMemo(
     () => {
-      const pendingMessages: PendingMessage[] = chat
-        ? typeof chat.pendingMessages === 'string'
-          ? JSON.parse(chat.pendingMessages ?? '[]')
-          : (chat.pendingMessages ?? [])
-        : []
+      const pendingMessages: PendingMessage[] = chat?.pendingMessages ?? []
 
       return {
         chat: chat || null,

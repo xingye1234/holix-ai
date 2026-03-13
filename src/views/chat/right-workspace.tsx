@@ -23,7 +23,7 @@ export default function RightWorkspace() {
       return []
     }
 
-    return typeof chat.workspace === 'string' ? JSON.parse(chat.workspace) : chat.workspace
+    return chat.workspace
   }, [chat])
 
   const selectFiles = useCallback(async () => {

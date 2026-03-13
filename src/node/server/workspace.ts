@@ -197,17 +197,7 @@ export const workspaceRouter = router({
       if (!chat || !chat.workspace)
         return { items: [] }
 
-      // Drizzle 的 .$type<>() 只是 TypeScript 类型标注，不做运行时转换。
-      // workspace 在数据库中以 JSON 字符串存储，读取时需手动 parse。
-      let workspaces: import('../database/schema/chat').Workspace[]
-      try {
-        workspaces = typeof chat.workspace === 'string'
-          ? JSON.parse(chat.workspace)
-          : chat.workspace
-      }
-      catch {
-        return { items: [] }
-      }
+      const workspaces = chat.workspace
 
       logger.info(`[workspace] queryFiles: chatUid=${input.chatUid}, query="${input.query}", maxResults=${input.maxResults}, onlyFiles=${input.onlyFiles} => total workspace files=${workspaces.length}`)
 
