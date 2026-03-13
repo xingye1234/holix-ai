@@ -1,3 +1,20 @@
+/**
+ * @deprecated 此文件已弃用，请使用 session-orchestrator.ts
+ *
+ * 原因：
+ * - 代码过于复杂，职责不清晰
+ * - 已被重构为更清晰的架构：
+ *   - SessionOrchestrator: 会话编排和生命周期管理
+ *   - ChatSession: 单个会话的执行逻辑
+ *   - SessionBuilder: 会话构建
+ *   - StreamProcessor: 流处理
+ *   - MessagePersister: 消息持久化
+ *
+ * 迁移指南：
+ * - 使用 sessionOrchestrator.startSession() 替代 chatManager.run()
+ * - 使用 sessionOrchestrator.abortSession() 替代 chatManager.abort()
+ */
+
 // biome-ignore assist/source/organizeImports: <explanation>
 import type { BaseChatModel } from '@langchain/core/language_models/chat_models'
 import type { AIMessage, AIMessageChunk, ToolMessage } from '@langchain/core/messages'

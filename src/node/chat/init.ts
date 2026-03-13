@@ -7,7 +7,7 @@ import { onCommand } from '../platform/commands'
 import { logger } from '../platform/logger'
 import { providerStore } from '../platform/provider'
 import { update } from '../platform/update'
-import { simplifiedChatManager } from './chat-manager-v2'
+import { sessionOrchestrator } from './session-orchestrator'
 import { createLlm } from './llm'
 
 export function initChat() {
@@ -70,8 +70,8 @@ export function initChat() {
 
     const systemMessages = chat.prompts || []
 
-    // 使用 ChatManager 启动会话（异步处理，不阻塞）
-    const requestId = await simplifiedChatManager.startSession({
+    // 使用 SessionOrchestrator 启动会话（异步处理，不阻塞）
+    const requestId = await sessionOrchestrator.startSession({
       chatUid: chatId,
       llm,
       userMessageContent: content,
@@ -91,12 +91,12 @@ export function initChat() {
 
     if (requestId) {
       // 中止特定请求
-      const success = simplifiedChatManager.abortSession(requestId)
+      const success = sessionOrchestrator.abortSession(requestId)
       logger.info(`[Chat] Abort session ${requestId}: ${success ? 'success' : 'not found'}`)
     }
     else if (chatId) {
       // 中止聊天的所有会话
-      const count = simplifiedChatManager.abortChatSessions(chatId)
+      const count = sessionOrchestrator.abortChatSessions(chatId)
       logger.info(`[Chat] Aborted ${count} sessions for chat ${chatId}`)
     }
   })

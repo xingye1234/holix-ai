@@ -1,6 +1,12 @@
 /**
- * 简化版 ChatManager
- * 只负责会话生命周期管理，具体逻辑委托给 ChatSession
+ * 会话编排器（Session Orchestrator）
+ * 负责编排和管理多个并发的聊天会话生命周期
+ *
+ * 职责：
+ * - 初始化 skills 系统
+ * - 创建和管理 ChatSession 实例
+ * - 协调会话的启动、运行和中止
+ * - 跟踪活跃会话状态
  */
 
 import type { BaseChatModel } from '@langchain/core/language_models/chat_models'
@@ -22,17 +28,17 @@ export interface StartSessionParams {
 }
 
 /**
- * ChatManager（简化版）
+ * 会话编排器
  * 管理多个并发的聊天会话
  */
-export class SimplifiedChatManager {
+export class SessionOrchestrator {
   private sessions: Map<string, ChatSession> = new Map()
 
   constructor() {
     // 初始化 skills 系统并启动目录监听
     skillManager.initialize()
     skillManager.watch()
-    logger.info(`[SimplifiedChatManager] Skills initialized: ${skillManager.size} skill(s) loaded`)
+    logger.info(`[SessionOrchestrator] Skills initialized: ${skillManager.size} skill(s) loaded`)
   }
 
   /**
@@ -59,7 +65,7 @@ export class SimplifiedChatManager {
     // 异步运行会话（不阻塞）
     session.run(userMessageContent, contextMessages)
       .catch((err) => {
-        logger.error(`[SimplifiedChatManager] Session ${requestId} failed:`, err)
+        logger.error(`[SessionOrchestrator] Session ${requestId} failed:`, err)
       })
       .finally(() => {
         // 清理会话
@@ -75,12 +81,12 @@ export class SimplifiedChatManager {
   abortSession(requestId: string): boolean {
     const session = this.sessions.get(requestId)
     if (!session) {
-      logger.warn(`[SimplifiedChatManager] Session ${requestId} not found for abort`)
+      logger.warn(`[SessionOrchestrator] Session ${requestId} not found for abort`)
       return false
     }
 
     session.abort()
-    logger.info(`[SimplifiedChatManager] Aborting session ${requestId}`)
+    logger.info(`[SessionOrchestrator] Aborting session ${requestId}`)
     return true
   }
 
@@ -95,7 +101,7 @@ export class SimplifiedChatManager {
         count++
       }
     }
-    logger.info(`[SimplifiedChatManager] Aborted ${count} sessions for chat ${chatUid}`)
+    logger.info(`[SessionOrchestrator] Aborted ${count} sessions for chat ${chatUid}`)
     return count
   }
 
@@ -117,4 +123,4 @@ export class SimplifiedChatManager {
 }
 
 // 导出单例
-export const simplifiedChatManager = new SimplifiedChatManager()
+export const sessionOrchestrator = new SessionOrchestrator()
