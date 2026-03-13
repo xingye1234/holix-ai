@@ -11,7 +11,6 @@ import { HumanMessage, SystemMessage as LangChainSystemMessage } from '@langchai
 import { createAgent } from 'langchain'
 import { configStore } from '../../platform/config'
 import { logger } from '../../platform/logger'
-import builtinMessages from '../builtin/messages'
 import { contextSchema } from '../context'
 import { skillManager } from '../skills'
 import { createToolRegistry } from '../tools/tool-registry'
@@ -118,26 +117,20 @@ export class SessionBuilder {
   private buildSystemPrompt(toolRegistry: any): LangChainSystemMessage {
     const content: Array<{ type: 'text', text: string }> = []
 
-    // 1. 全局系统提示
-    content.push({
-      type: 'text',
-      text: builtinMessages.globalSystem,
-    })
-
-    // 2. 用户自定义系统消息
+    // 1. 用户自定义系统消息
     if (this.config.systemMessages) {
       for (const msg of this.config.systemMessages) {
         content.push({ type: 'text', text: msg })
       }
     }
 
-    // 3. Skill System Prompts（根据策略）
+    // 2. Skill System Prompts（根据策略）
     const skillPrompts = toolRegistry.getSkillSystemPrompts()
     for (const prompt of skillPrompts) {
       content.push({ type: 'text', text: prompt })
     }
 
-    // 4. 工作区上下文
+    // 3. 工作区上下文
     const workspacePrompt = this.buildWorkspacePrompt()
     if (workspacePrompt) {
       content.push({ type: 'text', text: workspacePrompt })
