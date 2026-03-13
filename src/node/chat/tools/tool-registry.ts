@@ -3,7 +3,7 @@
  * 管理工具的动态加载和注册（为渐进式 Skills 加载做准备）
  */
 
-import type { DynamicStructuredTool } from 'langchain/tools'
+import type { DynamicStructuredTool } from '@langchain/core/tools'
 import { logger } from '../../platform/logger'
 import { skillManager } from '../skills/manager'
 import { configStore } from '../../platform/config'

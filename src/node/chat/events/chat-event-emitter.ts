@@ -56,8 +56,8 @@ export class ChatEventEmitter {
    * 发射消息流式更新事件
    */
   emitMessageStreaming(event: MessageStreamingEvent): void {
-    // 流式更新频繁，使用 trace 级别
-    logger.trace(`[ChatEventEmitter] message.streaming | chatUid=${event.chatUid} delta_len=${event.delta.length}`)
+    // 流式更新频繁，使用 debug 级别
+    logger.debug(`[ChatEventEmitter] message.streaming | chatUid=${event.chatUid} delta_len=${event.delta.length}`)
     update('message.streaming', event)
   }
 

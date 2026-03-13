@@ -60,7 +60,7 @@ export class MessagePersister {
     content: string,
     draftContent: DraftContent,
   ): Promise<void> {
-    logger.trace(`[MessagePersister] Updating content | messageUid=${messageUid} content_len=${content.length}`)
+    logger.debug(`[MessagePersister] Updating content | messageUid=${messageUid} content_len=${content.length}`)
 
     await updateMessage(messageUid, {
       content,
