@@ -106,6 +106,7 @@ export class ChatSession {
         llm,
         systemMessages: this.config.systemMessages?.map(m => m.content as string),
         workspace: this.config.workspace,
+        toolLoadingStrategy: configStore.get('skillsContextStrategy'),
       })
 
       // 构建 Agent 和消息

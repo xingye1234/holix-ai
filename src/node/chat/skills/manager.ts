@@ -170,6 +170,17 @@ class SkillManager {
   }
 
   /**
+   * 获取所有 skills 的基本信息（仅 name 和 description）
+   * 用于 lazy 模式，让 AI 知道有哪些 skills 可用，但不包含完整的 prompt
+   */
+  getSkillsSummary(): Array<{ name: string, description: string }> {
+    return Array.from(this.skills.values()).map(s => ({
+      name: s.name,
+      description: s.description,
+    }))
+  }
+
+  /**
    * 获取 skills 目录路径
    */
   getSkillsDir(): string {

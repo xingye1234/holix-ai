@@ -12,6 +12,7 @@ export interface ConfigData {
   autoStart: boolean
   minimizeToTray: boolean
   closeToTray: boolean
+  skillsContextStrategy: 'eager' | 'lazy'
 }
 
 export class Config extends Store<ConfigData> {
@@ -29,6 +30,7 @@ export class Config extends Store<ConfigData> {
         autoStart: false,
         minimizeToTray: true,
         closeToTray: true,
+        skillsContextStrategy: 'eager',
       },
     })
   }

@@ -1,6 +1,6 @@
 import { createFileRoute, useRouter } from '@tanstack/react-router'
-import { ChevronDown, ChevronRight, Clock, Code2, FolderTree, Info, Key, Lock, Package, Settings2, Terminal, Wrench } from 'lucide-react'
-import { useState } from 'react'
+import { ChevronDown, ChevronRight, Clock, Code2, FolderTree, Info, Key, Lock, Package, Settings2, Terminal, Wrench, Zap } from 'lucide-react'
+import { useCallback, useState } from 'react'
 import { toast } from 'sonner'
 import { MarkdownRenderer } from '@/components/markdown/markdown-renderer'
 import { Badge } from '@/components/ui/badge'
@@ -8,15 +8,18 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { useI18n } from '@/i18n/provider'
+import { getConfig, updateConfig } from '@/lib/config'
 import { trpcClient } from '@/lib/trpc-client'
 
 export const Route = createFileRoute('/setting/skills')({
   component: RouteComponent,
   loader: async () => {
     const skills = await trpcClient.skill.list()
-    return { skills }
+    const config = await getConfig()
+    return { skills, config }
   },
 })
 
@@ -458,15 +461,22 @@ function SkillCard({ skill }: { skill: Skill }) {
 
 function RouteComponent() {
   const router = useRouter()
-  const { skills } = Route.useLoaderData()
+  const { skills, config } = Route.useLoaderData()
   const { t } = useI18n()
   const [source, setSource] = useState('https://github.com/antfu/skills')
   const [path, setPath] = useState('')
   const [ref, setRef] = useState('')
   const [installing, setInstalling] = useState(false)
+  const [contextStrategy, setContextStrategy] = useState<'eager' | 'lazy'>(config.skillsContextStrategy ?? 'eager')
 
   const builtinSkills = skills.filter(s => s.isBuiltin)
   const userSkills = skills.filter(s => !s.isBuiltin)
+
+  const handleContextStrategyChange = useCallback(async (value: 'eager' | 'lazy') => {
+    setContextStrategy(value)
+    await updateConfig('skillsContextStrategy', value)
+    toast.success('Skills 上下文策略已更新，将在下次对话时生效')
+  }, [])
 
   async function handleInstallFromGithub() {
     if (!source.trim()) {
@@ -501,6 +511,47 @@ function RouteComponent() {
           {t('settings.skills.description')}
           {t('settings.skills.count', { total: skills.length, builtin: builtinSkills.length, user: userSkills.length })}
         </p>
+      </div>
+
+      {/* Skills 上下文策略配置 */}
+      <div className="max-w-2xl rounded-lg border bg-card p-4 mb-6">
+        <div className="flex items-start gap-3">
+          <div className="mt-0.5 shrink-0 rounded-md border p-1.5 bg-background">
+            <Zap className="size-4 text-muted-foreground" />
+          </div>
+          <div className="flex-1">
+            <h2 className="text-sm font-semibold mb-1">Skills 上下文策略</h2>
+            <p className="text-xs text-muted-foreground mb-3">
+              控制 AI 在聊天时如何感知 skills 信息
+            </p>
+            <div className="flex items-center gap-3">
+              <Label className="text-sm">加载方式：</Label>
+              <Select value={contextStrategy} onValueChange={handleContextStrategyChange}>
+                <SelectTrigger className="w-48">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="eager">
+                    <div className="flex flex-col">
+                      <span className="font-medium">急迫加载</span>
+                      <span className="text-xs text-muted-foreground">AI 直接看到所有 skills 的完整信息</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="lazy">
+                    <div className="flex flex-col">
+                      <span className="font-medium">渐进式加载</span>
+                      <span className="text-xs text-muted-foreground">AI 先看摘要，需要时再查看详情</span>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="mt-3 text-xs text-muted-foreground space-y-1">
+              <p>• <strong>急迫加载</strong>：AI 在聊天开始时就能看到所有 skills 的完整提示词，可以直接使用</p>
+              <p>• <strong>渐进式加载</strong>：AI 只看到 skills 的名称和描述，需要时通过工具查看详情，节省 token</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="max-w-2xl rounded-lg border bg-card p-4 mb-6 space-y-3">

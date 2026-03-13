@@ -154,9 +154,27 @@ export class ToolRegistry {
         // 加载所有 Skill prompts（当前行为）
         return skillManager.getSystemPrompts()
 
-      case 'lazy':
-        // 不加载任何 Skill prompts（完全渐进式）
-        return []
+      case 'lazy': {
+        // 渐进式加载：只提供 skills 摘要，让 AI 使用 load_skill 工具按需加载
+        const summary = skillManager.getSkillsSummary()
+        if (summary.length === 0) {
+          return []
+        }
+
+        const skillsList = summary
+          .map(s => `- ${s.name}: ${s.description}`)
+          .join('\n')
+
+        return [`
+# Available Skills
+
+You have access to the following skills. Use the \`load_skill\` tool to load a skill's full instructions when needed:
+
+${skillsList}
+
+**Note**: Skills are loaded on-demand. When you need to use a skill's capabilities, call \`load_skill\` with the skill name to get its complete instructions.
+`.trim()]
+      }
 
       case 'smart':
         // 只加载核心 Skills 的 prompts
