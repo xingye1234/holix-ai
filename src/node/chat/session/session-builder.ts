@@ -6,6 +6,7 @@
 import type { BaseChatModel } from '@langchain/core/language_models/chat_models'
 import type { SystemMessage } from '@langchain/core/messages'
 import type { Message, Workspace } from '../../database/schema/chat'
+import type { ToolLoadingStrategy } from '../tools/tool-registry'
 import { HumanMessage, SystemMessage as LangChainSystemMessage } from '@langchain/core/messages'
 import { createAgent } from 'langchain'
 import { configStore } from '../../platform/config'
@@ -14,7 +15,6 @@ import builtinMessages from '../builtin/messages'
 import { contextSchema } from '../context'
 import { skillManager } from '../skills'
 import { createToolRegistry } from '../tools/tool-registry'
-import type { ToolLoadingStrategy } from '../tools/tool-registry'
 
 /**
  * 会话构建器配置

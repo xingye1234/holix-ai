@@ -6,14 +6,14 @@
 import type { BaseChatModel } from '@langchain/core/language_models/chat_models'
 import type { Message, Workspace } from '../../database/schema/chat'
 import type { SessionConfig, SessionStatus } from './session-state'
-import { nanoid } from 'nanoid'
 import { AsyncBatcher } from '@tanstack/pacer'
-import { messagePersister } from '../message/message-persister'
-import { chatEventEmitter } from '../events/chat-event-emitter'
-import { toolCallTracker } from '../tools/tool-call-tracker'
-import { StreamProcessor } from '../stream/stream-processor'
-import { SessionBuilder } from './session-builder'
+import { nanoid } from 'nanoid'
 import { logger } from '../../platform/logger'
+import { chatEventEmitter } from '../events/chat-event-emitter'
+import { messagePersister } from '../message/message-persister'
+import { StreamProcessor } from '../stream/stream-processor'
+import { toolCallTracker } from '../tools/tool-call-tracker'
+import { SessionBuilder } from './session-builder'
 
 /**
  * 会话启动参数

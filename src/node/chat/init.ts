@@ -8,7 +8,7 @@ import { logger } from '../platform/logger'
 import { providerStore } from '../platform/provider'
 import { update } from '../platform/update'
 import { createLlm } from './llm'
-import { chatManager } from './manager'
+import { simplifiedChatManager } from './chat-manager-v2'
 
 export function initChat() {
   // 监听聊天消息发送
@@ -68,7 +68,7 @@ export function initChat() {
     const systemMessages = typeof chat.prompts === 'string' ? JSON.parse(chat.prompts) : (chat.prompts || [])
 
     // 使用 ChatManager 启动会话（异步处理，不阻塞）
-    const requestId = await chatManager.startSession({
+    const requestId = await simplifiedChatManager.startSession({
       chatUid: chatId,
       llm,
       userMessageContent: content,
@@ -88,12 +88,12 @@ export function initChat() {
 
     if (requestId) {
       // 中止特定请求
-      const success = chatManager.abortSession(requestId)
+      const success = simplifiedChatManager.abortSession(requestId)
       logger.info(`[Chat] Abort session ${requestId}: ${success ? 'success' : 'not found'}`)
     }
     else if (chatId) {
       // 中止聊天的所有会话
-      const count = chatManager.abortChatSessions(chatId)
+      const count = simplifiedChatManager.abortChatSessions(chatId)
       logger.info(`[Chat] Aborted ${count} sessions for chat ${chatId}`)
     }
   })
