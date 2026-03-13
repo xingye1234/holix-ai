@@ -96,6 +96,17 @@ export type MessageStreamErrorEnvelope = EventEnvelope<
   }
 >
 
+/**
+ * 消息删除事件
+ */
+export type MessageDeletedEnvelope = EventEnvelope<
+  'message.deleted',
+  {
+    chatUid: string
+    messageUid: string
+  }
+>
+
 export type ChatUpdateEnvelope
   = | MessageCreatedEnvelope
     | MessageStreamingEnvelope
@@ -104,3 +115,4 @@ export type ChatUpdateEnvelope
     | MessageStreamChunkEnvelope
     | MessageStreamDoneEnvelope
     | MessageStreamErrorEnvelope
+    | MessageDeletedEnvelope
