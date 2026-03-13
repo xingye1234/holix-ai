@@ -278,27 +278,16 @@ function ConfigForm({
 
 type Skill = Awaited<ReturnType<typeof trpcClient.skill.list>>[number]
 
-const SOURCE_LABEL_MAP: Record<string, string> = {
-  'builtin': '内置',
-  'external': '外部目录',
-  '.holixai': '.holixai',
-  '.holix': '.holix',
-  '.codex': '.codex',
-  '.claude': '.claude',
-  '.cursor': '.cursor',
-  '.gemini': '.gemini',
-  '.qwen': '.qwen',
-  '.kiro': '.kiro',
-}
-
 function SkillCard({ skill }: { skill: Skill }) {
   const { t } = useI18n()
   const [expanded, setExpanded] = useState(false)
   const hasDetails = skill.tools.length > 0 || skill.declarations.length > 0 || skill.prompt || (skill.config?.length ?? 0) > 0 || skill.availableResourceDirs.length > 0 || skill.allDirEntries.length > 0
 
   const getSourceLabel = (sourceLabel: string) => {
-    if (sourceLabel === 'builtin') return t('settings.skills.sourceLabels.builtin')
-    if (sourceLabel === 'external') return t('settings.skills.sourceLabels.external')
+    if (sourceLabel === 'builtin')
+      return t('settings.skills.sourceLabels.builtin')
+    if (sourceLabel === 'external')
+      return t('settings.skills.sourceLabels.external')
     return sourceLabel
   }
 
@@ -524,8 +513,16 @@ function RouteComponent() {
             </div>
 
             <div className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground space-y-1.5">
-              <p>• <strong>急迫加载</strong>：AI 在聊天开始时就能看到所有 skills 的完整提示词，可以直接使用</p>
-              <p>• <strong>渐进式加载</strong>：AI 只看到 skills 的名称和描述，需要时通过工具查看详情，节省 token</p>
+              <p>
+                •
+                <strong>急迫加载</strong>
+                ：AI 在聊天开始时就能看到所有 skills 的完整提示词，可以直接使用
+              </p>
+              <p>
+                •
+                <strong>渐进式加载</strong>
+                ：AI 只看到 skills 的名称和描述，需要时通过工具查看详情，节省 token
+              </p>
             </div>
           </div>
         </div>
