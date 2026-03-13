@@ -78,9 +78,9 @@ const zhCN = {
         setDefaultSuccess: '已设为默认供应商',
         setDefaultError: '设置默认供应商失败',
         addSuccess: '供应商添加成功',
-        addError: '添加失败：{message}',
+        addError: '添加失败：{{message}}',
         deleteSuccess: '供应商删除成功',
-        deleteError: '删除失败：{message}',
+        deleteError: '删除失败：{{message}}',
       },
       addDialog: {
         title: '添加新供应商',
@@ -96,7 +96,7 @@ const zhCN = {
     skills: {
       title: 'Skills',
       description: '查看当前已加载的所有 Skills 及其工具能力、权限配置。',
-      count: '共 {total} 个 Skill（{builtin} 内置 / {user} 用户）。',
+      count: '共 {{total}} 个 Skill（{{builtin}} 内置 / {{user}} 用户）。',
       install: {
         title: '从 GitHub 安装 Skills',
         description: '支持仓库 URL（如 https://github.com/antfu/skills）或 owner/repo（如 antfu/skills）。也支持扫描来自其他产品的 skills 说明文件（如 SKILL.md / AGENTS.md / CLAUDE.md 等），并会自动读取本机目录（如 ~/.claude/skills）中的兼容 skills，在下方查看 skill 详情。',
@@ -106,12 +106,12 @@ const zhCN = {
         installing: '安装中...',
         button: '安装 Skill',
         errorNoRepo: '请先输入 GitHub 仓库地址',
-        successInstalled: '已安装 {count} 个 skill：{names}',
+        successInstalled: '已安装 {{count}} 个 skill：{{names}}',
         errorInstall: '安装失败',
       },
       card: {
-        version: 'v{version}',
-        toolCount: '{count} 个工具',
+        version: 'v{{version}}',
+        toolCount: '{{count}} 个工具',
         sourcePath: '来源路径：',
         toolsCapability: '工具能力',
         systemPrompt: '系统提示词扩展',
@@ -162,9 +162,9 @@ const zhCN = {
         retry: '重试',
       },
       toast: {
-        newVersionFound: '发现新版本 {version}，开始下载...',
+        newVersionFound: '发现新版本 {{version}}，开始下载...',
         upToDate: '当前已是最新版本！',
-        updateError: '更新出错：{message}',
+        updateError: '更新出错：{{message}}',
         downloadComplete: '更新已下载完成，可以立即安装。',
         devToolsToggled: '开发者控制台已切换',
         devToolsError: '打开控制台失败',
