@@ -242,23 +242,29 @@ app.on('second-instance', () => {
 })
 
 app.on('window-all-closed', async () => {
+  // macOS: 即使所有窗口关闭，应用也不退出（符合 macOS 应用习惯）
+  if (process.platform === 'darwin') {
+    return
+  }
+
+  // 其他平台：所有窗口关闭时退出应用
   await lifecycle.setPhase(LifecyclePhase.STOPPING)
   app.quit()
 })
 
-// app.on('activate', () => {
-//   logger.info('[Main] Application activated', lifecycle.getPhase(), AppWindow.getAllWindows().length)
+app.on('activate', () => {
+  logger.info('[Main] Application activated', lifecycle.getPhase(), AppWindow.getAllWindows().length)
 
-//   if (lifecycle.getPhase() === LifecyclePhase.RUNNING && AppWindow.getAllWindows().length === 0) {
-//     starting()
-//       .then(() => {
-//         logger.info('[Main] Application activated and window created.')
-//       })
-//       .catch((err) => {
-//         logger.error('[Main] Failed to activate application:', err)
-//       })
-//   }
-// })
+  if (lifecycle.getPhase() === LifecyclePhase.RUNNING && AppWindow.getAllWindows().length === 0) {
+    starting()
+      .then(() => {
+        logger.info('[Main] Application activated and window created.')
+      })
+      .catch((err) => {
+        logger.error('[Main] Failed to activate application:', err)
+      })
+  }
+})
 
 app.on('before-quit', async () => {
   setIsQuitting(true)

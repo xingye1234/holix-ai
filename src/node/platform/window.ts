@@ -60,6 +60,14 @@ export class AppWindow extends BrowserWindow {
     })
 
     this.on('close', (event) => {
+      // macOS: 红色按钮只关闭窗口，不退出应用
+      if (isMacOS && !isQuitting) {
+        event.preventDefault()
+        this.hide()
+        return
+      }
+
+      // 其他平台：根据 closeToTray 配置决定行为
       if (!isQuitting && configStore.get('closeToTray')) {
         event.preventDefault()
         this.hide()
