@@ -124,19 +124,65 @@ export class SessionBuilder {
       }
     }
 
-    // 2. Skill System Prompts（根据策略）
+    // 2. Skill 加载策略说明
+    const strategyPrompt = this.buildStrategyPrompt(toolRegistry)
+    if (strategyPrompt) {
+      content.push({ type: 'text', text: strategyPrompt })
+    }
+
+    // 3. Skill System Prompts（根据策略）
     const skillPrompts = toolRegistry.getSkillSystemPrompts()
     for (const prompt of skillPrompts) {
       content.push({ type: 'text', text: prompt })
     }
 
-    // 3. 工作区上下文
+    // 4. 工作区上下文
     const workspacePrompt = this.buildWorkspacePrompt()
     if (workspacePrompt) {
       content.push({ type: 'text', text: workspacePrompt })
     }
 
     return new LangChainSystemMessage({ content })
+  }
+
+  /**
+   * 构建策略提示词
+   */
+  private buildStrategyPrompt(toolRegistry: any): string | null {
+    const config = toolRegistry.getConfig()
+    const strategy = config.strategy
+
+    switch (strategy) {
+      case 'lazy':
+        return [
+          '## Skill Loading Strategy',
+          '',
+          'Skills are loaded on-demand in this conversation. When you need a specific skill:',
+          '1. Use the `load_skill` tool to dynamically load it',
+          '2. After loading, the skill\'s tools and capabilities will become available',
+          '3. Only load skills when they are actually needed for the user\'s request',
+          '',
+          'This progressive loading approach keeps the context focused and efficient.',
+        ].join('\n')
+
+      case 'smart':
+        return [
+          '## Skill Loading Strategy',
+          '',
+          'Core skills are pre-loaded for quick access. Additional skills can be loaded on-demand:',
+          '- **Pre-loaded skills**: These are immediately available for use',
+          '- **Additional skills**: Use the `load_skill` tool to load them when needed',
+          '',
+          'Prefer using pre-loaded skills when possible, and only load additional skills when necessary.',
+        ].join('\n')
+
+      case 'eager':
+        // Eager 策略下所有 Skills 都已加载，不需要特别说明
+        return null
+
+      default:
+        return null
+    }
   }
 
   /**
