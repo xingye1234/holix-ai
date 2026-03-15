@@ -10,8 +10,8 @@
   "main": "./.holix/main/main.mjs",
   "scripts": {
     "dev:vite": "vite",
-    "dev:main": "tsdown -- --dev",
-    "build:main": "tsdown",
+    "dev:main": "tsdown --config-loader unrun -- --dev",
+    "build:main": "tsdown --config-loader unrun",
     "build:vite": "vite build",
     "dev:app": "pnpm run dev:main && electron .",
     "build": "pnpm build:main && pnpm build:vite",
