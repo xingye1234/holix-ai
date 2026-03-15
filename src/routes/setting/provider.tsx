@@ -20,6 +20,7 @@ import {
   getProviders,
   removeProvider,
   setDefaultProvider,
+  toggleProvider,
   updateProvider,
 } from '@/lib/provider'
 
@@ -124,7 +125,8 @@ function ProviderFormDialog({
       })
     }
     else {
-      onUpdate?.(initialData!.name, {
+      if (!initialData) return
+      onUpdate?.(initialData.name, {
         avatar: form.avatar,
         baseUrl: form.baseUrl,
         apiKey: form.apiKey,
@@ -254,7 +256,8 @@ function ProviderFormDialog({
                       variant="destructive"
                       size="sm"
                       onClick={() => {
-                        onDelete?.(initialData!.name)
+                        if (!initialData) return
+                        onDelete?.(initialData.name)
                         setDeletePopoverOpen(false)
                         onOpenChange(false)
                       }}
@@ -309,7 +312,7 @@ function RouteComponent() {
 
   const handleToggle = useCallback(async (name: string, enabled: boolean) => {
     try {
-      const updated = await updateProvider(name, { enabled })
+      const updated = await toggleProvider(name, enabled)
       setProviders(prev => prev.map(p => (p.name === name ? updated : p)))
     }
     catch (error) {
@@ -332,9 +335,9 @@ function RouteComponent() {
   const handleAddProvider = useCallback(async (data: AIProvider) => {
     try {
       const created = await addProvider(data)
+      await setDefaultProvider(created.name)
       setProviders(prev => [...prev, created])
       setDefaultProviderState(created.name)
-      await setDefaultProvider(created.name)
       toast.success(t('settings.provider.toast.addSuccess'))
     }
     catch (error) {
@@ -356,8 +359,11 @@ function RouteComponent() {
   const handleDeleteProvider = useCallback(async (name: string) => {
     try {
       await removeProvider(name)
-      const remaining = providers.filter(p => p.name !== name)
-      setProviders(remaining)
+      let remaining: AIProvider[] = []
+      setProviders((prev) => {
+        remaining = prev.filter(p => p.name !== name)
+        return remaining
+      })
       if (defaultProviderState === name && remaining.length > 0) {
         setDefaultProviderState(remaining[0].name)
         await setDefaultProvider(remaining[0].name)
@@ -368,7 +374,7 @@ function RouteComponent() {
       console.error('Failed to delete provider:', error)
       toast.error(t('settings.provider.toast.deleteError', { message: (error as Error).message }))
     }
-  }, [providers, defaultProviderState, t])
+  }, [defaultProviderState, t])
 
   const sortedProviders = [...providers].sort((a, b) => {
     if (a.enabled !== b.enabled)
