@@ -12,71 +12,14 @@
 import { X } from 'lucide-react'
 import * as React from 'react'
 import { cn } from '@/lib/utils'
-
-// ─── 常见模型候选表 ────────────────────────────────────────────────────────────
-
-export const COMMON_MODELS: string[] = [
-  // OpenAI
-  'gpt-4o',
-  'gpt-4o-mini',
-  'gpt-4-turbo',
-  'gpt-4',
-  'gpt-3.5-turbo',
-  'o1',
-  'o1-mini',
-  'o3',
-  'o3-mini',
-  // Anthropic
-  'claude-3-5-sonnet-20241022',
-  'claude-3-5-haiku-20241022',
-  'claude-3-opus-20240229',
-  'claude-3-sonnet-20240229',
-  'claude-3-haiku-20240307',
-  // Google
-  'gemini-2.0-flash',
-  'gemini-2.0-flash-thinking-exp',
-  'gemini-1.5-pro',
-  'gemini-1.5-flash',
-  'gemini-1.5-flash-8b',
-  // DeepSeek
-  'deepseek-chat',
-  'deepseek-reasoner',
-  // Moonshot
-  'moonshot-v1-8k',
-  'moonshot-v1-32k',
-  'moonshot-v1-128k',
-  // Qwen（阿里云百炼）
-  'qwen-max',
-  'qwen-plus',
-  'qwen-turbo',
-  'qwen-long',
-  'qwen2.5-72b-instruct',
-  'qwq-32b',
-  // 智谱 AI
-  'glm-4',
-  'glm-4-flash',
-  'glm-4-air',
-  'glm-4-plus',
-  'glm-z1-flash',
-  // Ollama 常见本地模型
-  'llama3.3',
-  'llama3.2',
-  'llama3.1',
-  'llama3',
-  'mistral',
-  'mistral-nemo',
-  'qwen2.5',
-  'phi4',
-  'gemma3',
-  'deepseek-r1',
-]
+import { ALL_MODELS } from '@/lib/model-presets'
 
 // ─── Props ─────────────────────────────────────────────────────────────────────
 
 export interface TagInputProps {
   value: string[]
   onChange: (values: string[]) => void
-  /** 候选词列表，默认使用内置 COMMON_MODELS */
+  /** 候选词列表，默认使用内置 ALL_MODELS */
   suggestions?: string[]
   placeholder?: string
   className?: string
@@ -88,7 +31,7 @@ export interface TagInputProps {
 export function TagInput({
   value,
   onChange,
-  suggestions = COMMON_MODELS,
+  suggestions = ALL_MODELS,
   placeholder = '输入模型名称，按 Enter 添加…',
   className,
   disabled = false,
