@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 export default function SplashScreen() {
   return (
     <motion.div
-      role="dialog"
+      role="status"
       aria-label="应用加载中"
       className="fixed inset-0 z-[60] bg-background flex flex-col items-center justify-center gap-3"
       initial={{ opacity: 1 }}

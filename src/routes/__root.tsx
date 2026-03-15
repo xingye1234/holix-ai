@@ -19,7 +19,7 @@ function RootLayout() {
   return (
     <>
       <AnimatePresence>
-        {!splashDone && <SplashScreen />}
+        {!splashDone && <SplashScreen key="splash" />}
       </AnimatePresence>
       <div className="size-full">
         <AppHeader />
