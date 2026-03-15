@@ -92,6 +92,12 @@ const zhCN = {
         cancelButton: '取消',
         addButton: '添加',
       },
+      vendorPresetLabel: '快速选择厂商',
+      editDialog: {
+        title: '编辑供应商',
+        saveButton: '保存',
+      },
+      noModels: '暂无模型',
     },
     skills: {
       title: 'Skills',

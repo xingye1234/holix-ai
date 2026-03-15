@@ -92,6 +92,12 @@ const enUS = {
         cancelButton: 'Cancel',
         addButton: 'Add',
       },
+      vendorPresetLabel: 'Quick vendor select',
+      editDialog: {
+        title: 'Edit Provider',
+        saveButton: 'Save',
+      },
+      noModels: 'No models',
     },
     skills: {
       title: 'Skills',
