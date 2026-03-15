@@ -6,9 +6,9 @@ import { Button } from '@/components/ui/button'
 function WelcomePage() {
   const navigate = useNavigate()
 
-  function handleStart() {
+  async function handleStart() {
     localStorage.setItem('holix-welcomed', '1')
-    navigate({ to: '/' })
+    await navigate({ to: '/' })
   }
 
   return (
