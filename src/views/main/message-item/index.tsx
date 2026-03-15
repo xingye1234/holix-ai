@@ -14,6 +14,7 @@ import { useMessageById } from '@/hooks/message'
 import { command } from '@/lib/command'
 import { formatWithLocalTZ } from '@/lib/time'
 import { cn } from '@/lib/utils'
+import useUI from '@/store/ui'
 import { MessageFooter } from './footer'
 import { GeneratingIndicator } from './generating'
 import { MessageMarkdown } from './markdown'
@@ -28,6 +29,8 @@ interface MessageItemProps {
 // ✅ Telegram 架构：只有该消息更新时才重渲染
 export const MessageItem = memo(({ id, index, onDelete }: MessageItemProps) => {
   const message = useMessageById(id)
+  const layoutMode = useUI(state => state.layoutMode)
+
   if (!message)
     return null
 
@@ -96,7 +99,7 @@ export const MessageItem = memo(({ id, index, onDelete }: MessageItemProps) => {
 
   const deleteHandler = useCallback(() => onDelete?.(id), [onDelete, id])
 
-  // ── system 消息 ──────────────────────────────────────────────────────────
+  // ── system 消息（两种布局相同） ──────────────────────────────────────────
   if (isSystem) {
     return (
       <div className="flex justify-center my-4" data-message-index={index}>
@@ -108,7 +111,7 @@ export const MessageItem = memo(({ id, index, onDelete }: MessageItemProps) => {
     )
   }
 
-  // ── 工具调用列表 ─────────────────────────────────────────────────────────
+  // ── 工具调用列表（两种布局共用） ─────────────────────────────────────────
   const toolCallList = !isUser && toolCallPairs.length > 0 && (
     <div className="flex flex-col gap-1.5 mb-2 w-full">
       {toolCallPairs.map(pair => (
@@ -121,7 +124,130 @@ export const MessageItem = memo(({ id, index, onDelete }: MessageItemProps) => {
     </div>
   )
 
-  // ── 主体 ─────────────────────────────────────────────────────────────────
+  // ── Article 布局（ChatGPT 风格）─────────────────────────────────────────
+  if (layoutMode === 'article') {
+    return (
+      <div
+        className="w-full max-w-3xl mx-auto px-6 py-4 group"
+        data-message-index={index}
+      >
+        {isUser
+          ? (
+            /* 用户消息：右对齐气泡 */
+              <div className="flex justify-end">
+                <ContextMenu>
+                  <ContextMenuTrigger asChild>
+                    <div className="max-w-[75%] bg-primary text-primary-foreground rounded-2xl rounded-tr-none px-4 py-2.5 text-sm shadow-sm">
+                      <p className="leading-relaxed whitespace-pre-wrap wrap-break-word">{content}</p>
+                      <div className="flex items-center justify-end mt-1">
+                        <span className="text-[10px] opacity-40">{formatWithLocalTZ(message.createdAt, 'HH:mm')}</span>
+                      </div>
+                    </div>
+                  </ContextMenuTrigger>
+                  <ContextMenuContent>
+                    <ContextMenuItem onClick={() => content && navigator.clipboard.writeText(content)}>
+                      <Copy className="w-3.5 h-3.5 mr-2" />
+                      复制消息
+                    </ContextMenuItem>
+                    <ContextMenuItem variant="destructive" onClick={deleteHandler}>
+                      删除消息
+                    </ContextMenuItem>
+                  </ContextMenuContent>
+                </ContextMenu>
+              </div>
+            )
+          : (
+            /* AI 消息：全宽文章式 */
+              <div className="flex flex-col gap-2">
+                {/* 标题行：avatar + 角色名 */}
+                <div className="flex items-center gap-2 mb-1">
+                  <Avatar className="w-6 h-6 border shadow-sm">
+                    <AvatarImage src="" />
+                    <AvatarFallback className="bg-secondary text-secondary-foreground">
+                      <Bot className="w-3.5 h-3.5" />
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-xs font-medium text-muted-foreground">AI</span>
+                </div>
+
+                {/* 工具调用 */}
+                {toolCallList}
+
+                {/* 正文 */}
+                <ContextMenu>
+                  <ContextMenuTrigger asChild>
+                    <div
+                      className={cn(
+                        'text-sm leading-relaxed',
+                        isError && 'text-destructive',
+                        isPending && 'opacity-70',
+                      )}
+                    >
+                      {isError && (
+                        <div className="flex items-center gap-2 mb-2 text-destructive font-medium">
+                          <AlertCircle className="w-4 h-4 shrink-0" />
+                          <span>生成出错</span>
+                        </div>
+                      )}
+
+                      {generating && !content
+                        ? <GeneratingIndicator isPending={isPending} />
+                        : (
+                            <MessageMarkdown
+                              content={content || (isError ? (message.error ?? '') : '')}
+                              isUser={false}
+                              isStreaming={isStreaming && !!content}
+                            />
+                          )}
+
+                      {isError && message.error && (
+                        <div className="mt-2 text-xs opacity-70 border-t border-destructive/20 pt-2">
+                          {message.error}
+                        </div>
+                      )}
+                    </div>
+                  </ContextMenuTrigger>
+                  <ContextMenuContent>
+                    {!generating && (
+                      <>
+                        <ContextMenuItem onClick={() => content && navigator.clipboard.writeText(content)}>
+                          <Copy className="w-3.5 h-3.5 mr-2" />
+                          复制消息
+                        </ContextMenuItem>
+                        <ContextMenuItem variant="destructive" onClick={deleteHandler}>
+                          删除消息
+                        </ContextMenuItem>
+                      </>
+                    )}
+                  </ContextMenuContent>
+                </ContextMenu>
+
+                {!generating && (
+                  <MessageFooter content={content} createdAt={message.createdAt} />
+                )}
+
+                {isStreaming && (
+                  <button
+                    type="button"
+                    onClick={handleCancelGeneration}
+                    className={cn(
+                      'self-start flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium',
+                      'text-muted-foreground border border-border/60 bg-background/80 backdrop-blur-sm',
+                      'hover:text-destructive hover:border-destructive/50 hover:bg-destructive/5',
+                      'transition-all duration-150 shadow-sm cursor-pointer select-none',
+                    )}
+                  >
+                    <OctagonX className="w-3 h-3 shrink-0" />
+                    停止生成
+                  </button>
+                )}
+              </div>
+            )}
+      </div>
+    )
+  }
+
+  // ── Chat 布局（气泡式，默认） ─────────────────────────────────────────────
   return (
     <div
       className={cn('flex w-full gap-3 px-4 py-3 group', isUser ? 'flex-row-reverse' : 'flex-row')}

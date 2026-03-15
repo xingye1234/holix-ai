@@ -10,7 +10,7 @@ function RootLayout() {
     <>
       <div className="size-full">
         <AppHeader />
-        <section className="flex border-t h-[calc(100vh-var(--app-header-height))]">
+        <section className="flex border-t h-[calc(100vh-var(--app-header-height))] overflow-hidden">
           <AppSideBar>
             <AsideChatHeader />
             <AsideChatSidebar />
