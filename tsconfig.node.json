@@ -9,6 +9,7 @@
     "src/types/**/*",
     "src/share/**/*",
     "src/env.d.ts",
+    "build/**/*",
     "tsdown.config.ts"
   ]
 }
