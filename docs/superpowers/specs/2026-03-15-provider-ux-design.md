@@ -32,7 +32,8 @@ export interface VendorPreset {
 
 ### Vendor Presets
 
-All model IDs are sourced from official provider API documentation (verified 2026-03).
+Model IDs sourced from official provider API documentation and verified via web search in 2026-03.
+Note: the OpenAI `gpt-4.1` family and `o4-mini` were released in April 2025 and confirmed available at the time of writing. Anthropic short-form IDs (`claude-opus-4-6`, `claude-sonnet-4-6`) are the official API identifiers per Anthropic's documentation; they do not use date-stamp suffixes in the short form.
 
 #### OpenAI
 ```ts
@@ -65,10 +66,8 @@ All model IDs are sourced from official provider API documentation (verified 202
   models: [
     'claude-opus-4-6',
     'claude-sonnet-4-6',
+    'claude-haiku-4-5-20251001',
     'claude-opus-4-5',
-    'claude-opus-4-1',
-    'claude-opus-4',
-    'claude-sonnet-4',
     'claude-3-5-sonnet-20241022',
     'claude-3-5-haiku-20241022',
   ],
@@ -160,6 +159,8 @@ All model IDs are sourced from official provider API documentation (verified 202
 }
 ```
 
+Note: `glm-4.7` and `glm-4.7-flash` use dotted versioning per Z.ai's official API docs (released Dec 2025); older GLM-4 entries use hyphen format. Both formats are correct for their respective model generations.
+
 #### Ollama（本地）
 ```ts
 {
@@ -196,44 +197,58 @@ export const ALL_MODELS: string[] = VENDOR_PRESETS.flatMap(v => v.models)
 
 ### Layout
 
-Cards become compact, read-only status displays. All editing moves to `ProviderFormDialog`.
+Cards become compact, read-only status displays. All editing moves to `ProviderFormDialog`. Card sort order is preserved from current implementation (enabled first, then default first within enabled).
 
 ```
 ┌─────────────────────────────────────────┐
-│  🟢  OpenAI          [默认]    ●──  ○   │
-│      api.openai.com/v1                  │
-│      gpt-4.1  gpt-4o  o3  +6           │
-│                              [编辑]     │
+│  🟢  OpenAI          [默认]  ☆  ━━━ ●  │  ← avatar + name + badge + star + toggle
+│      api.openai.com/v1                  │  ← baseUrl preview (truncated)
+│      gpt-4.1  gpt-4o  o3  +6           │  ← first 3 models + overflow count
+│                              [编辑]     │  ← edit button
 └─────────────────────────────────────────┘
 ```
 
 **Card elements:**
-- Row 1: avatar (emoji), provider name, Default badge (if applicable), enabled Switch
-- Row 2: baseUrl preview — truncated to hostname + path prefix, `text-xs text-muted-foreground`
-- Row 3: first 3 model names as small badges + `+N` count badge if more exist; if no models: `text-muted-foreground` placeholder
-- Row 4: "编辑" Button (`variant="outline" size="sm"`) aligned to the right
+- Row 1: avatar emoji, provider name, Default badge (conditional), Star button (set as default, hidden if already default), enabled Switch
+- Row 2: baseUrl hostname preview, `text-xs text-muted-foreground`
+- Row 3: first 3 model names as small badges + `+N` count badge if `models.length > 3`; if `models.length === 0`: muted placeholder text "暂无模型"
+- Row 4: "编辑" Button (`variant="outline" size="sm"`) right-aligned
 
-**Removed from cards:** Base URL input, API Key input, TagInput, delete button.
+**Star button ("设为默认"):** ghost icon button, `Star` icon from lucide-react, `title` attribute for tooltip. Hidden when this provider is already the default. Behaviour identical to current implementation (`handleSetDefault`).
 
-The Switch remains on the card (high-frequency action). Delete moves to the edit dialog.
+**Removed from cards:** Base URL Input, API Key Input, TagInput, delete Popover.
+
+The Switch and Star button remain on the card (high-frequency actions).
 
 ### Empty state
 
-When `providers.length === 0`, show a centred empty state with a "新增供应商" button — same as today but more prominent.
+When `providers.length === 0`, render the empty state with a prominent "新增供应商" button (same copy as today).
 
 ---
 
 ## ProviderFormDialog
 
-A single dialog component used for both add and edit. Receives `mode: 'add' | 'edit'` and an optional existing `AIProvider`.
+A single dialog component used for both add and edit, defined within `provider.tsx`. Accepts:
 
-### Dialog header
-- Add mode: title "添加供应商"
-- Edit mode: title "编辑供应商"
+```ts
+interface ProviderFormDialogProps {
+  mode: 'add' | 'edit'
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  initialData?: AIProvider   // required when mode === 'edit'
+  onAdd?: (provider: AIProvider) => void
+  onUpdate?: (name: string, updates: Partial<AIProvider>) => void
+  onDelete?: (name: string) => void
+}
+```
+
+**Edit mode initialisation:** form state is populated from `initialData` on dialog open. The `name` field is **read-only in edit mode** (displayed as plain text, not an Input), because `name` is the primary key used by `updateProvider(name, updates)`. Renaming a provider is not supported.
+
+**New provider `enabled` default:** `false`, matching current behaviour.
 
 ### Vendor preset chips (top section)
 
-A labelled section "快速选择厂商" showing 8 chip buttons, one per vendor, in a wrapping flex row:
+A labelled section "快速选择厂商" with 8 chip buttons in a wrapping flex row:
 
 ```
 快速选择厂商
@@ -241,45 +256,67 @@ A labelled section "快速选择厂商" showing 8 chip buttons, one per vendor, 
 [☁️ Qwen]  [🌙 Moonshot]  [🧠 智谱]   [🦙 Ollama]
 ```
 
-Clicking a chip immediately overwrites all four fields: name, avatar, baseUrl, models. No confirmation. Fields remain editable after the fill.
+Active chip detection uses a `selectedVendorId: string | null` field in local form state — not name string matching. When a chip is clicked, `selectedVendorId` is set to the vendor's `id`. The chip with `id === selectedVendorId` renders with `variant="secondary"`; all others render with `variant="outline"`.
 
-Chips use `variant="outline" size="sm"`. The active/selected chip (matching current `name` value) gets `variant="secondary"` to indicate the current selection.
+Clicking a chip immediately overwrites: `name` (add mode only — name is read-only in edit mode), `avatar`, `baseUrl`, `models`. No confirmation required.
 
-### Form fields (vertical layout, no grid)
+If the user manually edits `name`, `avatar`, or `baseUrl` after selecting a chip, `selectedVendorId` is cleared (chip highlight resets).
 
-Each field: `<Label>` above `<Input>` or `<TagInput>`, full width, `space-y-4` between fields.
+### Form fields (vertical layout)
+
+Each field: `<Label>` stacked above its control, full width, `space-y-4` between fields.
 
 ```
-名称 *
-[OpenAI                                    ]
-
-头像
-[🟢                                        ]
-
-Base URL *
-[https://api.openai.com/v1                 ]
-
-API Key
-[••••••••••••••••••••••••••••••••••         ]
-
-模型列表
-[gpt-4.1 ✕][gpt-4o ✕][o3 ✕]  输入添加…
+名称 *                         ← Input (add mode) or plain text (edit mode)
+头像                           ← Input, maxLength=2
+Base URL *                     ← Input type="url"
+API Key                        ← Input type="password"
+模型列表                       ← TagInput with ALL_MODELS suggestions
 ```
 
-- Name and Base URL are required (save button disabled if either is empty)
-- API Key uses `type="password"`
-- Models field is `TagInput` with `ALL_MODELS` suggestions
+Name and Base URL are required. Save/Add button is disabled when either is empty.
 
 ### Dialog footer
 
 ```
-Edit mode:   [删除供应商]        [取消]  [保存]
-Add mode:                        [取消]  [添加]
+Edit mode:   [删除供应商]          [取消] [保存]
+Add mode:                          [取消] [添加]
 ```
 
-- Delete button: `variant="destructive"`, left-aligned; triggers inline confirm (Popover or confirm text swap) before calling `removeProvider`
-- Cancel: closes dialog, no changes
-- Save/Add: calls `updateProvider` or `addProvider`
+- **Delete button:** `variant="destructive"`, left-aligned, edit mode only. Uses a `Popover` (consistent with existing pattern in this file) for inline confirmation. Popover contains confirmation text and a "确认删除" button that calls `onDelete`.
+- **取消:** closes dialog, discards changes.
+- **保存 / 添加:** calls `onUpdate` or `onAdd`; closes dialog on success.
+
+---
+
+## i18n
+
+The following new keys are added to `settings.provider` in both locale files:
+
+```ts
+// zh-CN additions
+provider: {
+  // existing keys preserved...
+  vendorPresetLabel: '快速选择厂商',
+  editDialog: {
+    title: '编辑供应商',
+    saveButton: '保存',
+  },
+  noModels: '暂无模型',
+}
+
+// en-US additions
+provider: {
+  vendorPresetLabel: 'Quick vendor select',
+  editDialog: {
+    title: 'Edit Provider',
+    saveButton: 'Save',
+  },
+  noModels: 'No models',
+}
+```
+
+Reused existing keys: `addDialog.title`, `addDialog.cancelButton`, `addDialog.addButton`, `deleteButton`, `deleteConfirmation`, `confirmDelete`, `setDefaultTitle`, `modelsLabel`, `apiKeyPlaceholder`.
 
 ---
 
@@ -289,9 +326,11 @@ Add mode:                        [取消]  [添加]
 |------|--------|--------|
 | `src/lib/model-presets.ts` | Create | `VendorPreset` interface, `VENDOR_PRESETS` array, `ALL_MODELS` export |
 | `src/components/ui/tag-input.tsx` | Modify | Remove inline `COMMON_MODELS`; import `ALL_MODELS` from `model-presets.ts` |
-| `src/routes/setting/provider.tsx` | Rewrite | Compact cards + extract `ProviderFormDialog` component |
+| `src/routes/setting/provider.tsx` | Rewrite | Compact cards + `ProviderFormDialog` component |
+| `src/i18n/locales/zh-CN.ts` | Modify | Add `vendorPresetLabel`, `editDialog`, `noModels` under `settings.provider` |
+| `src/i18n/locales/en-US.ts` | Modify | Same keys in English |
 
-No new dependencies. No schema or store changes. No i18n additions (new text hardcoded; existing keys reused where possible).
+No new dependencies. No schema or store changes.
 
 ---
 
@@ -302,3 +341,4 @@ No new dependencies. No schema or store changes. No i18n additions (new text har
 - OpenRouter or other aggregator presets
 - Model capability metadata (context window, pricing)
 - Drag-to-reorder providers
+- Renaming existing providers
