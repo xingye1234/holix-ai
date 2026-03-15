@@ -4,6 +4,7 @@ const zhCN = {
     save: '保存',
     cancel: '取消',
     add: '新增',
+    edit: '编辑',
   },
   home: {
     title: '与 Holix AI 对话',

@@ -488,7 +488,7 @@ function RouteComponent() {
                         onClick={() => openEditDialog(provider)}
                       >
                         <Pencil size={12} className="mr-1" />
-                        编辑
+                        {t('common.edit')}
                       </Button>
                     </div>
                   </div>

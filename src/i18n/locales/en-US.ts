@@ -4,6 +4,7 @@ const enUS = {
     save: 'Save',
     cancel: 'Cancel',
     add: 'Add',
+    edit: 'Edit',
   },
   home: {
     title: 'Chat with Holix AI',
