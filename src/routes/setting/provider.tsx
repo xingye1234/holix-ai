@@ -44,6 +44,14 @@ function getHostname(url: string): string {
 
 // ─── ProviderFormDialog ────────────────────────────────────────────────────
 
+const EMPTY_FORM = {
+  name: '',
+  avatar: '🤖',
+  baseUrl: '',
+  apiKey: '',
+  models: [] as string[],
+}
+
 interface ProviderFormDialogProps {
   mode: 'add' | 'edit'
   open: boolean
@@ -65,15 +73,7 @@ function ProviderFormDialog({
 }: ProviderFormDialogProps) {
   const { t } = useI18n()
 
-  const emptyForm = {
-    name: '',
-    avatar: '🤖',
-    baseUrl: '',
-    apiKey: '',
-    models: [] as string[],
-  }
-
-  const [form, setForm] = useState(emptyForm)
+  const [form, setForm] = useState(EMPTY_FORM)
   const [selectedVendorId, setSelectedVendorId] = useState<string | null>(null)
   const [deletePopoverOpen, setDeletePopoverOpen] = useState(false)
 
@@ -90,11 +90,11 @@ function ProviderFormDialog({
       })
     }
     else {
-      setForm(emptyForm)
+      setForm(EMPTY_FORM)
     }
     setSelectedVendorId(null)
     setDeletePopoverOpen(false)
-  }, [open])
+  }, [open, mode, initialData])
 
   function handleVendorChip(vendor: VendorPreset) {
     setSelectedVendorId(vendor.id)
