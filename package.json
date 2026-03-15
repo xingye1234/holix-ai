@@ -7,6 +7,10 @@
   "author": "",
   "license": "MIT",
   "keywords": [],
+  "engines": {
+    "node": ">=22",
+    "pnpm": ">=10"
+  },
   "main": "./.holix/main/main.mjs",
   "scripts": {
     "dev:vite": "vite",
