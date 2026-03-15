@@ -1,7 +1,8 @@
 import type { AIProvider } from '@/types/provider'
+import type { VendorPreset } from '@/lib/model-presets'
 import { createFileRoute } from '@tanstack/react-router'
-import { Plus, Star } from 'lucide-react'
-import { useCallback, useState } from 'react'
+import { Pencil, Plus, Star } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -12,6 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Switch } from '@/components/ui/switch'
 import { TagInput } from '@/components/ui/tag-input'
 import { useI18n } from '@/i18n/provider'
+import { ALL_MODELS, VENDOR_PRESETS } from '@/lib/model-presets'
 import {
   addProvider,
   getDefaultProvider,
@@ -29,30 +31,281 @@ export const Route = createFileRoute('/setting/provider')({
   },
 })
 
+// ─── Helper ────────────────────────────────────────────────────────────────
+
+function getHostname(url: string): string {
+  try {
+    return new URL(url).hostname
+  }
+  catch {
+    return url
+  }
+}
+
+// ─── ProviderFormDialog ────────────────────────────────────────────────────
+
+interface ProviderFormDialogProps {
+  mode: 'add' | 'edit'
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  initialData?: AIProvider
+  onAdd?: (provider: AIProvider) => void
+  onUpdate?: (name: string, updates: Partial<AIProvider>) => void
+  onDelete?: (name: string) => void
+}
+
+function ProviderFormDialog({
+  mode,
+  open,
+  onOpenChange,
+  initialData,
+  onAdd,
+  onUpdate,
+  onDelete,
+}: ProviderFormDialogProps) {
+  const { t } = useI18n()
+
+  const emptyForm = {
+    name: '',
+    avatar: '🤖',
+    baseUrl: '',
+    apiKey: '',
+    models: [] as string[],
+  }
+
+  const [form, setForm] = useState(emptyForm)
+  const [selectedVendorId, setSelectedVendorId] = useState<string | null>(null)
+  const [deletePopoverOpen, setDeletePopoverOpen] = useState(false)
+
+  useEffect(() => {
+    if (!open)
+      return
+    if (mode === 'edit' && initialData) {
+      setForm({
+        name: initialData.name,
+        avatar: initialData.avatar || '🤖',
+        baseUrl: initialData.baseUrl,
+        apiKey: initialData.apiKey,
+        models: initialData.models,
+      })
+    }
+    else {
+      setForm(emptyForm)
+    }
+    setSelectedVendorId(null)
+    setDeletePopoverOpen(false)
+  }, [open])
+
+  function handleVendorChip(vendor: VendorPreset) {
+    setSelectedVendorId(vendor.id)
+    setForm(prev => ({
+      ...prev,
+      ...(mode === 'add' ? { name: vendor.name } : {}),
+      avatar: vendor.avatar,
+      baseUrl: vendor.baseUrl,
+      models: vendor.models,
+    }))
+  }
+
+  function handleFieldChange(field: 'name' | 'avatar' | 'baseUrl', value: string) {
+    setSelectedVendorId(null)
+    setForm(prev => ({ ...prev, [field]: value }))
+  }
+
+  function handleSave() {
+    if (mode === 'add') {
+      onAdd?.({
+        name: form.name,
+        avatar: form.avatar,
+        baseUrl: form.baseUrl,
+        apiKey: form.apiKey,
+        models: form.models,
+        enabled: false,
+      })
+    }
+    else {
+      onUpdate?.(initialData!.name, {
+        avatar: form.avatar,
+        baseUrl: form.baseUrl,
+        apiKey: form.apiKey,
+        models: form.models,
+      })
+    }
+    onOpenChange(false)
+  }
+
+  const isValid = form.name.trim() !== '' && form.baseUrl.trim() !== ''
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>
+            {mode === 'edit'
+              ? t('settings.provider.editDialog.title')
+              : t('settings.provider.addDialog.title')}
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4 py-2">
+          {/* Vendor preset chips */}
+          <div className="space-y-2">
+            <Label>{t('settings.provider.vendorPresetLabel')}</Label>
+            <div className="flex flex-wrap gap-2">
+              {VENDOR_PRESETS.map(vendor => (
+                <Button
+                  key={vendor.id}
+                  type="button"
+                  variant={selectedVendorId === vendor.id ? 'secondary' : 'outline'}
+                  size="sm"
+                  onClick={() => handleVendorChip(vendor)}
+                >
+                  {vendor.avatar}
+                  {' '}
+                  {vendor.name}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          {/* Name */}
+          <div className="space-y-2">
+            <Label htmlFor="dialog-name">
+              {t('settings.provider.addDialog.nameLabel')}
+              {' '}
+              *
+            </Label>
+            {mode === 'add'
+              ? (
+                  <Input
+                    id="dialog-name"
+                    value={form.name}
+                    onChange={e => handleFieldChange('name', e.target.value)}
+                    placeholder={t('settings.provider.addDialog.namePlaceholder')}
+                  />
+                )
+              : (
+                  <p id="dialog-name" className="py-1 text-sm">
+                    {form.name}
+                  </p>
+                )}
+          </div>
+
+          {/* Avatar */}
+          <div className="space-y-2">
+            <Label htmlFor="dialog-avatar">{t('settings.provider.addDialog.avatarLabel')}</Label>
+            <Input
+              id="dialog-avatar"
+              value={form.avatar}
+              onChange={e => handleFieldChange('avatar', e.target.value)}
+              maxLength={2}
+              placeholder={t('settings.provider.addDialog.avatarPlaceholder')}
+            />
+          </div>
+
+          {/* Base URL */}
+          <div className="space-y-2">
+            <Label htmlFor="dialog-baseUrl">Base URL *</Label>
+            <Input
+              id="dialog-baseUrl"
+              type="url"
+              value={form.baseUrl}
+              onChange={e => handleFieldChange('baseUrl', e.target.value)}
+              placeholder="https://api.example.com/v1"
+            />
+          </div>
+
+          {/* API Key */}
+          <div className="space-y-2">
+            <Label htmlFor="dialog-apiKey">API Key</Label>
+            <Input
+              id="dialog-apiKey"
+              type="password"
+              value={form.apiKey}
+              onChange={e => setForm(prev => ({ ...prev, apiKey: e.target.value }))}
+              placeholder={t('settings.provider.apiKeyPlaceholder')}
+            />
+          </div>
+
+          {/* Models */}
+          <div className="space-y-2">
+            <Label>{t('settings.provider.modelsLabel')}</Label>
+            <TagInput
+              value={form.models}
+              suggestions={ALL_MODELS}
+              onChange={models => setForm(prev => ({ ...prev, models }))}
+            />
+          </div>
+        </div>
+
+        <DialogFooter className="flex-row items-center">
+          {mode === 'edit' && (
+            <Popover open={deletePopoverOpen} onOpenChange={setDeletePopoverOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="destructive" size="sm" className="mr-auto">
+                  {t('settings.provider.deleteButton')}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80">
+                <div className="space-y-4">
+                  <p className="text-sm">{t('settings.provider.deleteConfirmation')}</p>
+                  <div className="flex justify-end">
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => {
+                        onDelete?.(initialData!.name)
+                        setDeletePopoverOpen(false)
+                        onOpenChange(false)
+                      }}
+                    >
+                      {t('settings.provider.confirmDelete')}
+                    </Button>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+          )}
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            {t('settings.provider.addDialog.cancelButton')}
+          </Button>
+          <Button onClick={handleSave} disabled={!isValid}>
+            {mode === 'edit'
+              ? t('settings.provider.editDialog.saveButton')
+              : t('settings.provider.addDialog.addButton')}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// ─── RouteComponent ────────────────────────────────────────────────────────
+
 function RouteComponent() {
   const { t } = useI18n()
   const { providers: initialProviders, defaultProvider: initialDefaultProvider } = Route.useLoaderData()
   const [providers, setProviders] = useState<AIProvider[]>(initialProviders)
-  const [defaultProviderState, setDefaultProviderState] = useState(initialDefaultProvider || providers[0]?.name || '')
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [newProvider, setNewProvider] = useState<AIProvider>({
-    name: '',
-    baseUrl: '',
-    apiKey: '',
-    models: [],
-    enabled: false,
-    avatar: '🤖',
-  })
+  const [defaultProviderState, setDefaultProviderState] = useState(
+    initialDefaultProvider || providers[0]?.name || '',
+  )
 
-  const handleUpdateProvider = useCallback(async (name: string, field: keyof AIProvider, value: any) => {
-    try {
-      const updated = await updateProvider(name, { [field]: value })
-      setProviders(prev => prev.map(p => (p.name === name ? updated : p)))
-    }
-    catch (error) {
-      console.error('Failed to update provider:', error)
-    }
-  }, [])
+  // Dialog state
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [dialogMode, setDialogMode] = useState<'add' | 'edit'>('add')
+  const [editingProvider, setEditingProvider] = useState<AIProvider | undefined>()
+
+  function openAddDialog() {
+    setDialogMode('add')
+    setEditingProvider(undefined)
+    setDialogOpen(true)
+  }
+
+  function openEditDialog(provider: AIProvider) {
+    setDialogMode('edit')
+    setEditingProvider(provider)
+    setDialogOpen(true)
+  }
 
   const handleToggle = useCallback(async (name: string, enabled: boolean) => {
     try {
@@ -76,252 +329,177 @@ function RouteComponent() {
     }
   }, [t])
 
-  const handleAddProvider = useCallback(async () => {
+  const handleAddProvider = useCallback(async (data: AIProvider) => {
     try {
-      const created = await addProvider(newProvider)
+      const created = await addProvider(data)
       setProviders(prev => [...prev, created])
-      setIsDialogOpen(false)
       setDefaultProviderState(created.name)
       await setDefaultProvider(created.name)
-      setNewProvider({
-        name: '',
-        baseUrl: '',
-        apiKey: '',
-        models: [],
-        enabled: false,
-        avatar: '🤖',
-      })
-
       toast.success(t('settings.provider.toast.addSuccess'))
     }
     catch (error) {
       console.error('Failed to add provider:', error)
       toast.error(t('settings.provider.toast.addError', { message: (error as Error).message }))
     }
-  }, [newProvider, t])
+  }, [t])
 
-  if (providers.length === 0) {
-    return (
-      <div className="p-6">
-        <p className="text-muted-foreground">{t('settings.provider.noProviders')}</p>
-      </div>
-    )
-  }
+  const handleUpdateProvider = useCallback(async (name: string, updates: Partial<AIProvider>) => {
+    try {
+      const updated = await updateProvider(name, updates)
+      setProviders(prev => prev.map(p => (p.name === name ? updated : p)))
+    }
+    catch (error) {
+      console.error('Failed to update provider:', error)
+    }
+  }, [])
+
+  const handleDeleteProvider = useCallback(async (name: string) => {
+    try {
+      await removeProvider(name)
+      const remaining = providers.filter(p => p.name !== name)
+      setProviders(remaining)
+      if (defaultProviderState === name && remaining.length > 0) {
+        setDefaultProviderState(remaining[0].name)
+        await setDefaultProvider(remaining[0].name)
+      }
+      toast.success(t('settings.provider.toast.deleteSuccess'))
+    }
+    catch (error) {
+      console.error('Failed to delete provider:', error)
+      toast.error(t('settings.provider.toast.deleteError', { message: (error as Error).message }))
+    }
+  }, [providers, defaultProviderState, t])
+
+  const sortedProviders = [...providers].sort((a, b) => {
+    if (a.enabled !== b.enabled)
+      return a.enabled ? -1 : 1
+    if (a.name === defaultProviderState)
+      return -1
+    if (b.name === defaultProviderState)
+      return 1
+    return 0
+  })
 
   return (
     <div className="p-6">
       <div className="mb-6 flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold">{t('settings.provider.title')}</h1>
-          <p className="text-muted-foreground mt-1">{t('settings.provider.description')}</p>
+          <p className="mt-1 text-muted-foreground">{t('settings.provider.description')}</p>
         </div>
-        <Button size="sm" onClick={() => setIsDialogOpen(true)}>
+        <Button size="sm" onClick={openAddDialog}>
           <Plus className="mr-1.5" size={16} />
           {t('settings.provider.addButton')}
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        {[...providers].sort((a, b) => {
-          if (a.enabled !== b.enabled)
-            return a.enabled ? -1 : 1
-          if (a.name === defaultProviderState)
-            return -1
-          if (b.name === defaultProviderState)
-            return 1
-          return 0
-        }).map(provider => (
-          <div key={provider.name} className="flex flex-col rounded-xl border bg-card text-card-foreground shadow-sm">
-            <div className="flex flex-row items-center justify-between p-6 pb-4">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">{provider.avatar}</span>
-                <div className="flex flex-col">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-semibold leading-none tracking-tight">{provider.name}</h3>
-                    {defaultProviderState === provider.name && (
-                      <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">{t('settings.provider.defaultBadge')}</Badge>
-                    )}
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                {defaultProviderState !== provider.name && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                    onClick={() => handleSetDefault(provider.name)}
-                    title={t('settings.provider.setDefaultTitle')}
+      {providers.length === 0
+        ? (
+            <div className="flex flex-col items-center gap-4 py-16 text-center">
+              <p className="text-muted-foreground">{t('settings.provider.noProviders')}</p>
+              <Button onClick={openAddDialog}>
+                <Plus className="mr-1.5" size={16} />
+                {t('settings.provider.addButton')}
+              </Button>
+            </div>
+          )
+        : (
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
+              {sortedProviders.map(provider => {
+                const displayModels = provider.models.slice(0, 3)
+                const overflow = provider.models.length - 3
+
+                return (
+                  <div
+                    key={provider.name}
+                    className="flex flex-col rounded-xl border bg-card text-card-foreground shadow-sm"
                   >
-                    <Star size={16} />
-                  </Button>
-                )}
-                <Switch
-                  checked={provider.enabled}
-                  onCheckedChange={checked => handleToggle(provider.name, checked)}
-                />
-              </div>
-            </div>
-            <div className="p-6 pt-0 space-y-4 flex-1">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor={`baseUrl-${provider.name}`}>Base URL</Label>
-                  <Input
-                    id={`baseUrl-${provider.name}`}
-                    type="url"
-                    value={provider.baseUrl}
-                    onChange={e => handleUpdateProvider(provider.name, 'baseUrl', e.target.value)}
-                    placeholder="https://api.example.com/v1"
-                  />
-                </div>
+                    {/* Row 1: avatar, name, badge, star, switch */}
+                    <div className="flex items-center justify-between px-4 pt-4">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">{provider.avatar}</span>
+                        <span className="font-semibold leading-none">{provider.name}</span>
+                        {defaultProviderState === provider.name && (
+                          <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
+                            {t('settings.provider.defaultBadge')}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {defaultProviderState !== provider.name && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                            onClick={() => handleSetDefault(provider.name)}
+                            title={t('settings.provider.setDefaultTitle')}
+                          >
+                            <Star size={14} />
+                          </Button>
+                        )}
+                        <Switch
+                          checked={provider.enabled}
+                          onCheckedChange={checked => handleToggle(provider.name, checked)}
+                        />
+                      </div>
+                    </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor={`apiKey-${provider.name}`}>API Key</Label>
-                  <Input
-                    id={`apiKey-${provider.name}`}
-                    type="password"
-                    value={provider.apiKey}
-                    onChange={e => handleUpdateProvider(provider.name, 'apiKey', e.target.value)}
-                    placeholder={t('settings.provider.apiKeyPlaceholder')}
-                  />
-                </div>
+                    {/* Row 2: baseUrl hostname preview */}
+                    <p className="px-4 pt-1 text-xs text-muted-foreground">
+                      {getHostname(provider.baseUrl)}
+                    </p>
 
-                <div className="space-y-2">
-                  <Label htmlFor={`models-${provider.name}`}>{t('settings.provider.modelsLabel')}</Label>
-                  <TagInput
-                    value={provider.models}
-                    onChange={models => handleUpdateProvider(provider.name, 'models', models)}
-                  />
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center p-6 pt-0 mt-auto">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="destructive" size="sm" className="w-full">{t('settings.provider.deleteButton')}</Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-80">
-                  <div className="space-y-4">
-                    <p className="text-sm">{t('settings.provider.deleteConfirmation')}</p>
-                    <div className="flex justify-end gap-2">
+                    {/* Row 3: model badges */}
+                    <div className="flex flex-wrap items-center gap-1 px-4 pt-2">
+                      {provider.models.length === 0
+                        ? (
+                            <span className="text-xs text-muted-foreground">
+                              {t('settings.provider.noModels')}
+                            </span>
+                          )
+                        : (
+                            <>
+                              {displayModels.map(m => (
+                                <Badge key={m} variant="outline" className="text-[10px] font-mono">
+                                  {m}
+                                </Badge>
+                              ))}
+                              {overflow > 0 && (
+                                <Badge variant="secondary" className="text-[10px]">
+                                  +
+                                  {overflow}
+                                </Badge>
+                              )}
+                            </>
+                          )}
+                    </div>
+
+                    {/* Row 4: edit button */}
+                    <div className="flex justify-end px-4 pb-4 pt-3">
                       <Button
-                        variant="destructive"
+                        variant="outline"
                         size="sm"
-                        onClick={async () => {
-                          removeProvider(provider.name)
-                            .then(async () => {
-                              const remaining = providers.filter(p => p.name !== provider.name)
-                              setProviders(remaining)
-
-                              if (defaultProviderState === provider.name && remaining.length > 0) {
-                                setDefaultProviderState(remaining[0].name)
-                                await setDefaultProvider(remaining[0].name)
-                              }
-
-                              toast.success(t('settings.provider.toast.deleteSuccess'))
-                            })
-                            .catch((error) => {
-                              console.error('Failed to delete provider:', error)
-                              toast.error(t('settings.provider.toast.deleteError', { message: (error as Error).message }))
-                            })
-                        }}
+                        onClick={() => openEditDialog(provider)}
                       >
-                        {t('settings.provider.confirmDelete')}
+                        <Pencil size={12} className="mr-1" />
+                        编辑
                       </Button>
                     </div>
                   </div>
-                </PopoverContent>
-              </Popover>
+                )
+              })}
             </div>
-          </div>
-        ))}
-      </div>
+          )}
 
-      {/* 新增供应商弹窗 */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t('settings.provider.addDialog.title')}</DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="new-name" className="text-right">
-                {t('settings.provider.addDialog.nameLabel')}
-              </Label>
-              <Input
-                id="new-name"
-                value={newProvider.name}
-                onChange={e => setNewProvider({ ...newProvider, name: e.target.value })}
-                className="col-span-3"
-                placeholder={t('settings.provider.addDialog.namePlaceholder')}
-              />
-            </div>
-
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="new-avatar" className="text-right">
-                {t('settings.provider.addDialog.avatarLabel')}
-              </Label>
-              <Input
-                id="new-avatar"
-                value={newProvider.avatar}
-                onChange={e => setNewProvider({ ...newProvider, avatar: e.target.value })}
-                className="col-span-3"
-                placeholder={t('settings.provider.addDialog.avatarPlaceholder')}
-                maxLength={2}
-              />
-            </div>
-
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="new-baseUrl" className="text-right">
-                Base URL
-              </Label>
-              <Input
-                id="new-baseUrl"
-                value={newProvider.baseUrl}
-                onChange={e => setNewProvider({ ...newProvider, baseUrl: e.target.value })}
-                className="col-span-3"
-                placeholder="https://api.example.com/v1"
-              />
-            </div>
-
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="new-apiKey" className="text-right">
-                API Key
-              </Label>
-              <Input
-                id="new-apiKey"
-                type="password"
-                value={newProvider.apiKey}
-                onChange={e => setNewProvider({ ...newProvider, apiKey: e.target.value })}
-                className="col-span-3"
-                placeholder="sk-xxxxx"
-              />
-            </div>
-
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="new-models" className="text-right">
-                {t('settings.provider.addDialog.modelsLabel')}
-              </Label>
-              <div className="col-span-3">
-                <TagInput
-                  value={newProvider.models}
-                  onChange={models => setNewProvider({ ...newProvider, models })}
-                />
-              </div>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-              {t('settings.provider.addDialog.cancelButton')}
-            </Button>
-            <Button onClick={handleAddProvider} disabled={!newProvider.name || !newProvider.baseUrl}>
-              {t('settings.provider.addDialog.addButton')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ProviderFormDialog
+        mode={dialogMode}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        initialData={editingProvider}
+        onAdd={handleAddProvider}
+        onUpdate={handleUpdateProvider}
+        onDelete={handleDeleteProvider}
+      />
     </div>
   )
 }
