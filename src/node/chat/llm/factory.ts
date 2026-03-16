@@ -1,5 +1,5 @@
-import { inferProvider } from '../../../share/models'
 import type { LlmConfig, LlmProvider } from './types'
+import { inferProvider } from '../../../share/models'
 import {
   createAnthropicAdapter,
   createGeminiAdapter,

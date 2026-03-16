@@ -7,8 +7,8 @@ import { onCommand } from '../platform/commands'
 import { logger } from '../platform/logger'
 import { providerStore } from '../platform/provider'
 import { update } from '../platform/update'
-import { sessionOrchestrator } from './session-orchestrator'
 import { createLlm } from './llm'
+import { sessionOrchestrator } from './session-orchestrator'
 
 export function initChat() {
   // 监听聊天消息发送
