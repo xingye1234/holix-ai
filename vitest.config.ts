@@ -38,6 +38,7 @@ export default defineConfig({
           include: [
             'src/components/**/__tests__/**/*.test.{ts,tsx}',
             'src/hooks/**/__tests__/**/*.test.{ts,tsx}',
+            'src/store/**/__tests__/**/*.test.{ts,tsx}',
           ],
           globals: true,
           setupFiles: ['./src/test-setup.ts'],

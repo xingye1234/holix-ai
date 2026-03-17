@@ -1,14 +1,19 @@
 import type { PendingMessage } from '@/node/database/schema/chat'
 import { createFileRoute } from '@tanstack/react-router'
 import { AnimatePresence } from 'framer-motion'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { toast } from 'sonner'
 import { ChatContext } from '@/context/chat'
 import { SettingsPanelProvider } from '@/context/settings-panel'
 import { updateConfig } from '@/lib/config'
+import { trpcClient } from '@/lib/trpc-client'
+import { useMessageShortcuts } from '@/hooks/use-message-shortcuts'
 import useChat from '@/store/chat'
+import useMessageSelection from '@/store/message-selection'
 import ChatPanel from '@/views/chat/right-panel'
 import { MainContent } from '@/views/main/content'
 import MainFooter from '@/views/main/footer'
+import { SelectionToolbar } from '@/components/message-selection'
 
 export const Route = createFileRoute('/chat/$id')({
   component: Component,
@@ -57,12 +62,60 @@ function Component() {
     [isSettingsPanelOpen],
   )
 
+  // 处理批量删除选中的消息
+  const handleDeleteSelected = useCallback(
+    async (messageIds: string[]) => {
+      if (!chat)
+        return
+
+      try {
+        // 这里需要调用删除消息的 API
+        // 由于当前的 API 设计，我们需要逐个删除消息或创建一个批量删除的 API
+        toast.info('批量删除功能开发中...')
+
+        // TODO: 实现批量删除逻辑
+        // const removeChat = useChat.getState().removeChat
+        // messageIds.forEach(id => {
+        //   // 调用删除消息的 API
+        // })
+      }
+      catch (error) {
+        console.error('Failed to delete messages:', error)
+        toast.error('删除消息失败')
+      }
+    },
+    [chat],
+  )
+
+  // 处理批量导出选中的消息
+  const handleExportSelected = useCallback(
+    (messageIds: string[]) => {
+      if (!chat)
+        return
+
+      // TODO: 实现批量导出逻辑
+      toast.info('批量导出功能开发中...')
+    },
+    [chat],
+  )
+
+  // 获取当前聊天的所有消息ID
+  const messageIds = useMemo(() => chat?.messages ?? [], [chat?.messages])
+
+  // 启用键盘快捷键
+  useMessageShortcuts({ messageIds })
+
   return (
     <ChatContext.Provider value={contextValue}>
       <SettingsPanelProvider value={settingsPanelValue}>
         <div className="w-full h-[calc(100vh - var(--app-header-height))] flex">
           {/* Main Chat Area */}
-          <div className="flex-1 flex flex-col">
+          <div className="flex-1 flex flex-col relative">
+            {/* Selection Toolbar */}
+            <SelectionToolbar
+              onDeleteSelected={handleDeleteSelected}
+              onExportSelected={handleExportSelected}
+            />
             <MainContent />
             <MainFooter />
           </div>

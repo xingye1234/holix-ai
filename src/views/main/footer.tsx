@@ -11,6 +11,7 @@ import ProviderModelSelector from '@/components/provider-model-selector'
 import { Button } from '@/components/ui/button'
 import { useChatContext } from '@/context/chat'
 import { useSettingsPanel } from '@/context/settings-panel'
+import { SelectionToggle } from '@/components/message-selection'
 import { command } from '@/lib/command'
 import { trpcClient } from '@/lib/trpc-client'
 import { estimateTokens, formatTokenCount } from '../../share/token'
@@ -256,6 +257,7 @@ export default function MainFooter() {
         <div className="text-sm text-muted-foreground flex ml-auto items-center gap-2">
           <Coins className="w-4 h-4" />
           <span>{formatTokenCount(estimatedTokens)}</span>
+          <SelectionToggle />
           <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={toggleSettingsPanel} title="设置">
             <Settings className="w-4 h-4" />
           </Button>
