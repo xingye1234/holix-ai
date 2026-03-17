@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { ALL_MODELS, VENDOR_PRESETS } from '../../lib/model-presets'
+import { ALL_MODELS, VENDOR_PRESETS } from '../../share/models'
 
-describe('VENDOR_PRESETS', () => {
+describe('vENDOR_PRESETS', () => {
   it('has exactly 8 vendors', () => {
     expect(VENDOR_PRESETS).toHaveLength(8)
   })
@@ -23,7 +23,7 @@ describe('VENDOR_PRESETS', () => {
   })
 })
 
-describe('ALL_MODELS', () => {
+describe('aLL_MODELS', () => {
   it('is a flat string array', () => {
     expect(Array.isArray(ALL_MODELS)).toBe(true)
     expect(ALL_MODELS.every(m => typeof m === 'string')).toBe(true)
