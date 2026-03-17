@@ -141,6 +141,11 @@ export class ChatSession {
           return
         }
 
+        // 添加详细的调试日志
+        logger.info(
+          `[ChatSession] Stream chunk | mode=${streamMode} | keys=${chunk ? Object.keys(chunk).join(',') : 'null'}`,
+        )
+
         streamProcessor.processChunk(streamMode as any, chunk)
       }
 
