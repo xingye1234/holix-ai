@@ -32,10 +32,29 @@ vi.stubGlobal('ResizeObserver', MockResizeObserver)
 
 // ── requestAnimationFrame / cancelAnimationFrame ──────────────────────────────
 // happy-dom stubs exist but may not flush synchronously in all cases.
+// Use a mock that doesn't cause infinite recursion with framer-motion's infinite animations
+// but still allows normal RAF callbacks (like rafThrottle) to execute.
+
+let rafId = 0
+let rafDepth = 0
+const MAX_RAF_DEPTH = 50 // Prevent infinite recursion from framer-motion
 
 vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
-  cb(performance.now())
-  return 0
+  const id = ++rafId
+
+  // Execute synchronously but with recursion depth limit
+  if (rafDepth < MAX_RAF_DEPTH) {
+    rafDepth++
+    try {
+      cb(performance.now())
+    }
+    finally {
+      rafDepth--
+    }
+  }
+  // If depth exceeded, silently skip to prevent stack overflow
+
+  return id
 })
 
 vi.stubGlobal('cancelAnimationFrame', () => {})
