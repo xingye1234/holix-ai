@@ -104,8 +104,14 @@ export default function AppSearch() {
     command()
   }
 
-  const handleSelectMessage = (chatUid: string) => {
-    runCommand(() => navigate({ to: `/chat/$id`, params: { id: chatUid } }))
+  const handleSelectMessage = (chatUid: string, messageId: string) => {
+    runCommand(() =>
+      navigate({
+        to: `/chat/$id`,
+        params: { id: chatUid },
+        hash: `msg-${messageId}`,
+      }),
+    )
   }
 
   // Reset search when dialog closes
@@ -147,7 +153,7 @@ export default function AppSearch() {
                 <CommandItem
                   key={msg.uid}
                   value={`msg-${msg.uid}-${msg.content}`}
-                  onSelect={() => handleSelectMessage(msg.chatUid)}
+                  onSelect={() => handleSelectMessage(msg.chatUid, msg.uid)}
                 >
                   <MessageSquare className="mr-2 size-4 shrink-0" />
                   <span className="truncate">{msg.content}</span>

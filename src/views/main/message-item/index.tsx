@@ -115,6 +115,7 @@ export const MessageItem = memo(({ id, index, onDelete }: MessageItemProps) => {
           'flex justify-center my-4 transition-all duration-200',
           isSelectionMode && 'opacity-50',
         )}
+        data-message-id={id}
         data-message-index={index}
       >
         <div className="text-xs text-muted-foreground bg-muted/50 px-3 py-1 rounded-full flex items-center gap-1">
@@ -147,6 +148,7 @@ export const MessageItem = memo(({ id, index, onDelete }: MessageItemProps) => {
           isSelected && 'bg-accent/50',
           isSelectionMode && 'hover:bg-accent/30',
         )}
+        data-message-id={id}
         data-message-index={index}
       >
         {isUser
@@ -293,6 +295,7 @@ export const MessageItem = memo(({ id, index, onDelete }: MessageItemProps) => {
         isSelected && 'bg-accent/50',
         isSelectionMode && 'hover:bg-accent/30',
       )}
+      data-message-id={id}
       data-message-index={index}
       onClick={() => isSelectionMode && toggleMessageSelection(id)}
     >

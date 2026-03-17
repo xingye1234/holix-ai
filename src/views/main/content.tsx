@@ -1,9 +1,11 @@
 import type { VirtualItemRenderInfo } from '@/components/virtual-list'
 import { AnimatePresence, motion } from 'framer-motion'
-import { useEffect } from 'react'
+import { memo, useCallback, useEffect, useRef } from 'react'
+import { useLocation } from '@tanstack/react-router'
 import { VirtualMessageList } from '@/components/virtual-list'
 import { useChatContext } from '@/context/chat'
 import { useChatVirtualList } from '@/hooks/chat-virtual-list'
+import { useMessageJump } from '@/hooks/use-message-jump'
 import { MessageItem } from './message-item'
 
 // ─── item 渲染函数 ─────────────────────────────────────────────────────────────
@@ -17,6 +19,7 @@ function renderItem({ item: id, index }: VirtualItemRenderInfo<string>) {
 
 export const MainContent = memo(() => {
   const { chat, setIsAtBottom, scrollToBottomRef } = useChatContext()
+  const location = useLocation()
 
   const {
     messageIds,
@@ -27,6 +30,37 @@ export const MainContent = memo(() => {
     onAtBottomStateChange,
     listRef,
   } = useChatVirtualList()
+
+  // 集成消息跳转 hook
+  const { jumpToMessage } = useMessageJump({
+    chatUid: chat?.uid || '',
+    listRef,
+    messageIds,
+  })
+
+  // 用于追踪已处理的 hash，避免重复跳转
+  const processedHashRef = useRef<string | null>(null)
+
+  // 监听 URL hash 变化，实现消息跳转
+  useEffect(() => {
+    if (!chat?.uid)
+      return
+
+    const hash = location.hash
+    if (!hash || hash === processedHashRef.current)
+      return
+
+    // 解析 hash: msg-{messageId}
+    if (hash.startsWith('msg-')) {
+      const messageId = hash.replace('msg-', '')
+      processedHashRef.current = hash
+
+      // 延迟执行跳转，确保列表已经渲染
+      setTimeout(() => {
+        jumpToMessage({ messageId })
+      }, 100)
+    }
+  }, [chat?.uid, location.hash, messageIds, jumpToMessage])
 
   // 把滚动到底部的函数挂载到 context ref，供 footer 调用
   useEffect(() => {

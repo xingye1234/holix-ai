@@ -271,3 +271,41 @@ html {
 .streaming-cursor-user > :last-child::after {
   background: hsl(var(--primary-foreground));
 }
+/* ── 消息跳转高亮动画 ───────────────────────────────────────────── */
+.message-highlight {
+  position: relative;
+  transition: all 0.3s ease-out;
+  border-radius: 0.75rem;
+}
+
+.message-highlight::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 1rem;
+  background: var(--message-highlight-bg, oklch(0.5 0.2 250));
+  opacity: 0;
+  transition: opacity 0.3s ease-out;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.message-highlight-active::before {
+  opacity: 0.6;
+  animation: message-highlight-pulse 2s ease-out;
+}
+
+@keyframes message-highlight-pulse {
+  0% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.3;
+    transform: scale(1.02);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+}
