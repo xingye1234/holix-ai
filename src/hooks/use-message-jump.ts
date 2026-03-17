@@ -179,7 +179,7 @@ export function useMessageJump(props: {
     element.classList.add('message-highlight')
 
     // 强制重排以触发动画
-    void element.offsetWidth
+    void (element as HTMLElement).offsetWidth
 
     // 激活高亮（开始动画）
     requestAnimationFrame(() => {
@@ -223,7 +223,7 @@ export function useMessageJump(props: {
       else if (target.seq !== undefined) {
         // 按 seq 查找
         const messages = getMessages(chatUid)
-        const message = messages.find(id => {
+        const message = messages.find((id) => {
           const msg = getMessageById(id)
           return msg && msg.seq === target.seq
         })
@@ -261,7 +261,7 @@ export function useMessageJump(props: {
         list.scrollToIndex({
           index: targetIndex,
           align,
-          behavior: jumpStrategy === 'instant' ? 'auto' : jumpStrategy,
+          behavior: jumpStrategy === 'instant' ? 'auto' : 'smooth',
         })
 
         // 6. 添加高亮效果
