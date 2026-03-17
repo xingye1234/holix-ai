@@ -2,6 +2,7 @@
   "name": "file_system",
   "version": "1.0.0",
   "description": "Local file system tools: read/write files, list directories, check paths, and browse directory trees.",
+  "prompt": "You have access to the following file system tools:\n\n**Available Tools:**\n- `read_file`: Read file contents (files larger than 256KB will be truncated)\n- `write_file`: Write or append content to files (creates parent directories automatically)\n- `list_directory`: List files and subdirectories in a directory (non-recursive)\n- `file_exists`: Check if a file or directory exists and return its type and size\n- `get_directory_tree`: Recursively output directory tree structure (default 3 levels deep, max 50 entries per level)\n\n**Important:** Use these specific tool names (e.g., `read_file`, `write_file`) to interact with the file system. Do not try to call a tool named \"file_system\" as it is the skill name, not a tool name.\n\n**Usage Examples:**\n- To read a file: Call the `read_file` tool with the `file_path` parameter\n- To write a file: Call the `write_file` tool with `file_path`, `content`, and optionally `append` parameters\n- To list a directory: Call the `list_directory` tool with the `dir_path` parameter\n- To check if a path exists: Call the `file_exists` tool with the `file_path` parameter\n- To browse directory structure: Call the `get_directory_tree` tool with the `dir_path` parameter\n\n**Note:** Always use absolute paths for all file operations.",
   "tools": [
     {
       "type": "js",
