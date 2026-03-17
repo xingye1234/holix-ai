@@ -49,6 +49,10 @@ export const MessageItem = memo(({ id, index, onDelete }: MessageItemProps) => {
   const isPending = message.status === 'pending'
   const generating = !isUser && (isStreaming || isPending)
 
+  // 工具调用状态
+  const isToolRunning = message.toolStatus?.running ?? false
+  const runningTools = message.toolStatus?.tools ?? []
+
   /** 最终展示内容 */
   const content = useMemo(() => {
     if (message.content)
@@ -230,7 +234,13 @@ export const MessageItem = memo(({ id, index, onDelete }: MessageItemProps) => {
                       )}
 
                       {generating && !content
-                        ? <GeneratingIndicator isPending={isPending} />
+                        ? (
+                            <GeneratingIndicator
+                              isPending={isPending}
+                              isToolRunning={isToolRunning}
+                              runningTools={runningTools}
+                            />
+                          )
                         : (
                             <MessageMarkdown
                               content={content || (isError ? (message.error ?? '') : '')}
@@ -365,7 +375,11 @@ export const MessageItem = memo(({ id, index, onDelete }: MessageItemProps) => {
               {generating && !content
                 ? (
                   /* 无内容时：跳动点 */
-                    <GeneratingIndicator isPending={isPending} />
+                    <GeneratingIndicator
+                      isPending={isPending}
+                      isToolRunning={isToolRunning}
+                      runningTools={runningTools}
+                    />
                   )
                 : isUser
                   ? (

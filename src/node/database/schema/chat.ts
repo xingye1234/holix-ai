@@ -194,6 +194,14 @@ export const message = sqliteTable(
       .notNull()
       .default('done'),
 
+    /** 工具调用状态 */
+    toolStatus: t.text('tool_status').$type<{
+      /** 是否正在执行工具 */
+      running: boolean
+      /** 当前执行的工具名称列表 */
+      tools: string[]
+    }>(),
+
     /** assistant 消息使用的模型 */
     model: t.text('model'),
 

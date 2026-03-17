@@ -39,6 +39,7 @@ export function useMessageUpdates() {
         content: value.content,
         draftContent: value.draftContent,
         toolCalls: value.toolCalls,
+        toolStatus: value.toolStatus,
       })
     })
 
@@ -61,6 +62,7 @@ export function useMessageUpdates() {
         content: payload.content,
         draftContent: payload.draftContent,
         toolCalls: payload.toolCalls,
+        toolStatus: payload.toolStatus,
       })
 
       if (rafId.current == null) {

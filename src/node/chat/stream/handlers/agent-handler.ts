@@ -54,6 +54,12 @@ export class AgentHandler extends BaseStreamHandler {
       toolArgs: call.args,
     })
 
+    // 更新工具调用状态
+    state.toolStatus = {
+      running: true,
+      tools: [call.name],
+    }
+
     logger.info(
       `[${this.name}] Tool call dispatched | name=${call.name} id=${call.id} args=${JSON.stringify(call.args)}`,
     )

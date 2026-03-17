@@ -51,6 +51,16 @@ export interface MessageContent {
 }
 
 /**
+ * 工具调用状态
+ */
+export interface ToolCallStatus {
+  /** 是否正在执行工具 */
+  running: boolean
+  /** 当前执行的工具名称列表 */
+  tools: string[]
+}
+
+/**
  * 消息更新事件
  */
 export interface MessageUpdateEvent {
@@ -61,6 +71,7 @@ export interface MessageUpdateEvent {
     content?: string
     draftContent?: DraftContent
     toolCalls?: ToolCallTrace[]
+    toolStatus?: ToolCallStatus
     error?: string
   }
 }
@@ -75,4 +86,5 @@ export interface MessageStreamingEvent {
   delta: string
   draftContent: DraftContent
   toolCalls: ToolCallTrace[]
+  toolStatus?: ToolCallStatus
 }

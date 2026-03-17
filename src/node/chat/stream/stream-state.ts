@@ -6,6 +6,16 @@ import type { DraftContent } from '../../database/schema/chat'
 import type { AsyncBatcher } from '@tanstack/pacer'
 
 /**
+ * 工具调用状态
+ */
+export interface ToolCallStatus {
+  /** 是否正在执行工具 */
+  running: boolean
+  /** 当前执行的工具名称列表 */
+  tools: string[]
+}
+
+/**
  * 流处理上下文（只读，传递给各个处理器）
  */
 export interface StreamContext {
@@ -34,6 +44,12 @@ export interface StreamState {
 
   /** 草稿片段 */
   draftSegments: DraftContent
+
+  /** 工具调用状态 */
+  toolStatus?: {
+    running: boolean
+    tools: string[]
+  }
 }
 
 /**

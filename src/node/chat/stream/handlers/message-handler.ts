@@ -95,5 +95,13 @@ export class MessageHandler extends BaseStreamHandler {
       delta: true,
       createdAt: this.now(),
     })
+
+    // 文本开始生成时，重置工具调用状态
+    if (state.toolStatus?.running) {
+      state.toolStatus = {
+        running: false,
+        tools: [],
+      }
+    }
   }
 }

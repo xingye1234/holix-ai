@@ -23,6 +23,14 @@ export class ToolHandler extends BaseStreamHandler {
       this.recordToolResult(toolMsg, state, context)
     }
 
+    // 工具执行完毕，重置工具调用状态
+    if (toolMessages.length > 0) {
+      state.toolStatus = {
+        running: false,
+        tools: [],
+      }
+    }
+
     // 触发数据库更新
     if (toolMessages.length > 0) {
       context.throttledDbUpdate.addItem({

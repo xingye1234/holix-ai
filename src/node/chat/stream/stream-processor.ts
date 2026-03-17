@@ -42,6 +42,10 @@ export class StreamProcessor {
       fullContent: '',
       segmentIndex: 0,
       draftSegments: [],
+      toolStatus: {
+        running: false,
+        tools: [],
+      },
     }
   }
 
@@ -88,6 +92,7 @@ export class StreamProcessor {
       delta,
       draftContent: [...this.state.draftSegments],
       toolCalls,
+      toolStatus: this.state.toolStatus,
     })
   }
 
