@@ -33,7 +33,6 @@ import {
 import { configStore } from '../platform/config'
 import { logger } from '../platform/logger'
 import { update } from '../platform/update'
-import builtinMessages from './builtin/messages'
 import { contextSchema } from './context'
 import { skillManager } from './skills'
 import { chatKeywordSearchTool, chatTimeSearchTool } from './tools/chat'
@@ -185,10 +184,6 @@ export class ChatManager {
         signal: abortController.signal,
         systemPrompt: new SystemMessage({
           content: [
-            {
-              type: 'text',
-              text: builtinMessages.globalSystem,
-            },
             ...(session.systemMessages?.map(msg => ({ type: 'text', text: msg.content })) || []),
             // 注入所有已启用 skill 的 system prompt
             ...skillPrompts.map(prompt => ({ type: 'text', text: prompt })),
