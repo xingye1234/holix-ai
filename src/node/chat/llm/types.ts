@@ -1,3 +1,5 @@
+import type { ProviderType } from '@/share/models'
+
 /**
  * LLM 配置接口
  */
@@ -14,19 +16,11 @@ export interface LlmConfig {
   streaming?: boolean
   /** Provider name (optional, will be inferred if not provided) */
   provider?: string
+  /** API Type for format compatibility */
+  apiType?: ProviderType
 }
 
 /**
  * 支持的 LLM 提供商
  */
-export type LlmProvider =
-  | 'anthropic'
-  | 'openai'
-  | 'gemini'
-  | 'ollama'
-  | 'zhipu'
-  | '智谱ai'
-  | 'deepseek'
-  | 'moonshot'
-  | 'qwen'
-  | '阿里云百炼'
+export type LlmProvider = ProviderType

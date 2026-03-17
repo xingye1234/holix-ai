@@ -59,7 +59,7 @@ export function initChat() {
 
     // 创建 LLM 实例
     const llm = createLlm(model, {
-      provider: provider.name,
+      provider: provider.apiType,
       apiKey: provider.apiKey,
       baseURL: provider.baseUrl,
       streaming: true,

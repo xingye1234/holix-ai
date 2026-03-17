@@ -1,5 +1,5 @@
+import type { ProviderType, VendorPreset } from '@/share/models'
 import type { AIProvider } from '@/types/provider'
-import type { VendorPreset } from '@/lib/model-presets'
 import { createFileRoute } from '@tanstack/react-router'
 import { Pencil, Plus, Star } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
@@ -13,7 +13,6 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Switch } from '@/components/ui/switch'
 import { TagInput } from '@/components/ui/tag-input'
 import { useI18n } from '@/i18n/provider'
-import { ALL_MODELS, VENDOR_PRESETS } from '@/lib/model-presets'
 import {
   addProvider,
   getDefaultProvider,
@@ -23,6 +22,7 @@ import {
   toggleProvider,
   updateProvider,
 } from '@/lib/provider'
+import { ALL_MODELS, VENDOR_PRESETS } from '@/share/models'
 
 export const Route = createFileRoute('/setting/provider')({
   component: RouteComponent,
@@ -50,6 +50,7 @@ const EMPTY_FORM = {
   avatar: '🤖',
   baseUrl: '',
   apiKey: '',
+  apiType: 'openai' as ProviderType,
   models: [] as string[],
 }
 
@@ -87,6 +88,7 @@ function ProviderFormDialog({
         avatar: initialData.avatar || '🤖',
         baseUrl: initialData.baseUrl,
         apiKey: initialData.apiKey,
+        apiType: initialData.apiType || 'openai',
         models: initialData.models,
       })
     }
@@ -104,6 +106,7 @@ function ProviderFormDialog({
       ...(mode === 'add' ? { name: vendor.name } : {}),
       avatar: vendor.avatar,
       baseUrl: vendor.baseUrl,
+      apiType: vendor.apiType,
       models: vendor.models,
     }))
   }
@@ -120,16 +123,19 @@ function ProviderFormDialog({
         avatar: form.avatar,
         baseUrl: form.baseUrl,
         apiKey: form.apiKey,
+        apiType: form.apiType,
         models: form.models,
         enabled: false,
       })
     }
     else {
-      if (!initialData) return
+      if (!initialData)
+        return
       onUpdate?.(initialData.name, {
         avatar: form.avatar,
         baseUrl: form.baseUrl,
         apiKey: form.apiKey,
+        apiType: form.apiType,
         models: form.models,
       })
     }
@@ -207,19 +213,46 @@ function ProviderFormDialog({
 
           {/* Base URL */}
           <div className="space-y-2">
-            <Label htmlFor="dialog-baseUrl">Base URL *</Label>
+            <Label htmlFor="dialog-baseUrl">
+              {t('settings.provider.baseUrlLabel')}
+              {' '}
+              *
+            </Label>
             <Input
               id="dialog-baseUrl"
               type="url"
               value={form.baseUrl}
               onChange={e => handleFieldChange('baseUrl', e.target.value)}
-              placeholder="https://api.example.com/v1"
+              placeholder={t('settings.provider.baseUrlPlaceholder')}
             />
+          </div>
+
+          {/* API Type */}
+          <div className="space-y-2">
+            <Label htmlFor="dialog-apiType">{t('settings.provider.apiTypeLabel')}</Label>
+            <select
+              id="dialog-apiType"
+              value={form.apiType}
+              onChange={e => setForm(prev => ({ ...prev, apiType: e.target.value as ProviderType }))}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <option value="openai">{t('settings.provider.apiTypeNames.openai')}</option>
+              <option value="anthropic">{t('settings.provider.apiTypeNames.anthropic')}</option>
+              <option value="gemini">{t('settings.provider.apiTypeNames.gemini')}</option>
+              <option value="deepseek">{t('settings.provider.apiTypeNames.deepseek')}</option>
+              <option value="qwen">{t('settings.provider.apiTypeNames.qwen')}</option>
+              <option value="moonshot">{t('settings.provider.apiTypeNames.moonshot')}</option>
+              <option value="zhipu">{t('settings.provider.apiTypeNames.zhipu')}</option>
+              <option value="ollama">{t('settings.provider.apiTypeNames.ollama')}</option>
+            </select>
+            <p className="text-xs text-muted-foreground">
+              {t('settings.provider.apiTypeDescription')}
+            </p>
           </div>
 
           {/* API Key */}
           <div className="space-y-2">
-            <Label htmlFor="dialog-apiKey">API Key</Label>
+            <Label htmlFor="dialog-apiKey">{t('settings.provider.apiKeyLabel')}</Label>
             <Input
               id="dialog-apiKey"
               type="password"
@@ -256,7 +289,8 @@ function ProviderFormDialog({
                       variant="destructive"
                       size="sm"
                       onClick={() => {
-                        if (!initialData) return
+                        if (!initialData)
+                          return
                         onDelete?.(initialData.name)
                         setDeletePopoverOpen(false)
                         onOpenChange(false)
@@ -411,7 +445,7 @@ function RouteComponent() {
           )
         : (
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
-              {sortedProviders.map(provider => {
+              {sortedProviders.map((provider) => {
                 const displayModels = provider.models.slice(0, 3)
                 const overflow = provider.models.length - 3
 

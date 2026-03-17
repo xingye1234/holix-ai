@@ -33,14 +33,12 @@ export function createLlm(model: string, config?: LlmConfig) {
     return createOllamaAdapter(model, config)
   }
 
-  // OpenAI 兼容接口（智谱AI、DeepSeek、Moonshot、Qwen、阿里云百炼等）
+  // OpenAI 兼容接口（智谱AI、DeepSeek、Moonshot、Qwen 等）
   if (
     provider === 'zhipu'
-    || provider === '智谱ai'
     || provider === 'deepseek'
     || provider === 'moonshot'
     || provider === 'qwen'
-    || provider === '阿里云百炼'
     || provider === 'openai'
   ) {
     return createOpenAIAdapter(model, config)

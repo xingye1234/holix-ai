@@ -94,6 +94,21 @@
         "addButton": "Add"
       },
       "vendorPresetLabel": "Quick vendor select",
+      "baseUrlLabel": "Base URL",
+      "baseUrlPlaceholder": "https://api.example.com/v1",
+      "apiKeyLabel": "API Key",
+      "apiTypeLabel": "API Type",
+      "apiTypeDescription": "Select the API format used by this provider. This ensures correct API calls.",
+      "apiTypeNames": {
+        "openai": "OpenAI",
+        "anthropic": "Anthropic",
+        "gemini": "Gemini",
+        "deepseek": "DeepSeek",
+        "qwen": "Qwen",
+        "moonshot": "Moonshot",
+        "zhipu": "Zhipu AI",
+        "ollama": "Ollama"
+      },
       "editDialog": {
         "title": "Edit Provider",
         "saveButton": "Save"
