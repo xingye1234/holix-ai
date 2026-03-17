@@ -37,6 +37,21 @@
   --sidebar-accent-foreground: oklch(0.35 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  /* 区域背景 - 亮色主题 */
+  --region-sidebar: oklch(0.99 0 0);
+  --region-chat: oklch(1 0 0);
+  --region-input: oklch(0.98 0 0);
+
+  /* 消息气泡增强 */
+  --message-user-shadow: 0 1px 2px oklch(0 0 0 / 0.1);
+  --message-ai-shadow: 0 1px 2px oklch(0 0 0 / 0.05);
+  --message-ai-border: oklch(0.90 0.01 250);
+
+  /* 消息状态颜色 */
+  --message-success-bg: oklch(0.96 0.05 140);
+  --message-error-bg: oklch(0.96 0.08 25);
+  --message-thinking-bg: oklch(0.95 0.05 220);
 }
 
 .dark {
@@ -72,6 +87,21 @@
   --sidebar-accent-foreground: oklch(0.9 0 0);
   --sidebar-border: oklch(0.2 0 0);
   --sidebar-ring: oklch(0.439 0 0);
+
+  /* 区域背景 - 暗色主题 */
+  --region-sidebar: oklch(0.15 0 0);
+  --region-chat: oklch(0.12 0 0);
+  --region-input: oklch(0.10 0 0);
+
+  /* 消息气泡增强 */
+  --message-user-shadow: 0 1px 2px oklch(0 0 0 / 0.3);
+  --message-ai-shadow: 0 1px 2px oklch(0 0 0 / 0.2);
+  --message-ai-border: oklch(0.25 0.01 250);
+
+  /* 消息状态颜色 */
+  --message-success-bg: oklch(0.20 0.08 140);
+  --message-error-bg: oklch(0.20 0.10 25);
+  --message-thinking-bg: oklch(0.18 0.08 220);
 }
 
 @theme inline {
@@ -111,6 +141,16 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
+  /* 区域背景映射 */
+  --color-region-sidebar: var(--region-sidebar);
+  --color-region-chat: var(--region-chat);
+  --color-region-input: var(--region-input);
+
+  /* 消息状态颜色映射 */
+  --color-message-success: var(--message-success-bg);
+  --color-message-error: var(--message-error-bg);
+  --color-message-thinking: var(--message-thinking-bg);
 }
 
 @layer base {

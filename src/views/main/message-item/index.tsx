@@ -137,7 +137,7 @@ export const MessageItem = memo(({ id, index, onDelete }: MessageItemProps) => {
               <div className="flex justify-end">
                 <ContextMenu>
                   <ContextMenuTrigger asChild>
-                    <div className="max-w-[75%] bg-primary text-primary-foreground rounded-2xl rounded-tr-none px-4 py-2.5 text-sm shadow-sm">
+                    <div className="max-w-[75%] bg-primary text-primary-foreground rounded-2xl rounded-tr-none px-4 py-2.5 text-sm transition-all duration-200" style={{ boxShadow: 'var(--message-user-shadow)' }}>
                       <p className="leading-relaxed whitespace-pre-wrap wrap-break-word">{content}</p>
                       <div className="flex items-center justify-end mt-1">
                         <span className="text-[10px] opacity-40">{formatWithLocalTZ(message.createdAt, 'HH:mm')}</span>
@@ -178,10 +178,14 @@ export const MessageItem = memo(({ id, index, onDelete }: MessageItemProps) => {
                   <ContextMenuTrigger asChild>
                     <div
                       className={cn(
-                        'text-sm leading-relaxed',
+                        'text-sm leading-relaxed transition-all duration-200',
                         isError && 'text-destructive',
                         isPending && 'opacity-70',
                       )}
+                      style={{
+                        ...(isError && !isUser ? { backgroundColor: 'var(--message-error-bg)', padding: '0.5rem', borderRadius: '0.5rem' } : {}),
+                        ...(isPending && !isUser ? { backgroundColor: 'var(--message-thinking-bg)', padding: '0.5rem', borderRadius: '0.5rem' } : {}),
+                      }}
                     >
                       {isError && (
                         <div className="flex items-center gap-2 mb-2 text-destructive font-medium">
@@ -284,13 +288,19 @@ export const MessageItem = memo(({ id, index, onDelete }: MessageItemProps) => {
           <ContextMenuTrigger asChild>
             <div
               className={cn(
-                'relative min-w-16 max-w-full rounded-2xl px-4 py-3 text-sm shadow-sm transition-colors',
+                'relative min-w-16 max-w-full rounded-2xl px-4 py-3 text-sm transition-all duration-200',
                 isUser
                   ? 'bg-primary text-primary-foreground rounded-tr-none'
                   : 'bg-secondary text-secondary-foreground rounded-tl-none border border-border/50',
                 isError && 'border-destructive/50 bg-destructive/10 text-destructive',
                 isPending && 'opacity-80',
               )}
+              style={{
+                boxShadow: isUser ? 'var(--message-user-shadow)' : 'var(--message-ai-shadow)',
+                ...(isUser ? {} : { borderColor: 'var(--message-ai-border)' }),
+                ...(isError && !isUser ? { backgroundColor: 'var(--message-error-bg)' } : {}),
+                ...(isPending && !isUser ? { backgroundColor: 'var(--message-thinking-bg)' } : {}),
+              }}
             >
               {/* 错误标题 */}
               {isError && (
