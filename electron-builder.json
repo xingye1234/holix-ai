@@ -59,6 +59,24 @@
     "icon": "./public/favicon.icns",
     "artifactName": "holix-ai-${version}-${arch}.${ext}"
   },
+  "dmg": {
+    "contents": [
+      {
+        "x": 130,
+        "y": 220
+      },
+      {
+        "x": 410,
+        "y": 220,
+        "type": "link",
+        "path": "/Applications"
+      }
+    ],
+    "window": {
+      "width": 580,
+      "height": 380
+    }
+  },
   "win": {
     "target": "nsis",
     "icon": "./public/favicon.ico",
