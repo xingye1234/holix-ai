@@ -4,15 +4,13 @@
  */
 
 import type { BaseChatModel } from '@langchain/core/language_models/chat_models'
-import type { SystemMessage } from '@langchain/core/messages'
 import type { Message, Workspace } from '../../database/schema/chat'
 import type { ToolLoadingStrategy } from '../tools/tool-registry'
-import { HumanMessage, SystemMessage as LangChainSystemMessage } from '@langchain/core/messages'
+import { AIMessage, HumanMessage, SystemMessage as LangChainSystemMessage } from '@langchain/core/messages'
 import { createAgent } from 'langchain'
 import { configStore } from '../../platform/config'
 import { logger } from '../../platform/logger'
 import { contextSchema } from '../context'
-import { skillManager } from '../skills'
 import { createToolRegistry } from '../tools/tool-registry'
 
 /**
@@ -79,7 +77,7 @@ export class SessionBuilder {
    * 构建消息历史
    */
   buildMessages(contextMessages: Message[], userMessageContent: string) {
-    const messages: (HumanMessage | LangChainSystemMessage)[] = []
+    const messages: (HumanMessage | AIMessage | LangChainSystemMessage)[] = []
 
     // 添加历史消息
     for (const msg of contextMessages) {
@@ -87,8 +85,8 @@ export class SessionBuilder {
         messages.push(new HumanMessage(msg.content || ''))
       }
       else if (msg.role === 'assistant') {
-        // Assistant 消息也作为 HumanMessage（LangChain 的约定）
-        messages.push(new HumanMessage(msg.content || ''))
+        // Assistant 消息应该转换为 AIMessage
+        messages.push(new AIMessage(msg.content || ''))
       }
       else if (msg.role === 'system') {
         messages.push(new LangChainSystemMessage(msg.content || ''))
@@ -115,34 +113,36 @@ export class SessionBuilder {
    * 构建 System Prompt
    */
   private buildSystemPrompt(toolRegistry: any): LangChainSystemMessage {
-    const content: Array<{ type: 'text', text: string }> = []
+    const parts: string[] = []
 
     // 1. 用户自定义系统消息
     if (this.config.systemMessages) {
       for (const msg of this.config.systemMessages) {
-        content.push({ type: 'text', text: msg })
+        parts.push(msg)
       }
     }
 
     // 2. Skill 加载策略说明
     const strategyPrompt = this.buildStrategyPrompt(toolRegistry)
     if (strategyPrompt) {
-      content.push({ type: 'text', text: strategyPrompt })
+      parts.push(strategyPrompt)
     }
 
     // 3. Skill System Prompts（根据策略）
     const skillPrompts = toolRegistry.getSkillSystemPrompts()
     for (const prompt of skillPrompts) {
-      content.push({ type: 'text', text: prompt })
+      parts.push(prompt)
     }
 
     // 4. 工作区上下文
     const workspacePrompt = this.buildWorkspacePrompt()
     if (workspacePrompt) {
-      content.push({ type: 'text', text: workspacePrompt })
+      parts.push(workspacePrompt)
     }
 
-    return new LangChainSystemMessage({ content })
+    // 合并为单个字符串，兼容更多 API
+    const content = parts.join('\n\n')
+    return new LangChainSystemMessage(content)
   }
 
   /**
