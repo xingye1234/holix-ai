@@ -1,12 +1,14 @@
 import { Link } from '@tanstack/react-router'
-import { AlignJustify, MessageSquare, PanelLeftClose, PanelLeftOpen, Search, SquarePen, Wrench, X } from 'lucide-react'
+import { AlignJustify, Bot, MessageSquare, PanelLeftClose, PanelLeftOpen, Search, SquarePen, Wrench, X } from 'lucide-react'
 import { useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { useI18n } from '@/i18n/provider'
 import useChat from '@/store/chat'
 import useUI from '@/store/ui'
 
 export function AsideChatHeader() {
+  const { t } = useI18n()
   const searchQuery = useChat(state => state.searchQuery)
   const setSearchQuery = useChat(state => state.setSearchQuery)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -15,11 +17,11 @@ export function AsideChatHeader() {
   return (
     <header className="px-3 py-3 bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 sticky top-0 z-10 space-y-2">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-sm font-semibold text-foreground/80 pl-1">对话</span>
+        <span className="text-sm font-semibold text-foreground/80 pl-1">{t('chat.sidebar.title')}</span>
         <Button
           variant="ghost"
           size="icon"
-          title="收起侧边栏"
+          title={t('chat.sidebar.collapse')}
           className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground"
           onClick={toggleSidebar}
         >
@@ -33,7 +35,7 @@ export function AsideChatHeader() {
           ref={inputRef}
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
-          placeholder="搜索聊天..."
+          placeholder={t('chat.searchPlaceholder')}
           className="h-9 pl-8 pr-8 w-full bg-muted/50 border-transparent focus-visible:bg-background"
         />
         {searchQuery && (
@@ -60,17 +62,27 @@ export function AsideChatHeader() {
           }}
         >
           <SquarePen className="h-4 w-4 text-muted-foreground" />
-          <span>新聊天</span>
+          <span>{t('chat.sidebar.newChat')}</span>
         </Link>
         <Link
-          to="/skill-store"
+          to="/skills"
           className="h-9 w-full flex items-center justify-start gap-2 rounded-md px-2 text-sm font-normal text-foreground/90 hover:bg-muted hover:text-foreground"
           activeProps={{
             className: 'bg-accent text-accent-foreground',
           }}
         >
           <Wrench className="h-4 w-4 text-muted-foreground" />
-          <span>技能</span>
+          <span>{t('chat.sidebar.skills')}</span>
+        </Link>
+        <Link
+          to="/agents"
+          className="h-9 w-full flex items-center justify-start gap-2 rounded-md px-2 text-sm font-normal text-foreground/90 hover:bg-muted hover:text-foreground"
+          activeProps={{
+            className: 'bg-accent text-accent-foreground',
+          }}
+        >
+          <Bot className="h-4 w-4 text-muted-foreground" />
+          <span>{t('chat.sidebar.agents')}</span>
         </Link>
       </div>
     </header>
@@ -85,7 +97,7 @@ export function ChatLayoutToggle() {
     <Button
       variant="ghost"
       size="icon"
-      title={layoutMode === 'chat' ? '切换为文章布局' : '切换为聊天布局'}
+      title={layoutMode === 'chat' ? t('chat.sidebar.switchToArticle') : t('chat.sidebar.switchToChat')}
       className="h-8 w-8 text-muted-foreground hover:text-foreground"
       onClick={toggleLayoutMode}
     >
@@ -104,7 +116,7 @@ export function SidebarToggleButton() {
     <Button
       variant="ghost"
       size="icon"
-      title={sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'}
+      title={sidebarCollapsed ? t('chat.sidebar.expand') : t('chat.sidebar.collapse')}
       className="h-8 w-8 text-muted-foreground hover:text-foreground"
       onClick={toggleSidebar}
     >
