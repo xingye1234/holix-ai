@@ -92,6 +92,7 @@ export function AsideChatHeader() {
 export function ChatLayoutToggle() {
   const layoutMode = useUI(state => state.layoutMode)
   const toggleLayoutMode = useUI(state => state.toggleLayoutMode)
+  const { t } = useI18n()
 
   return (
     <Button
@@ -111,6 +112,7 @@ export function ChatLayoutToggle() {
 export function SidebarToggleButton() {
   const sidebarCollapsed = useUI(state => state.sidebarCollapsed)
   const toggleSidebar = useUI(state => state.toggleSidebar)
+  const { t } = useI18n()
 
   return (
     <Button

@@ -10,9 +10,11 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WelcomeRouteImport } from './routes/welcome'
+import { Route as SkillsRouteImport } from './routes/skills'
 import { Route as SkillStoreRouteImport } from './routes/skill-store'
 import { Route as SettingRouteImport } from './routes/setting'
 import { Route as PreviewRouteImport } from './routes/preview'
+import { Route as AgentsRouteImport } from './routes/agents'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SettingSkillsRouteImport } from './routes/setting/skills'
 import { Route as SettingSkillLogsRouteImport } from './routes/setting/skill-logs'
@@ -24,6 +26,11 @@ import { Route as ChatIdRouteImport } from './routes/chat/$id'
 const WelcomeRoute = WelcomeRouteImport.update({
   id: '/welcome',
   path: '/welcome',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SkillsRoute = SkillsRouteImport.update({
+  id: '/skills',
+  path: '/skills',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SkillStoreRoute = SkillStoreRouteImport.update({
@@ -39,6 +46,11 @@ const SettingRoute = SettingRouteImport.update({
 const PreviewRoute = PreviewRouteImport.update({
   id: '/preview',
   path: '/preview',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AgentsRoute = AgentsRouteImport.update({
+  id: '/agents',
+  path: '/agents',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -79,9 +91,11 @@ const ChatIdRoute = ChatIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/agents': typeof AgentsRoute
   '/preview': typeof PreviewRoute
   '/setting': typeof SettingRouteWithChildren
   '/skill-store': typeof SkillStoreRoute
+  '/skills': typeof SkillsRoute
   '/welcome': typeof WelcomeRoute
   '/chat/$id': typeof ChatIdRoute
   '/setting/general': typeof SettingGeneralRoute
@@ -92,9 +106,11 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/agents': typeof AgentsRoute
   '/preview': typeof PreviewRoute
   '/setting': typeof SettingRouteWithChildren
   '/skill-store': typeof SkillStoreRoute
+  '/skills': typeof SkillsRoute
   '/welcome': typeof WelcomeRoute
   '/chat/$id': typeof ChatIdRoute
   '/setting/general': typeof SettingGeneralRoute
@@ -106,9 +122,11 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/agents': typeof AgentsRoute
   '/preview': typeof PreviewRoute
   '/setting': typeof SettingRouteWithChildren
   '/skill-store': typeof SkillStoreRoute
+  '/skills': typeof SkillsRoute
   '/welcome': typeof WelcomeRoute
   '/chat/$id': typeof ChatIdRoute
   '/setting/general': typeof SettingGeneralRoute
@@ -121,9 +139,11 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/agents'
     | '/preview'
     | '/setting'
     | '/skill-store'
+    | '/skills'
     | '/welcome'
     | '/chat/$id'
     | '/setting/general'
@@ -134,9 +154,11 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/agents'
     | '/preview'
     | '/setting'
     | '/skill-store'
+    | '/skills'
     | '/welcome'
     | '/chat/$id'
     | '/setting/general'
@@ -147,9 +169,11 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/agents'
     | '/preview'
     | '/setting'
     | '/skill-store'
+    | '/skills'
     | '/welcome'
     | '/chat/$id'
     | '/setting/general'
@@ -161,9 +185,11 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AgentsRoute: typeof AgentsRoute
   PreviewRoute: typeof PreviewRoute
   SettingRoute: typeof SettingRouteWithChildren
   SkillStoreRoute: typeof SkillStoreRoute
+  SkillsRoute: typeof SkillsRoute
   WelcomeRoute: typeof WelcomeRoute
   ChatIdRoute: typeof ChatIdRoute
 }
@@ -175,6 +201,13 @@ declare module '@tanstack/react-router' {
       path: '/welcome'
       fullPath: '/welcome'
       preLoaderRoute: typeof WelcomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/skills': {
+      id: '/skills'
+      path: '/skills'
+      fullPath: '/skills'
+      preLoaderRoute: typeof SkillsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/skill-store': {
@@ -196,6 +229,13 @@ declare module '@tanstack/react-router' {
       path: '/preview'
       fullPath: '/preview'
       preLoaderRoute: typeof PreviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/agents': {
+      id: '/agents'
+      path: '/agents'
+      fullPath: '/agents'
+      preLoaderRoute: typeof AgentsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -271,9 +311,11 @@ const SettingRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AgentsRoute: AgentsRoute,
   PreviewRoute: PreviewRoute,
   SettingRoute: SettingRouteWithChildren,
   SkillStoreRoute: SkillStoreRoute,
+  SkillsRoute: SkillsRoute,
   WelcomeRoute: WelcomeRoute,
   ChatIdRoute: ChatIdRoute,
 }
