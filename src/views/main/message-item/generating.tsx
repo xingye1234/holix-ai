@@ -36,7 +36,9 @@ export function GeneratingIndicator({
           <span className="typing-dot bg-muted-foreground" />
         </div>
         <span className="text-xs text-muted-foreground select-none">
-          正在使用工具: {runningTools.join(', ')}
+          正在使用工具:
+          {' '}
+          {runningTools.join(', ')}
         </span>
       </div>
     )

@@ -6,9 +6,8 @@
  * or generates it from recent commits
  */
 
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { execa } from 'execa'
-import { readFileSync, writeFileSync, existsSync } from 'node:fs'
-import { join } from 'node:path'
 
 const CHANGELOG_FILE = 'CHANGELOG.md'
 const RELEASE_NOTES_FILE = 'RELEASE_NOTES.md'

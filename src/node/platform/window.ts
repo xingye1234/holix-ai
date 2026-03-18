@@ -8,9 +8,12 @@ import { logger } from './logger'
 import { update } from './update'
 
 // 标记是否正在退出（用于区分关闭到托盘和真正退出）
-export let isQuitting = false
+let isQuitting = false
 export function setIsQuitting(val: boolean) {
   isQuitting = val
+}
+export function getIsQuitting() {
+  return isQuitting
 }
 
 const minWidth = 800
@@ -61,14 +64,14 @@ export class AppWindow extends BrowserWindow {
 
     this.on('close', (event) => {
       // macOS: 红色按钮只关闭窗口，不退出应用
-      if (isMacOS && !isQuitting) {
+      if (isMacOS && !getIsQuitting()) {
         event.preventDefault()
         this.hide()
         return
       }
 
       // 其他平台：根据 closeToTray 配置决定行为
-      if (!isQuitting && configStore.get('closeToTray')) {
+      if (!getIsQuitting() && configStore.get('closeToTray')) {
         event.preventDefault()
         this.hide()
         return

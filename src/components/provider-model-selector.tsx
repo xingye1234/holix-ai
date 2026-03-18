@@ -1,15 +1,15 @@
-import { useCallback, useEffect, useState } from "react";
-import { getDefaultProvider, getProviders } from "@/lib/provider";
-import type { AIProvider } from "@/types/provider";
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import type { AIProvider } from '@/types/provider'
+import { useCallback, useEffect, useState } from 'react'
+import { getDefaultProvider, getProviders } from '@/lib/provider'
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from './ui/select'
 
 export interface ProviderModelSelectorProps {
-  initialProvider?: string;
-  initialModel?: string;
-  triggerOnInitialize?: boolean;
-  onProviderChange?: (provider: string) => void;
-  onModelChange?: (model: string) => void;
-  className?: string;
+  initialProvider?: string
+  initialModel?: string
+  triggerOnInitialize?: boolean
+  onProviderChange?: (provider: string) => void
+  onModelChange?: (model: string) => void
+  className?: string
 }
 
 export default function ProviderModelSelector({
@@ -20,87 +20,90 @@ export default function ProviderModelSelector({
   onModelChange,
   className,
 }: ProviderModelSelectorProps) {
-  const [providers, setProviders] = useState<AIProvider[]>([]);
-  const [selectedProvider, setSelectedProvider] = useState<string>("");
-  const [selectedModel, setSelectedModel] = useState<string>("");
-  const [loading, setLoading] = useState(true);
+  const [providers, setProviders] = useState<AIProvider[]>([])
+  const [selectedProvider, setSelectedProvider] = useState<string>('')
+  const [selectedModel, setSelectedModel] = useState<string>('')
+  const [loading, setLoading] = useState(true)
 
   // 初始化加载供应商和默认值
   useEffect(() => {
     const init = async () => {
       try {
-        const [providerList, defaultProviderName] = await Promise.all([getProviders(), getDefaultProvider()]);
+        const [providerList, defaultProviderName] = await Promise.all([getProviders(), getDefaultProvider()])
 
         // 只显示已启用的供应商
-        const enabledProviders = providerList.filter((p) => p.enabled);
-        setProviders(enabledProviders);
+        const enabledProviders = providerList.filter(p => p.enabled)
+        setProviders(enabledProviders)
 
         // 确定初始供应商：优先使用传入的 initialProvider，其次使用默认配置
-        let targetProvider: AIProvider | undefined;
+        let targetProvider: AIProvider | undefined
         if (propInitialProvider) {
-          targetProvider = enabledProviders.find((p) => p.name === propInitialProvider);
+          targetProvider = enabledProviders.find(p => p.name === propInitialProvider)
         }
         if (!targetProvider) {
-          targetProvider = enabledProviders.find((p) => p.name === defaultProviderName) || enabledProviders[0];
+          targetProvider = enabledProviders.find(p => p.name === defaultProviderName) || enabledProviders[0]
         }
 
         if (targetProvider) {
-          setSelectedProvider(targetProvider.name);
+          setSelectedProvider(targetProvider.name)
 
           // 确定初始模型：优先使用传入的 initialModel，其次使用第一个可用模型
-          const availableModels = targetProvider.models || [];
-          let targetModel = "";
+          const availableModels = targetProvider.models || []
+          let targetModel = ''
           if (propInitialModel && availableModels.includes(propInitialModel)) {
-            targetModel = propInitialModel;
-          } else {
-            targetModel = availableModels[0] || "";
+            targetModel = propInitialModel
+          }
+          else {
+            targetModel = availableModels[0] || ''
           }
 
           if (targetModel) {
-            setSelectedModel(targetModel);
+            setSelectedModel(targetModel)
             // 如果设置了 triggerOnInitialize，在初始化时触发回调
             if (triggerOnInitialize) {
-              onProviderChange?.(targetProvider.name);
-              onModelChange?.(targetModel);
+              onProviderChange?.(targetProvider.name)
+              onModelChange?.(targetModel)
             }
           }
         }
-      } catch (error) {
-        console.error("Failed to load providers:", error);
-      } finally {
-        setLoading(false);
       }
-    };
+      catch (error) {
+        console.error('Failed to load providers:', error)
+      }
+      finally {
+        setLoading(false)
+      }
+    }
 
-    init();
-  }, [propInitialProvider, propInitialModel, triggerOnInitialize, onModelChange, onProviderChange]);
+    init()
+  }, [propInitialProvider, propInitialModel, triggerOnInitialize, onModelChange, onProviderChange])
 
   const handleProviderChange = useCallback(
     (providerName: string) => {
-      setSelectedProvider(providerName);
-      onProviderChange?.(providerName);
+      setSelectedProvider(providerName)
+      onProviderChange?.(providerName)
 
       // 切换供应商时，自动选择第一个模型
-      const provider = providers.find((p) => p.name === providerName);
+      const provider = providers.find(p => p.name === providerName)
       if (provider?.models && provider.models.length > 0) {
-        const firstModel = provider.models[0];
-        setSelectedModel(firstModel);
-        onModelChange?.(firstModel);
+        const firstModel = provider.models[0]
+        setSelectedModel(firstModel)
+        onModelChange?.(firstModel)
       }
     },
     [providers, onProviderChange, onModelChange],
-  );
+  )
 
   const handleModelChange = useCallback(
     (model: string) => {
-      setSelectedModel(model);
-      onModelChange?.(model);
+      setSelectedModel(model)
+      onModelChange?.(model)
     },
     [onModelChange],
-  );
+  )
 
-  const currentProvider = providers.find((p) => p.name === selectedProvider);
-  const availableModels = currentProvider?.models || [];
+  const currentProvider = providers.find(p => p.name === selectedProvider)
+  const availableModels = currentProvider?.models || []
 
   if (loading) {
     return (
@@ -108,15 +111,15 @@ export default function ProviderModelSelector({
         <div className="h-10 w-40 bg-muted animate-pulse rounded-md" />
         <div className="h-10 w-56 bg-muted animate-pulse rounded-md" />
       </div>
-    );
+    )
   }
 
   if (providers.length === 0) {
-    return <div className="text-sm text-muted-foreground">请先在设置中配置 AI 供应商</div>;
+    return <div className="text-sm text-muted-foreground">请先在设置中配置 AI 供应商</div>
   }
 
   return (
-    <div className={`flex items-center gap-2 ${className || ""}`}>
+    <div className={`flex items-center gap-2 ${className || ''}`}>
       {/* 供应商选择器 */}
       <Select value={selectedProvider} onValueChange={handleProviderChange}>
         <SelectTrigger className="w-40">
@@ -124,7 +127,7 @@ export default function ProviderModelSelector({
         </SelectTrigger>
         <SelectContent>
           <SelectGroup>
-            {providers.map((provider) => (
+            {providers.map(provider => (
               <SelectItem key={provider.name} value={provider.name}>
                 <span className="flex items-center gap-2">
                   <span>{provider.avatar}</span>
@@ -143,7 +146,7 @@ export default function ProviderModelSelector({
         </SelectTrigger>
         <SelectContent>
           <SelectGroup>
-            {availableModels.map((model) => (
+            {availableModels.map(model => (
               <SelectItem key={model} value={model}>
                 {model}
               </SelectItem>
@@ -152,5 +155,5 @@ export default function ProviderModelSelector({
         </SelectContent>
       </Select>
     </div>
-  );
+  )
 }

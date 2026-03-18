@@ -1,6 +1,6 @@
+import type { LlmConfig } from '../types'
 import process from 'node:process'
 import { ChatOllama } from '@langchain/ollama'
-import type { LlmConfig } from '../types'
 
 /**
  * 创建 Ollama LLM 适配器

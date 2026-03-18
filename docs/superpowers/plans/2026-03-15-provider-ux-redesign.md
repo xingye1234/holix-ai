@@ -379,8 +379,8 @@ No automated tests for this component — it requires complex store mocking. Man
   Replace the entire file with the following:
 
   ```tsx
-  import type { AIProvider } from '@/types/provider'
   import type { VendorPreset } from '@/lib/model-presets'
+  import type { AIProvider } from '@/types/provider'
   import { createFileRoute } from '@tanstack/react-router'
   import { Pencil, Plus, Star } from 'lucide-react'
   import { useCallback, useEffect, useState } from 'react'
@@ -786,7 +786,7 @@ No automated tests for this component — it requires complex store mocking. Man
             )
           : (
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
-                {sortedProviders.map(provider => {
+                {sortedProviders.map((provider) => {
                   const displayModels = provider.models.slice(0, 3)
                   const overflow = provider.models.length - 3
 

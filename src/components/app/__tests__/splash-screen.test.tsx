@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import SplashScreen from '../splash-screen'
 
-describe('SplashScreen', () => {
+describe('splashScreen', () => {
   it('renders the app logo', () => {
     render(<SplashScreen />)
     const logo = screen.getByRole('img', { name: /holix ai/i })

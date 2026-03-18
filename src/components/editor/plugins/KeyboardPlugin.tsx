@@ -1,4 +1,3 @@
-import type { LexicalCommand } from 'lexical'
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
 import {
   COMMAND_PRIORITY_HIGH,

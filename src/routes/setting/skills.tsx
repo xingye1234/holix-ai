@@ -449,7 +449,6 @@ function SkillCard({ skill }: { skill: Skill }) {
 // ─── 页面 ────────────────────────────────────────────────────────────────────
 
 function RouteComponent() {
-  const router = useRouter()
   const { skills, config } = Route.useLoaderData()
   const { t } = useI18n()
   const [contextStrategy, setContextStrategy] = useState<'eager' | 'lazy'>(config.skillsContextStrategy ?? 'eager')

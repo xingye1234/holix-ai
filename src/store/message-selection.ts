@@ -37,7 +37,7 @@ const useMessageSelection = create<MessageSelectionStore>()(
       isSelectionMode: false,
 
       toggleSelectionMode: () =>
-        set(state => {
+        set((state) => {
           if (state.isSelectionMode) {
             // 关闭选择模式，清空选择
             return {
@@ -58,7 +58,7 @@ const useMessageSelection = create<MessageSelectionStore>()(
         }),
 
       toggleMessageSelection: messageId =>
-        set(state => {
+        set((state) => {
           const newSet = new Set(state.selectedMessageIds)
           if (newSet.has(messageId)) {
             newSet.delete(messageId)
@@ -77,14 +77,14 @@ const useMessageSelection = create<MessageSelectionStore>()(
         }),
 
       selectMessage: messageId =>
-        set(state => {
+        set((state) => {
           const newSet = new Set(state.selectedMessageIds)
           newSet.add(messageId)
           return { selectedMessageIds: newSet }
         }),
 
       deselectMessage: messageId =>
-        set(state => {
+        set((state) => {
           const newSet = new Set(state.selectedMessageIds)
           newSet.delete(messageId)
           // 如果没有选中的消息了，自动关闭选择模式
@@ -107,7 +107,7 @@ const useMessageSelection = create<MessageSelectionStore>()(
         }),
 
       removeSelectedMessages: messageIds =>
-        set(state => {
+        set((state) => {
           const newSet = new Set(state.selectedMessageIds)
           messageIds.forEach(id => newSet.delete(id))
           // 如果没有选中的消息了，自动关闭选择模式

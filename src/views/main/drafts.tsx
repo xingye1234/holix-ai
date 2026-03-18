@@ -1,11 +1,9 @@
 import type { PendingMessage } from '@/node/database/schema/chat'
 import { Delete, NotepadTextDashed, Send } from 'lucide-react'
-import { useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Item, ItemActions, ItemContent } from '@/components/ui/item'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { useChatContext } from '@/context/chat'
-import { trpcClient } from '@/lib/trpc-client'
 
 export default function DraftsView({
   onEdit,

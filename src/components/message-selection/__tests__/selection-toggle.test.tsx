@@ -7,10 +7,10 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { SelectionToggle } from '../selection-toggle'
 import useMessageSelection from '@/store/message-selection'
+import { SelectionToggle } from '../selection-toggle'
 
-describe('SelectionToggle', () => {
+describe('selectionToggle', () => {
   beforeEach(() => {
     // 重置 store
     useMessageSelection.getState().disableSelectionMode()

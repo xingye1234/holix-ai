@@ -4,7 +4,7 @@ import { motion } from 'framer-motion'
 function LoadingDots() {
   return (
     <div className="flex items-center justify-center gap-1.5" aria-hidden="true">
-      {[0, 1, 2].map((i) => (
+      {[0, 1, 2].map(i => (
         <motion.div
           key={i}
           className="w-2 h-2 rounded-full bg-primary/60"
@@ -26,7 +26,7 @@ function LoadingDots() {
 function PulseRing() {
   return (
     <div className="absolute inset-0 flex items-center justify-center">
-      {[0, 1].map((i) => (
+      {[0, 1].map(i => (
         <motion.div
           key={i}
           className="absolute w-20 h-20 rounded-full border-2 border-primary/20"

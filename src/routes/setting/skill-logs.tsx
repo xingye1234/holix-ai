@@ -2,8 +2,8 @@ import { createFileRoute } from '@tanstack/react-router'
 import { Clock3, RefreshCw, ShieldX, Wrench } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Virtuoso } from 'react-virtuoso'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { trpcClient } from '@/lib/trpc-client'
 
 export const Route = createFileRoute('/setting/skill-logs')({
@@ -56,8 +56,14 @@ function RouteComponent() {
       </div>
 
       <div className="mb-4 flex items-center gap-2 text-xs text-muted-foreground">
-        <Badge variant="outline">总数: {stats.total}</Badge>
-        <Badge variant="outline">拒绝: {stats.rejectedCount}</Badge>
+        <Badge variant="outline">
+          总数:
+          {stats.total}
+        </Badge>
+        <Badge variant="outline">
+          拒绝:
+          {stats.rejectedCount}
+        </Badge>
       </div>
 
       <div className="h-[70vh] min-h-[420px] rounded-lg border bg-card">
@@ -94,7 +100,10 @@ function RouteComponent() {
               )}
 
               {log.error && (
-                <p className="text-xs text-destructive">Error: {log.error}</p>
+                <p className="text-xs text-destructive">
+                  Error:
+                  {log.error}
+                </p>
               )}
             </div>
           )}

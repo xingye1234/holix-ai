@@ -1,6 +1,6 @@
+import type { LlmConfig } from '../types'
 import process from 'node:process'
 import { ChatOpenAI } from '@langchain/openai'
-import type { LlmConfig } from '../types'
 
 /**
  * 创建 OpenAI LLM 适配器

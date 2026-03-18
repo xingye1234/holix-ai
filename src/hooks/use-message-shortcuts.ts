@@ -38,7 +38,6 @@ export function useMessageShortcuts({
       if (e.key === 'Escape') {
         e.preventDefault()
         disableSelectionMode()
-        return
       }
     }
 

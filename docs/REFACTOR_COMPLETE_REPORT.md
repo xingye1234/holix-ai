@@ -56,11 +56,11 @@
 
 #### 修改内容
 ```typescript
-// 旧的导入
-import { chatManager } from './manager'
-
 // 新的导入
 import { simplifiedChatManager } from './chat-manager-v2'
+
+// 旧的导入
+import { chatManager } from './manager'
 ```
 
 #### 接口兼容性

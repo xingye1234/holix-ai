@@ -174,7 +174,8 @@ export class MessageHandler extends BaseStreamHandler {
 // message/content-extractor.ts (独立的服务)
 export class ContentExtractor {
   extractTextDelta(content: AIMessageChunk['content']): string {
-    if (typeof content === 'string') return content
+    if (typeof content === 'string')
+      return content
     return content
       .filter((c: any) => c?.type === 'text')
       .map((c: any) => c.text as string)

@@ -159,7 +159,7 @@ export const chats = sqliteTable(
       .text('context_settings')
       .$type<ChatContextSettings>()
       .notNull()
-      .default(JSON.stringify(DEFAULT_CHAT_CONTEXT_SETTINGS)),
+      .default(sql`${JSON.stringify(DEFAULT_CHAT_CONTEXT_SETTINGS)}`),
   },
   table => ({
     chatUidIdx: index('idx_chat_uid').on(table.uid),

@@ -2,8 +2,8 @@
  * 流处理状态类型定义
  */
 
-import type { DraftContent } from '../../database/schema/chat'
 import type { AsyncBatcher } from '@tanstack/pacer'
+import type { DraftContent } from '../../database/schema/chat'
 
 /**
  * 工具调用状态

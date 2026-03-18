@@ -9,15 +9,15 @@ export interface VendorPreset {
 }
 
 // Provider 类型定义，用于选择 API 形式
-export type ProviderType =
-  | 'openai'
-  | 'anthropic'
-  | 'gemini'
-  | 'ollama'
-  | 'zhipu'
-  | 'deepseek'
-  | 'moonshot'
-  | 'qwen'
+export type ProviderType
+  = | 'openai'
+    | 'anthropic'
+    | 'gemini'
+    | 'ollama'
+    | 'zhipu'
+    | 'deepseek'
+    | 'moonshot'
+    | 'qwen'
 
 // 厂商预设配置
 export const VENDOR_PRESETS: VendorPreset[] = [

@@ -97,10 +97,10 @@ logger.verbose('...') // 不存在
 
 ### 2. 使用正确的 LangChain 导入路径
 ```typescript
-// ✅ 推荐
-import type { DynamicStructuredTool } from '@langchain/core/tools'
 import type { BaseChatModel } from '@langchain/core/language_models/chat_models'
 import type { AIMessage, HumanMessage } from '@langchain/core/messages'
+// ✅ 推荐
+import type { DynamicStructuredTool } from '@langchain/core/tools'
 
 // ❌ 避免
 import type { DynamicStructuredTool } from 'langchain/tools'

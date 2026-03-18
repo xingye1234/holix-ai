@@ -4,11 +4,11 @@
  */
 
 import type { StreamContext, StreamState } from '../stream-state'
-import { BaseStreamHandler } from './base-handler'
-import { AgentHandler } from './agent-handler'
-import { ToolHandler } from './tool-handler'
-import { logger } from '../../../platform/logger'
 import util from 'node:util'
+import { logger } from '../../../platform/logger'
+import { AgentHandler } from './agent-handler'
+import { BaseStreamHandler } from './base-handler'
+import { ToolHandler } from './tool-handler'
 
 /**
  * Updates 模式处理器

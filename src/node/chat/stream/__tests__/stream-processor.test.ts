@@ -2,7 +2,6 @@
  * StreamProcessor 单元测试
  */
 
-import type { DraftContent } from '../../../database/schema/chat'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { StreamProcessor } from '../stream-processor'
 

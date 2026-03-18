@@ -1,5 +1,5 @@
-import { readFileSync } from 'node:fs'
 import type { SandboxPermissions } from '../sandbox/types'
+import { readFileSync } from 'node:fs'
 import { normalizeSandboxPermissions } from '../sandbox/types'
 
 export interface SourceAuditIssue {

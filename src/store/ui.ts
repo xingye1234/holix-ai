@@ -18,16 +18,16 @@ const useUI = create<UIStore>()(
       layoutMode: 'chat',
       sidebarCollapsed: false,
 
-      setLayoutMode: (mode) => set({ layoutMode: mode }),
+      setLayoutMode: mode => set({ layoutMode: mode }),
       toggleLayoutMode: () =>
         set({ layoutMode: get().layoutMode === 'chat' ? 'article' : 'chat' }),
 
-      setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
+      setSidebarCollapsed: collapsed => set({ sidebarCollapsed: collapsed }),
       toggleSidebar: () => set({ sidebarCollapsed: !get().sidebarCollapsed }),
     }),
     {
       name: 'holix-ui-preferences',
-      partialize: (state) => ({
+      partialize: state => ({
         layoutMode: state.layoutMode,
         sidebarCollapsed: state.sidebarCollapsed,
       }),

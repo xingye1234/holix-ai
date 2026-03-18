@@ -55,9 +55,9 @@ export class ContentExtractor {
     }
 
     return content.some((c: any) =>
-      c?.type === 'image_url' ||
-      c?.type === 'video' ||
-      c?.type === 'audio'
+      c?.type === 'image_url'
+      || c?.type === 'video'
+      || c?.type === 'audio',
     )
   }
 

@@ -7,8 +7,8 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { SelectionToolbar } from '../selection-toolbar'
 import useMessageSelection from '@/store/message-selection'
+import { SelectionToolbar } from '../selection-toolbar'
 
 // Mock logger to avoid electron-log initialization issues in test environment
 vi.mock('@/lib/logger', () => ({
@@ -20,7 +20,7 @@ vi.mock('@/lib/logger', () => ({
   },
 }))
 
-describe('SelectionToolbar', () => {
+describe('selectionToolbar', () => {
   const mockOnDeleteSelected = vi.fn()
   const mockOnExportSelected = vi.fn()
 

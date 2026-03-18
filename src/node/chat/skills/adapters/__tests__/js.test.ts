@@ -157,7 +157,7 @@ describe('loadJsTools - declaration 元数据优先', () => {
     )
 
     expect(tools).toHaveLength(1)
-    expect(tools[0].name).toBe('declared_name')          // 来自 declaration
+    expect(tools[0].name).toBe('declared_name') // 来自 declaration
     expect(tools[0].description).toBe('Declared description') // 来自 declaration
   })
 
@@ -287,11 +287,13 @@ describe('loadJsTools - 数组导出（多个 tools）', () => {
 
     const t1 = loadJsTools(
       { type: 'js', name: 'tool_one', description: 'Tool one', file: 'multi.js' },
-      testDir, 'test_skill',
+      testDir,
+      'test_skill',
     )
     const t2 = loadJsTools(
       { type: 'js', name: 'tool_two', description: 'Tool two', file: 'multi.js' },
-      testDir, 'test_skill',
+      testDir,
+      'test_skill',
     )
 
     // 每次 loadJsTools 返回恰好 1 个 tool
@@ -318,7 +320,8 @@ describe('loadJsTools - schema 构建（来自 declaration）', () => {
 
     const tools = loadJsTools(
       { type: 'js', name: 'no_schema', description: 'No schema', file: 'no-schema.js' },
-      testDir, 'test_skill',
+      testDir,
+      'test_skill',
     )
     const result = await tools[0].invoke({})
     expect(result).toBe('result')
@@ -342,7 +345,8 @@ describe('loadJsTools - schema 构建（来自 declaration）', () => {
         file: 'shorthand-schema.js',
         schema: { text: 'string', count: 'number', flag: 'boolean' },
       },
-      testDir, 'test_skill',
+      testDir,
+      'test_skill',
     )
     const result = await tools[0].invoke({ text: 'hello', count: 3, flag: true })
     expect(result).toBe('hello:3:true')
@@ -368,7 +372,8 @@ describe('loadJsTools - schema 构建（来自 declaration）', () => {
           optional_field: { type: 'string', description: 'Optional', optional: true },
         },
       },
-      testDir, 'test_skill',
+      testDir,
+      'test_skill',
     )
     const result = await tools[0].invoke({ required_field: 'hello' })
     expect(result).toBe('hello')
@@ -390,7 +395,8 @@ describe('loadJsTools - 具名导出', () => {
 
     const tools = loadJsTools(
       { type: 'js', name: 'named_tool', description: 'Named export tool', file: 'named-export.js', export: 'myTool' },
-      testDir, 'test_skill',
+      testDir,
+      'test_skill',
     )
 
     expect(tools).toHaveLength(1)
@@ -407,7 +413,8 @@ describe('loadJsTools - 具名导出', () => {
 
     const tools = loadJsTools(
       { type: 'js', name: 'named_tool', description: 'Named export tool', file: 'named-invoke.js', export: 'myTool' },
-      testDir, 'test_skill',
+      testDir,
+      'test_skill',
     )
     const result = await tools[0].invoke({})
     expect(result).toBe('from named export')
@@ -425,7 +432,8 @@ describe('loadJsTools - 错误处理', () => {
     // 文件存在 → 根据 declaration 创建 tool（不执行文件）
     const tools = loadJsTools(
       { type: 'js', name: 'broken_tool', description: 'Broken', file: 'syntax-error.js' },
-      testDir, 'test_skill',
+      testDir,
+      'test_skill',
     )
     expect(tools).toHaveLength(1)
 
@@ -454,7 +462,8 @@ describe('loadJsTools - 安全沙箱（执行阶段）', () => {
 
     const tools = loadJsTools(
       { type: 'js', name: 'electron_tool', description: 'Tries to use electron', file: 'use-electron.js' },
-      testDir, 'test_skill',
+      testDir,
+      'test_skill',
     )
     expect(tools).toEqual([])
   })
@@ -472,7 +481,8 @@ describe('loadJsTools - 安全沙箱（执行阶段）', () => {
 
     const tools = loadJsTools(
       { type: 'js', name: 'relative_tool', description: 'Tries relative require', file: 'use-relative.js' },
-      testDir, 'test_skill',
+      testDir,
+      'test_skill',
     )
     const result = await tools[0].invoke({})
 
@@ -499,7 +509,8 @@ describe('loadJsTools - 安全沙箱（执行阶段）', () => {
         file: 'use-fs.js',
         permissions: { allowedBuiltins: [] },
       },
-      testDir, 'test_skill',
+      testDir,
+      'test_skill',
     )
     expect(tools).toEqual([])
   })
@@ -524,7 +535,8 @@ describe('loadJsTools - 安全沙箱（执行阶段）', () => {
         schema: { input: 'string' },
         permissions: { allowedBuiltins: ['path'] },
       },
-      testDir, 'test_skill',
+      testDir,
+      'test_skill',
     )
     const result = await tools[0].invoke({ input: '/foo/bar/baz.txt' })
 

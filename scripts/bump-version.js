@@ -5,8 +5,8 @@
  * Usage: node scripts/bump-version.js [major|minor|patch]
  */
 
-import { execa } from 'execa'
 import { readFileSync, writeFileSync } from 'node:fs'
+import { execa } from 'execa'
 
 const VALID_TYPES = ['major', 'minor', 'patch']
 
@@ -45,7 +45,7 @@ async function bumpVersion(type = 'patch') {
 
     // Update package.json
     packageJson.version = newVersion
-    writeFileSync('package.json', JSON.stringify(packageJson, null, 2) + '\n')
+    writeFileSync('package.json', `${JSON.stringify(packageJson, null, 2)}\n`)
     console.log('✅ Updated package.json')
 
     // Generate changelog
@@ -59,8 +59,8 @@ async function bumpVersion(type = 'patch') {
     console.log('\n✅ Version bump complete!')
     console.log('\n📝 Next steps:')
     console.log('   1. Review CHANGELOG.md and RELEASE_NOTES.md')
-    console.log('   2. Commit changes: git add . && git commit -m "chore: release v' + newVersion + '"')
-    console.log('   3. Create tag: git tag v' + newVersion)
+    console.log(`   2. Commit changes: git add . && git commit -m "chore: release v${newVersion}"`)
+    console.log(`   3. Create tag: git tag v${newVersion}`)
     console.log('   4. Push: git push && git push --tags')
   }
   catch (error) {

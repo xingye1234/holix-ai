@@ -138,19 +138,34 @@ export const HARDCODED_BLOCKED: readonly string[] = [
  */
 export const RISKY_BUILTINS: ReadonlySet<string> = new Set([
   // 🟡 中风险 — 文件系统
-  'fs', 'node:fs', 'fs/promises', 'node:fs/promises',
+  'fs',
+  'node:fs',
+  'fs/promises',
+  'node:fs/promises',
   // 🟡 中风险 — 网络
-  'net', 'node:net',
-  'http', 'node:http',
-  'https', 'node:https',
-  'dgram', 'node:dgram',
-  'dns', 'node:dns', 'dns/promises', 'node:dns/promises',
-  'tls', 'node:tls',
-  'http2', 'node:http2',
+  'net',
+  'node:net',
+  'http',
+  'node:http',
+  'https',
+  'node:https',
+  'dgram',
+  'node:dgram',
+  'dns',
+  'node:dns',
+  'dns/promises',
+  'node:dns/promises',
+  'tls',
+  'node:tls',
+  'http2',
+  'node:http2',
   // 🔴 高风险 — 子进程 / 线程 / 集群
-  'child_process', 'node:child_process',
-  'worker_threads', 'node:worker_threads',
-  'cluster', 'node:cluster',
+  'child_process',
+  'node:child_process',
+  'worker_threads',
+  'node:worker_threads',
+  'cluster',
+  'node:cluster',
 ])
 
 /**

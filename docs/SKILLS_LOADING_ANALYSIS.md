@@ -350,7 +350,7 @@ logger.info(`[ChatManager] Total prompt tokens: ${skillPrompts.reduce((sum, p) =
 // 配置示例
 interface ChatConfig {
   skillLoadingStrategy: 'eager' | 'lazy' | 'smart'
-  coreSkills: string[]  // 始终加载的 skills
+  coreSkills: string[] // 始终加载的 skills
 }
 ```
 

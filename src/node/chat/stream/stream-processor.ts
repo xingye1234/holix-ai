@@ -5,11 +5,11 @@
 
 import type { DraftContent } from '../../database/schema/chat'
 import type { StreamContext, StreamMode, StreamState } from './stream-state'
-import { MessageHandler } from './handlers/message-handler'
-import { UpdateHandler } from './handlers/update-handler'
+import { logger } from '../../platform/logger'
 import { chatEventEmitter } from '../events/chat-event-emitter'
 import { toolCallTracker } from '../tools/tool-call-tracker'
-import { logger } from '../../platform/logger'
+import { MessageHandler } from './handlers/message-handler'
+import { UpdateHandler } from './handlers/update-handler'
 
 /**
  * 流处理器配置

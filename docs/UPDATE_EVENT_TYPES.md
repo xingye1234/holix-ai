@@ -62,7 +62,7 @@ export type ChatUpdateEnvelope
     | MessageStreamChunkEnvelope
     | MessageStreamDoneEnvelope
     | MessageStreamErrorEnvelope
-    | MessageDeletedEnvelope  // ✅ 新增
+    | MessageDeletedEnvelope // ✅ 新增
 ```
 
 ### 2. 扩展 ChatEnvelope（会话事件）
@@ -85,15 +85,15 @@ export type ChatUpdatedEnvelope = EventEnvelope<
   'chat.updated',
   {
     chatUid: string
-    updates: Record<string, any>  // ✅ 修复：不是完整的 Chat 对象
+    updates: Record<string, any> // ✅ 修复：不是完整的 Chat 对象
   }
 >
 
-export type ChatEnvelope =
-  | CreateChatEnvelope
-  | ChatCreatedEnvelope  // ✅ 新增
-  | ChatUpdatedEnvelope
-  | ChatDeletedEnvelope
+export type ChatEnvelope
+  = | CreateChatEnvelope
+    | ChatCreatedEnvelope // ✅ 新增
+    | ChatUpdatedEnvelope
+    | ChatDeletedEnvelope
 ```
 
 ## 事件类型完整列表

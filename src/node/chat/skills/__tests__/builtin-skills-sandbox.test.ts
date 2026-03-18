@@ -72,7 +72,6 @@ describe('built-in skills sandbox execution (production loader path)', () => {
     await expect(tools.find_files.invoke({ dir_path: sandboxDir, name_pattern: '.ts' })).resolves.toMatch(/sample\.ts/)
   })
 
-
   it('runs web-search tool validation path without token', async () => {
     await expect(tools.web_search.invoke({ search_query: 'holix ai' })).resolves.toMatch(/未配置 apiToken/)
   })

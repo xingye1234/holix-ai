@@ -7,8 +7,8 @@ import type { DraftContent, Message, ToolCallTrace } from '../../database/schema
 import type { MessageStatus } from './message-types'
 import {
   createMessage,
-  updateMessage,
   getLatestMessages,
+  updateMessage,
 } from '../../database/message-operations'
 import { logger } from '../../platform/logger'
 

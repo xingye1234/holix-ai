@@ -22,10 +22,10 @@ Three coordinated improvements to the provider settings experience:
 
 ```ts
 export interface VendorPreset {
-  id: string       // machine identifier, e.g. 'openai'
-  name: string     // display name, e.g. 'OpenAI'
-  avatar: string   // emoji, e.g. '🤖'
-  baseUrl: string  // default API base URL
+  id: string // machine identifier, e.g. 'openai'
+  name: string // display name, e.g. 'OpenAI'
+  avatar: string // emoji, e.g. '🤖'
+  baseUrl: string // default API base URL
   models: string[] // ordered list of current model IDs
 }
 ```
@@ -235,7 +235,7 @@ interface ProviderFormDialogProps {
   mode: 'add' | 'edit'
   open: boolean
   onOpenChange: (open: boolean) => void
-  initialData?: AIProvider   // required when mode === 'edit'
+  initialData?: AIProvider // required when mode === 'edit'
   onAdd?: (provider: AIProvider) => void
   onUpdate?: (name: string, updates: Partial<AIProvider>) => void
   onDelete?: (name: string) => void

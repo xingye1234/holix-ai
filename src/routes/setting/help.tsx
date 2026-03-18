@@ -43,7 +43,11 @@ function ReleaseNotesDialog({ version }: { version: string | null }) {
   }, [status])
 
   return (
-    <Dialog onOpenChange={(open) => { if (open) fetchNotes() }}>
+    <Dialog onOpenChange={(open) => {
+      if (open)
+        fetchNotes()
+    }}
+    >
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
           <FileText className="mr-1.5" size={14} />
@@ -56,7 +60,8 @@ function ReleaseNotesDialog({ version }: { version: string | null }) {
             {t('settings.help.update.detailsTitle')}
             {version && (
               <span className="ml-2 text-sm font-normal text-muted-foreground">
-                v{version}
+                v
+                {version}
               </span>
             )}
           </DialogTitle>
@@ -74,7 +79,14 @@ function ReleaseNotesDialog({ version }: { version: string | null }) {
               ? (
                   <div className="flex flex-col items-center gap-3 py-12 text-sm text-muted-foreground">
                     <p>{t('settings.help.update.loadError')}</p>
-                    <Button variant="outline" size="sm" onClick={() => { setStatus('idle'); fetchNotes() }}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setStatus('idle')
+                        fetchNotes()
+                      }}
+                    >
                       {t('settings.help.update.retry')}
                     </Button>
                   </div>

@@ -3,6 +3,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { collectSkillDirs, installSkillsFromGitHub, parseGitHubSource } from '../skill-installer'
+
 const mocked = vi.hoisted(() => ({
   sourceRepo: '',
 }))
@@ -17,8 +19,6 @@ vi.mock('node:child_process', () => ({
     cpSync(mocked.sourceRepo, targetDir, { recursive: true })
   }),
 }))
-
-import { collectSkillDirs, installSkillsFromGitHub, parseGitHubSource } from '../skill-installer'
 
 afterEach(() => {
   if (mocked.sourceRepo && existsSync(mocked.sourceRepo)) {

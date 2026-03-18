@@ -1,7 +1,7 @@
 import type { VirtualItemRenderInfo } from '@/components/virtual-list'
+import { useLocation } from '@tanstack/react-router'
 import { AnimatePresence, motion } from 'framer-motion'
 import { memo, useCallback, useEffect, useRef } from 'react'
-import { useLocation } from '@tanstack/react-router'
 import { VirtualMessageList } from '@/components/virtual-list'
 import { useChatContext } from '@/context/chat'
 import { useChatVirtualList } from '@/hooks/chat-virtual-list'

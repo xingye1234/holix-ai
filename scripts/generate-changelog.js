@@ -6,8 +6,6 @@
  */
 
 import { execa } from 'execa'
-import { writeFileSync, readFileSync, existsSync } from 'node:fs'
-import { join } from 'node:path'
 
 const CHANGELOG_FILE = 'CHANGELOG.md'
 
@@ -18,10 +16,13 @@ async function generateChangelog() {
     // Generate changelog using conventional-changelog-cli
     const { stdout } = await execa('npx', [
       'conventional-changelog',
-      '-p', 'conventionalcommits',
-      '-i', CHANGELOG_FILE,
+      '-p',
+      'conventionalcommits',
+      '-i',
+      CHANGELOG_FILE,
       '-s',
-      '-r', '0', // Generate for all releases
+      '-r',
+      '0', // Generate for all releases
     ])
 
     console.log('✅ CHANGELOG.md generated successfully!')
