@@ -1,5 +1,5 @@
-import type { CursorMcpConfig, CursorMcpServer } from '@/types/mcp'
 import type { Connection } from '@langchain/mcp-adapters'
+import type { CursorMcpConfig, CursorMcpServer } from '@/types/mcp'
 import { MultiServerMCPClient } from '@langchain/mcp-adapters'
 import { logger } from '../../platform/logger'
 import { mcpStore } from '../../platform/mcp'
