@@ -68,8 +68,8 @@ export function initChat() {
 
     const contextSettings = chat.contextSettings || DEFAULT_CHAT_CONTEXT_SETTINGS
     const contextMessagesRaw = await getLatestMessages(chatId, contextSettings.maxMessages)
-    const contextMessages = contextSettings.timeWindowHours
-      ? contextMessagesRaw.filter(msg => msg.createdAt >= Date.now() - contextSettings.timeWindowHours * 60 * 60 * 1000)
+    const contextMessages = contextSettings.timeWindowHours != null
+      ? contextMessagesRaw.filter(msg => msg.createdAt >= Date.now() - contextSettings.timeWindowHours! * 60 * 60 * 1000)
       : contextMessagesRaw
 
     const systemMessages = chat.prompts || []
