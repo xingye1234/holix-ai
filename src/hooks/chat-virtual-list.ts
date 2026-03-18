@@ -11,6 +11,11 @@
  *  - 在 onLoadMoreTop 前调用 captureAnchor 防止跳动
  *  - 在 AI 流式输出时跟随底部滚动
  *  - 暴露命令式 listRef 供父组件调用 scrollToIndex / scrollToBottom
+ *
+ * 多消息流式生成优化：
+ *  - 检测多个消息同时生成时，使用即时滚动（auto）避免抖动
+ *  - 单个消息生成时使用平滑滚动（smooth）提升体验
+ *  - 批量处理滚动更新，减少频繁的滚动操作
  */
 
 import type { RefObject } from 'react'
@@ -19,7 +24,6 @@ import type { Message } from '@/node/database/schema/chat'
 import { useCallback, useRef, useState } from 'react'
 import { useChatContext } from '@/context/chat'
 import { useChatMessages, useInitialMessageLoad, useLoadMoreMessages } from '@/hooks/message'
-import { useRafThrottle } from '@/hooks/throttle'
 import useUpdate from '@/hooks/update'
 import logger from '@/lib/logger'
 import { useMessageStore } from '@/store/message'
@@ -41,6 +45,8 @@ export interface ChatVirtualListState {
   onDeleteMessage: (messageId: string) => Promise<void>
   /** 命令式列表 ref */
   listRef: RefObject<VirtualListHandle | null>
+  /** 当前正在流式生成的消息数量（用于调试） */
+  streamingCount: number
 }
 
 export function useChatVirtualList(): ChatVirtualListState {
@@ -52,6 +58,23 @@ export function useChatVirtualList(): ChatVirtualListState {
   const loadMore = useLoadMoreMessages(chatUid)
 
   const listRef = useRef<VirtualListHandle>(null)
+
+  // ── 流式消息跟踪（多消息生成优化）───────────────────────────────────────────
+
+  const streamingMessagesRef = useRef<Set<string>>(new Set())
+  const [streamingCount, setStreamingCount] = useState(0)
+
+  // 更新流式消息计数
+  const updateStreamingCount = useCallback(() => {
+    const count = streamingMessagesRef.current.size
+    setStreamingCount(count)
+  }, [])
+
+  // 检查是否在流式生成中
+  const isStreamingMessage = useCallback((messageId: string): boolean => {
+    const message = useMessageStore.getState().messages[messageId]
+    return message?.status === 'streaming' || message?.status === 'pending'
+  }, [])
 
   // ── 顶部加载状态管理 ─────────────────────────────────────────────────────
 
@@ -98,7 +121,7 @@ export function useChatVirtualList(): ChatVirtualListState {
     messagesLengthRef.current = messages.length
   }
 
-  // ── 跟随底部 ─────────────────────────────────────────────────────────────
+  // ── 跟随底部（智能滚动策略）────────────────────────────────────────────────
 
   const isAtBottomRef = useRef(true)
 
@@ -106,20 +129,35 @@ export function useChatVirtualList(): ChatVirtualListState {
     isAtBottomRef.current = atBottom
   }, [])
 
+  /**
+   * 智能滚动策略：
+   * - 多个消息同时生成时使用 'auto'（即时滚动，避免抖动）
+   * - 单个消息生成时使用 'smooth'（平滑滚动，提升体验）
+   * - 只有在底部时才跟随
+   */
   const followOutputBehavior = useCallback((isAtBottom: boolean): ScrollBehavior | false => {
-    return isAtBottom ? 'smooth' : false
-  }, [])
-
-  // ── streaming 自动滚动 ────────────────────────────────────────────────────
-
-  const scrollToBottom = useRafThrottle(() => {
-    if (!isAtBottomRef.current) {
-      logger.warn('ChatVirtualList: Not at bottom, skipping auto-scroll')
-      return
+    if (!isAtBottom) {
+      return false
     }
-    listRef.current?.scrollToBottom('smooth')
+    const streamingCount = streamingMessagesRef.current.size
+    // 多个消息流式生成时，使用即时滚动避免抖动
+    if (streamingCount >= 2) {
+      return 'auto'
+    }
+    // 单个消息或无流式生成时，使用平滑滚动
+    return 'smooth'
   }, [])
 
+  // ── streaming 自动滚动（多消息优化）───────────────────────────────────────────
+
+  /**
+   * 处理流式更新：
+   * 1. 跟踪流式消息状态
+   * 2. 更新 streamingCount，影响 followOutputBehavior 的决策
+   *
+   * 注意：不在这里直接调用 scrollToBottom，而是通过 followOutputBehavior
+   * 让虚拟列表自己处理滚动，避免双重滚动导致抖动
+   */
   const handleStreamingUpdate = useCallback((payload: { chatUid: string, message?: Message }) => {
     if (!chat)
       return
@@ -127,8 +165,30 @@ export function useChatVirtualList(): ChatVirtualListState {
       return
     if (payload.chatUid !== chat.uid)
       return
-    scrollToBottom()
-  }, [chat, scrollToBottom])
+
+    const messageId = payload.message?.uid
+    if (!messageId)
+      return
+
+    // 更新流式消息跟踪
+    const isStreaming = isStreamingMessage(messageId)
+    const wasStreaming = streamingMessagesRef.current.has(messageId)
+
+    if (isStreaming && !wasStreaming) {
+      // 新开始流式生成
+      streamingMessagesRef.current.add(messageId)
+      updateStreamingCount()
+      logger.debug(`ChatVirtualList: Message ${messageId} started streaming (count: ${streamingMessagesRef.current.size})`)
+    }
+    else if (!isStreaming && wasStreaming) {
+      // 流式生成完成
+      streamingMessagesRef.current.delete(messageId)
+      updateStreamingCount()
+      logger.debug(`ChatVirtualList: Message ${messageId} finished streaming (count: ${streamingMessagesRef.current.size})`)
+    }
+
+    // 滚动由 followOutputBehavior + 虚拟列表自动处理，不需要手动调用
+  }, [chat, isStreamingMessage, updateStreamingCount])
 
   useUpdate('message.streaming', handleStreamingUpdate)
   useUpdate('message.created', handleStreamingUpdate)
@@ -157,5 +217,6 @@ export function useChatVirtualList(): ChatVirtualListState {
     onAtBottomStateChange,
     onDeleteMessage,
     listRef,
+    streamingCount,
   }
 }
