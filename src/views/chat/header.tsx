@@ -1,15 +1,9 @@
 import { Link } from '@tanstack/react-router'
-import { AlignJustify, MessageSquare, PanelLeftClose, PanelLeftOpen, Search, SquarePen, Wrench, X } from 'lucide-react'
-import { useRef } from 'react'
+import { AlignJustify, MessageSquare, PanelLeftClose, PanelLeftOpen, SquarePen, Wrench } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import useChat from '@/store/chat'
 import useUI from '@/store/ui'
 
 export function AsideChatHeader() {
-  const searchQuery = useChat(state => state.searchQuery)
-  const setSearchQuery = useChat(state => state.setSearchQuery)
-  const inputRef = useRef<HTMLInputElement>(null)
   const toggleSidebar = useUI(state => state.toggleSidebar)
 
   return (
@@ -25,30 +19,6 @@ export function AsideChatHeader() {
         >
           <PanelLeftClose className="h-4 w-4" />
         </Button>
-      </div>
-
-      <div className="relative">
-        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          ref={inputRef}
-          value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
-          placeholder="搜索聊天..."
-          className="h-9 pl-8 pr-8 w-full bg-muted/50 border-transparent focus-visible:bg-background"
-        />
-        {searchQuery && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute right-0 top-0 h-9 w-9 hover:bg-transparent text-muted-foreground hover:text-foreground"
-            onClick={() => {
-              setSearchQuery('')
-              inputRef.current?.focus()
-            }}
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        )}
       </div>
 
       <div className="space-y-0.5">

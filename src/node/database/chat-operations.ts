@@ -390,3 +390,56 @@ export async function getAllChats(options?: {
   const rawChats = await query
   return rawChats.map(deserializeChat)
 }
+
+export interface SearchChatOptions {
+  /** 搜索关键词 */
+  query: string
+  /** 分页：返回数量上限，默认 20 */
+  limit?: number
+  /** 分页：偏移量，默认 0 */
+  offset?: number
+  /** 是否包含已归档会话，默认 false */
+  includeArchived?: boolean
+}
+
+export interface SearchChatResult {
+  rank: number
+  chat: Chat
+}
+
+/**
+ * 使用 LIKE 进行会话关键词搜索。
+ *
+ * 匹配 title 和 lastMessagePreview，默认排除已归档会话。
+ */
+export async function searchChats(options: SearchChatOptions): Promise<SearchChatResult[]> {
+  const { query, limit = 20, offset = 0, includeArchived = false } = options
+
+  if (!query || !query.trim()) {
+    return []
+  }
+
+  const likePattern = `%${query.trim()}%`
+
+  const conditions = [
+    sql`(
+      LOWER(${chats.title}) LIKE LOWER(${likePattern})
+      OR LOWER(COALESCE(${chats.lastMessagePreview}, '')) LIKE LOWER(${likePattern})
+    )`,
+    ...(includeArchived ? [] : [eq(chats.archived, false)]),
+  ]
+
+  const db = await getDatabase()
+  const rows = await db
+    .select()
+    .from(chats)
+    .where(and(...conditions))
+    .orderBy(sql`${chats.updatedAt} DESC`)
+    .limit(limit)
+    .offset(offset)
+
+  return rows.map((row, index) => ({
+    rank: index,
+    chat: deserializeChat(row),
+  }))
+}
