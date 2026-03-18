@@ -3,6 +3,7 @@ import {
   updateLastMessagePreview,
 } from '../database/chat-operations'
 import { createUserMessage, getLatestMessages } from '../database/message-operations'
+import { DEFAULT_CHAT_CONTEXT_SETTINGS } from '../database/schema/chat'
 import { onCommand } from '../platform/commands'
 import { logger } from '../platform/logger'
 import { providerStore } from '../platform/provider'
@@ -65,8 +66,11 @@ export function initChat() {
       streaming: true,
     })
 
-    // 获取最近的上下文消息（例如最近 10 条）
-    const contextMessages = await getLatestMessages(chatId, 10)
+    const contextSettings = chat.contextSettings || DEFAULT_CHAT_CONTEXT_SETTINGS
+    const contextMessagesRaw = await getLatestMessages(chatId, contextSettings.maxMessages)
+    const contextMessages = contextSettings.timeWindowHours != null
+      ? contextMessagesRaw.filter(msg => msg.createdAt >= Date.now() - contextSettings.timeWindowHours! * 60 * 60 * 1000)
+      : contextMessagesRaw
 
     const systemMessages = chat.prompts || []
 

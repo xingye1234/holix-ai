@@ -9,7 +9,7 @@ import { and, eq, inArray, isNotNull, lte, sql } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import { deserializeChat, serializeChat } from './chat-serializer'
 import { getDatabase, sqlite } from './connect'
-import { chats, message } from './schema/chat'
+import { chats, DEFAULT_CHAT_CONTEXT_SETTINGS, message } from './schema/chat'
 
 /**
  * 创建新会话
@@ -43,6 +43,7 @@ export async function createChat(params: {
     pendingMessages: null,
     prompts: '[]' as any,
     workspace: null,
+    contextSettings: JSON.stringify(DEFAULT_CHAT_CONTEXT_SETTINGS) as any,
   }
 
   await db.insert(chats).values(insert)
@@ -77,13 +78,14 @@ export async function updateChatModel(
  */
 export async function updateChat(
   chatUid: string,
-  updates: Partial<Pick<Chat, 'provider' | 'model' | 'title' | 'status' | 'pinned' | 'archived' | 'expiresAt'>>,
+  updates: Partial<Pick<Chat, 'provider' | 'model' | 'title' | 'status' | 'pinned' | 'archived' | 'expiresAt' | 'contextSettings'>>,
 ): Promise<Chat> {
   const db = await getDatabase()
+  const serializedUpdates = serializeChat(updates)
   await db
     .update(chats)
     .set({
-      ...updates,
+      ...serializedUpdates,
       updatedAt: Date.now(),
     })
     .where(eq(chats.uid, chatUid))
@@ -292,6 +294,28 @@ export async function updatePendingMessages(
     .update(chats)
     .set({
       pendingMessages: pendingMessages ? (JSON.stringify(pendingMessages) as any) : null,
+      updatedAt: Date.now(),
+    })
+    .where(eq(chats.uid, chatUid))
+
+  const [rawChat] = await db.select().from(chats).where(eq(chats.uid, chatUid))
+  return deserializeChat(rawChat)
+}
+
+/**
+ * 更新会话的上下文设置
+ * @param chatUid - 会话 UID
+ * @param contextSettings - 上下文设置
+ */
+export async function updateChatContextSettings(
+  chatUid: string,
+  contextSettings: Chat['contextSettings'],
+): Promise<Chat> {
+  const db = await getDatabase()
+  await db
+    .update(chats)
+    .set({
+      contextSettings: JSON.stringify(contextSettings) as any,
       updatedAt: Date.now(),
     })
     .where(eq(chats.uid, chatUid))

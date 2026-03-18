@@ -3,15 +3,17 @@
  * 处理数据库层的 JSON 字段转换，避免业务代码侵入
  */
 
-import type { Chat, PendingMessage, Workspace } from './schema/chat'
+import type { Chat, ChatContextSettings, PendingMessage, Workspace } from './schema/chat'
+import { DEFAULT_CHAT_CONTEXT_SETTINGS } from './schema/chat'
 
 /**
  * 数据库原始 Chat 类型（JSON 字段为字符串）
  */
-export type RawChat = Omit<Chat, 'prompts' | 'workspace' | 'pendingMessages'> & {
+export type RawChat = Omit<Chat, 'prompts' | 'workspace' | 'pendingMessages' | 'contextSettings'> & {
   prompts: string | string[]
   workspace: string | Workspace[] | null
   pendingMessages: string | PendingMessage[] | null
+  contextSettings: string | ChatContextSettings
 }
 
 /**
@@ -24,6 +26,7 @@ export function deserializeChat(raw: RawChat): Chat {
     prompts: deserializeJsonField(raw.prompts, []) as string[],
     workspace: deserializeJsonField(raw.workspace, null) as Workspace[] | null,
     pendingMessages: deserializeJsonField(raw.pendingMessages, null) as PendingMessage[] | null,
+    contextSettings: deserializeJsonField(raw.contextSettings, DEFAULT_CHAT_CONTEXT_SETTINGS) as ChatContextSettings,
   }
 }
 
@@ -46,6 +49,10 @@ export function serializeChat(chat: Partial<Chat>): Partial<RawChat> {
     result.pendingMessages = serializeJsonField(chat.pendingMessages)
   }
 
+  if ('contextSettings' in chat && chat.contextSettings !== undefined) {
+    result.contextSettings = serializeJsonField(chat.contextSettings)
+  }
+
   return result
 }
 
@@ -61,7 +68,8 @@ function deserializeJsonField<T>(value: string | T | null | undefined, defaultVa
   if (typeof value === 'string') {
     try {
       return JSON.parse(value) as T
-    } catch {
+    }
+    catch {
       return defaultValue
     }
   }
