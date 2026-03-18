@@ -10,6 +10,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { SelectionToolbar } from '../selection-toolbar'
 import useMessageSelection from '@/store/message-selection'
 
+// Mock logger to avoid electron-log initialization issues in test environment
+vi.mock('@/lib/logger', () => ({
+  default: {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  },
+}))
+
 describe('SelectionToolbar', () => {
   const mockOnDeleteSelected = vi.fn()
   const mockOnExportSelected = vi.fn()
