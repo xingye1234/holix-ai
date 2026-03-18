@@ -440,7 +440,7 @@ function SkillCard({ skill }: { skill: Skill }) {
 
 // ─── 页面 ────────────────────────────────────────────────────────────────────
 
-export function SkillsManagementPage({ skills, config }: { skills: Skill[], config: ConfigData }) {
+export function SkillsPage({ skills, config }: { skills: Skill[], config: ConfigData }) {
   const { t } = useI18n()
   const [contextStrategy, setContextStrategy] = useState<'eager' | 'lazy'>(config.skillsContextStrategy ?? 'eager')
 

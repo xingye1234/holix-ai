@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { SkillsManagementPage } from '@/components/skills/skills-management-page'
+import { SkillsPage } from '@/views/skills/page'
 import { getConfig } from '@/lib/config'
 import { trpcClient } from '@/lib/trpc-client'
 
@@ -14,5 +14,5 @@ export const Route = createFileRoute('/skills')({
 
 function RouteComponent() {
   const { skills, config } = Route.useLoaderData()
-  return <SkillsManagementPage skills={skills} config={config} />
+  return <SkillsPage skills={skills} config={config} />
 }
