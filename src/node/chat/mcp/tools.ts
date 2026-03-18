@@ -1,12 +1,11 @@
 import type { CursorMcpConfig, CursorMcpServer } from '@/types/mcp'
+import { MultiServerMCPClient } from '@langchain/mcp-adapters'
 import { logger } from '../../platform/logger'
 import { mcpStore } from '../../platform/mcp'
 
 interface MCPClientLike {
   getTools: () => Promise<any[]>
 }
-
-type MCPClientCtor = new (servers: Record<string, any>) => MCPClientLike
 
 function toTransportConfig(server: CursorMcpServer) {
   const transport = server.transport || (server.url ? 'http' : 'stdio')
@@ -43,11 +42,6 @@ function buildMcpClientConfig(config: CursorMcpConfig) {
   )
 }
 
-async function loadMcpClientCtor(): Promise<MCPClientCtor> {
-  const mod = await import('@langchain/mcp-adapters')
-  return mod.MultiServerMCPClient as MCPClientCtor
-}
-
 export async function loadMcpTools() {
   const config = mcpStore.getConfig()
   const servers = buildMcpClientConfig(config)
@@ -57,7 +51,6 @@ export async function loadMcpTools() {
   }
 
   try {
-    const MultiServerMCPClient = await loadMcpClientCtor()
     const client = new MultiServerMCPClient(servers)
     const tools = await client.getTools()
     logger.info(`[MCP] Loaded ${tools.length} MCP tools from ${Object.keys(servers).length} servers`)
