@@ -1,23 +1,18 @@
 import { Link } from '@tanstack/react-router'
-import { AlignJustify, Bot, MessageSquare, PanelLeftClose, PanelLeftOpen, Search, SquarePen, Wrench, X } from 'lucide-react'
-import { useRef } from 'react'
+import { AlignJustify, Bot, MessageSquare, PanelLeftClose, PanelLeftOpen, Plus, Wrench } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { useI18n } from '@/i18n/provider'
-import useChat from '@/store/chat'
 import useUI from '@/store/ui'
 
 export function AsideChatHeader() {
   const { t } = useI18n()
-  const searchQuery = useChat(state => state.searchQuery)
-  const setSearchQuery = useChat(state => state.setSearchQuery)
-  const inputRef = useRef<HTMLInputElement>(null)
   const toggleSidebar = useUI(state => state.toggleSidebar)
 
   return (
-    <header className="px-3 py-3 bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 sticky top-0 z-10 space-y-2">
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-sm font-semibold text-foreground/80 pl-1">{t('chat.sidebar.title')}</span>
+    <header className="px-3 py-3 bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 sticky top-0 z-10">
+      {/* 标题栏：标题 + 收起按钮 */}
+      <div className="flex items-center justify-between mb-3">
+        <h1 className="text-sm font-semibold text-foreground">{t('chat.sidebar.title')}</h1>
         <Button
           variant="ghost"
           size="icon"
@@ -29,44 +24,28 @@ export function AsideChatHeader() {
         </Button>
       </div>
 
-      <div className="relative">
-        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          ref={inputRef}
-          value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
-          placeholder={t('chat.searchPlaceholder')}
-          className="h-9 pl-8 pr-8 w-full bg-muted/50 border-transparent focus-visible:bg-background"
-        />
-        {searchQuery && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute right-0 top-0 h-9 w-9 hover:bg-transparent text-muted-foreground hover:text-foreground"
-            onClick={() => {
-              setSearchQuery('')
-              inputRef.current?.focus()
-            }}
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        )}
-      </div>
+      {/* 新建会话按钮 */}
+      <Link
+        to="/"
+        className="w-full mb-3"
+        activeProps={{
+          className: 'pointer-events-none',
+        }}
+      >
+        <Button
+          variant="default"
+          className="w-full justify-start gap-2 h-10 shadow-sm hover:shadow transition-all"
+        >
+          <Plus className="h-4 w-4" />
+          <span>{t('chat.sidebar.newChat')}</span>
+        </Button>
+      </Link>
 
+      {/* 功能链接 */}
       <div className="space-y-0.5">
         <Link
-          to="/"
-          className="h-9 w-full flex items-center justify-start gap-2 rounded-md px-2 text-sm font-normal text-foreground/90 hover:bg-muted hover:text-foreground"
-          activeProps={{
-            className: 'bg-accent text-accent-foreground',
-          }}
-        >
-          <SquarePen className="h-4 w-4 text-muted-foreground" />
-          <span>{t('chat.sidebar.newChat')}</span>
-        </Link>
-        <Link
           to="/skills"
-          className="h-9 w-full flex items-center justify-start gap-2 rounded-md px-2 text-sm font-normal text-foreground/90 hover:bg-muted hover:text-foreground"
+          className="h-9 w-full flex items-center justify-start gap-2 rounded-md px-2 text-sm font-normal text-foreground/90 hover:bg-muted hover:text-foreground transition-colors"
           activeProps={{
             className: 'bg-accent text-accent-foreground',
           }}
@@ -76,7 +55,7 @@ export function AsideChatHeader() {
         </Link>
         <Link
           to="/agents"
-          className="h-9 w-full flex items-center justify-start gap-2 rounded-md px-2 text-sm font-normal text-foreground/90 hover:bg-muted hover:text-foreground"
+          className="h-9 w-full flex items-center justify-start gap-2 rounded-md px-2 text-sm font-normal text-foreground/90 hover:bg-muted hover:text-foreground transition-colors"
           activeProps={{
             className: 'bg-accent text-accent-foreground',
           }}
