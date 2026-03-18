@@ -85,6 +85,18 @@ export interface Workspace {
 
 type Workspaces = Workspace[]
 
+export interface ChatContextSettings {
+  /** 参与上下文的最近消息数量 */
+  maxMessages: number
+  /** 参与上下文的时间窗口（小时），null 表示不限时间 */
+  timeWindowHours: number | null
+}
+
+export const DEFAULT_CHAT_CONTEXT_SETTINGS: ChatContextSettings = {
+  maxMessages: 10,
+  timeWindowHours: 24,
+}
+
 export const chats = sqliteTable(
   'chat',
   {
@@ -141,6 +153,13 @@ export const chats = sqliteTable(
 
     /** 工作区 */
     workspace: t.text('workspace').$type<Workspaces>(),
+
+    /** 聊天上下文策略 */
+    contextSettings: t
+      .text('context_settings')
+      .$type<ChatContextSettings>()
+      .notNull()
+      .default(JSON.stringify(DEFAULT_CHAT_CONTEXT_SETTINGS)),
   },
   table => ({
     chatUidIdx: index('idx_chat_uid').on(table.uid),

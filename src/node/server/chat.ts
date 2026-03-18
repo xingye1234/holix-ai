@@ -7,6 +7,7 @@ import {
   getAllChats,
   getChatByUid,
   updateChat,
+  updateChatContextSettings,
   updateChatModel,
   updateChatPrompts,
   updateChatWorkspace,
@@ -75,6 +76,10 @@ export const chatRouter = router({
         pinned: z.boolean().optional(),
         archived: z.boolean().optional(),
         expiresAt: z.number().nullable().optional(),
+        contextSettings: z.object({
+          maxMessages: z.number().int().min(1).max(200),
+          timeWindowHours: z.number().int().min(1).max(24 * 30).nullable(),
+        }).optional(),
       }),
     )
     .mutation(async ({ input }) => {
@@ -103,6 +108,23 @@ export const chatRouter = router({
     )
     .mutation(async ({ input }) => {
       const chat = await updateChatPrompts(input.chatUid, input.prompts)
+      update('chat.updated', chat)
+      return chat
+    }),
+
+  // 更新聊天上下文设置
+  updateContextSettings: procedure()
+    .input(
+      z.object({
+        chatUid: z.string(),
+        contextSettings: z.object({
+          maxMessages: z.number().int().min(1).max(200),
+          timeWindowHours: z.number().int().min(1).max(24 * 30).nullable(),
+        }),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const chat = await updateChatContextSettings(input.chatUid, input.contextSettings)
       update('chat.updated', chat)
       return chat
     }),

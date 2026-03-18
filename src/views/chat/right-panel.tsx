@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useSettingsPanel } from '@/context/settings-panel'
 import { cn } from '@/lib/utils'
+import RightContextSettings from './right-context-settings'
 import Prompts from './right-prompts'
 import RightWorkspace from './right-workspace'
 
@@ -11,13 +12,13 @@ export default function ChatPanel() {
   return (
     <motion.div
       initial={{ width: 0 }}
-      animate={{ width: 350 }}
+      animate={{ width: 420 }}
       exit={{ width: 0 }}
       transition={{ duration: 0.2 }}
-      className={cn('h-full w-100 border-l bg-background flex flex-col overflow-hidden')}
+      className={cn('h-full w-[420px] border-l bg-background flex flex-col overflow-hidden')}
     >
-      <div className="w-100">
-        <div className="h-(--app-header-height) border-b px-4 flex items-center justify-between">
+      <div className="h-full flex flex-col">
+        <div className="h-(--app-header-height) border-b px-4 flex items-center justify-between shrink-0">
           <h2 className="text-sm font-semibold">设置</h2>
           <Button
             className="text-muted-foreground hover:text-foreground transition-colors"
@@ -28,16 +29,20 @@ export default function ChatPanel() {
             ✕
           </Button>
         </div>
-        <div className="flex-1 overflow-auto h-[calc(100vh-var(--app-header-height)-var(--app-header-height))]">
-          <Tabs defaultValue="prompts" className="w-full p-2 h-full">
-            <TabsList className="p-1 w-full">
+        <div className="flex-1 overflow-hidden">
+          <Tabs defaultValue="context" className="h-full flex flex-col">
+            <TabsList className="m-2 p-1 grid grid-cols-3 shrink-0">
+              <TabsTrigger value="context">上下文</TabsTrigger>
               <TabsTrigger value="prompts">提示词</TabsTrigger>
               <TabsTrigger value="workspace">工作区</TabsTrigger>
             </TabsList>
-            <TabsContent value="prompts">
+            <TabsContent value="context" className="mt-0 px-2 pb-2 overflow-auto">
+              <RightContextSettings />
+            </TabsContent>
+            <TabsContent value="prompts" className="mt-0 px-2 pb-2 overflow-auto">
               <Prompts />
             </TabsContent>
-            <TabsContent value="workspace">
+            <TabsContent value="workspace" className="mt-0 px-2 pb-2 overflow-auto">
               <RightWorkspace />
             </TabsContent>
           </Tabs>
