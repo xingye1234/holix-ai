@@ -17,6 +17,7 @@ import { Route as PreviewRouteImport } from './routes/preview'
 import { Route as AgentsRouteImport } from './routes/agents'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SettingProviderRouteImport } from './routes/setting/provider'
+import { Route as SettingMcpRouteImport } from './routes/setting/mcp'
 import { Route as SettingHelpRouteImport } from './routes/setting/help'
 import { Route as SettingGeneralRouteImport } from './routes/setting/general'
 import { Route as ChatIdRouteImport } from './routes/chat/$id'
@@ -61,6 +62,11 @@ const SettingProviderRoute = SettingProviderRouteImport.update({
   path: '/provider',
   getParentRoute: () => SettingRoute,
 } as any)
+const SettingMcpRoute = SettingMcpRouteImport.update({
+  id: '/mcp',
+  path: '/mcp',
+  getParentRoute: () => SettingRoute,
+} as any)
 const SettingHelpRoute = SettingHelpRouteImport.update({
   id: '/help',
   path: '/help',
@@ -88,6 +94,7 @@ export interface FileRoutesByFullPath {
   '/chat/$id': typeof ChatIdRoute
   '/setting/general': typeof SettingGeneralRoute
   '/setting/help': typeof SettingHelpRoute
+  '/setting/mcp': typeof SettingMcpRoute
   '/setting/provider': typeof SettingProviderRoute
 }
 export interface FileRoutesByTo {
@@ -101,6 +108,7 @@ export interface FileRoutesByTo {
   '/chat/$id': typeof ChatIdRoute
   '/setting/general': typeof SettingGeneralRoute
   '/setting/help': typeof SettingHelpRoute
+  '/setting/mcp': typeof SettingMcpRoute
   '/setting/provider': typeof SettingProviderRoute
 }
 export interface FileRoutesById {
@@ -115,6 +123,7 @@ export interface FileRoutesById {
   '/chat/$id': typeof ChatIdRoute
   '/setting/general': typeof SettingGeneralRoute
   '/setting/help': typeof SettingHelpRoute
+  '/setting/mcp': typeof SettingMcpRoute
   '/setting/provider': typeof SettingProviderRoute
 }
 export interface FileRouteTypes {
@@ -130,6 +139,7 @@ export interface FileRouteTypes {
     | '/chat/$id'
     | '/setting/general'
     | '/setting/help'
+    | '/setting/mcp'
     | '/setting/provider'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -143,6 +153,7 @@ export interface FileRouteTypes {
     | '/chat/$id'
     | '/setting/general'
     | '/setting/help'
+    | '/setting/mcp'
     | '/setting/provider'
   id:
     | '__root__'
@@ -156,6 +167,7 @@ export interface FileRouteTypes {
     | '/chat/$id'
     | '/setting/general'
     | '/setting/help'
+    | '/setting/mcp'
     | '/setting/provider'
   fileRoutesById: FileRoutesById
 }
@@ -228,6 +240,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingProviderRouteImport
       parentRoute: typeof SettingRoute
     }
+    '/setting/mcp': {
+      id: '/setting/mcp'
+      path: '/mcp'
+      fullPath: '/setting/mcp'
+      preLoaderRoute: typeof SettingMcpRouteImport
+      parentRoute: typeof SettingRoute
+    }
     '/setting/help': {
       id: '/setting/help'
       path: '/help'
@@ -255,12 +274,14 @@ declare module '@tanstack/react-router' {
 interface SettingRouteChildren {
   SettingGeneralRoute: typeof SettingGeneralRoute
   SettingHelpRoute: typeof SettingHelpRoute
+  SettingMcpRoute: typeof SettingMcpRoute
   SettingProviderRoute: typeof SettingProviderRoute
 }
 
 const SettingRouteChildren: SettingRouteChildren = {
   SettingGeneralRoute: SettingGeneralRoute,
   SettingHelpRoute: SettingHelpRoute,
+  SettingMcpRoute: SettingMcpRoute,
   SettingProviderRoute: SettingProviderRoute,
 }
 

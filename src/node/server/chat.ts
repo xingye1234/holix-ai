@@ -6,8 +6,8 @@ import {
   deleteChat,
   getAllChats,
   getChatByUid,
+  searchChats,
   updateChat,
-  updateChatContextSettings,
   updateChatModel,
   updateChatPrompts,
   updateChatWorkspace,
@@ -97,6 +97,24 @@ export const chatRouter = router({
 
     return await getAllChats()
   }),
+
+  search: procedure()
+    .input(
+      z.object({
+        keyword: z.string(),
+        limit: z.number().optional(),
+        offset: z.number().optional(),
+        includeArchived: z.boolean().optional(),
+      }),
+    )
+    .query(async ({ input }) => {
+      return await searchChats({
+        query: input.keyword,
+        limit: input.limit,
+        offset: input.offset,
+        includeArchived: input.includeArchived,
+      })
+    }),
 
   // 更新提示词列表
   updatePrompts: procedure()

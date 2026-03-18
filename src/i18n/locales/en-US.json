@@ -25,7 +25,8 @@
       "provider": "Providers",
       "skills": "Skills",
       "skillLogs": "Skill Logs",
-      "help": "Help & Support"
+      "help": "Help & Support",
+      "mcp": "MCP"
     },
     "general": {
       "title": "General Settings",
@@ -209,6 +210,17 @@
         "docs": "Documentation",
         "feedback": "Feedback",
         "github": "GitHub Repository"
+      }
+    },
+    "mcp": {
+      "title": "MCP Configuration",
+      "description": "Configure MCP servers using Cursor-compatible JSON format.",
+      "configLabel": "MCP JSON Config",
+      "hint": "Use Cursor format: { \"mcpServers\": { \"name\": { \"command\": \"...\", \"args\": [] } } }. Use \"url\" for HTTP transport; add \"disabled\": true to disable a server.",
+      "saving": "Saving...",
+      "toast": {
+        "saveSuccess": "MCP config saved",
+        "saveError": "Failed to save: {{message}}"
       }
     }
   },

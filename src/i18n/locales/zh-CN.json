@@ -25,7 +25,8 @@
       "provider": "供应商设置",
       "skills": "技能",
       "skillLogs": "技能执行记录",
-      "help": "帮助与支持"
+      "help": "帮助与支持",
+      "mcp": "MCP 设置"
     },
     "general": {
       "title": "常规设置",
@@ -209,6 +210,17 @@
         "docs": "使用文档",
         "feedback": "问题反馈",
         "github": "GitHub 仓库"
+      }
+    },
+    "mcp": {
+      "title": "MCP 配置",
+      "description": "使用与 Cursor 相同的 JSON 格式配置 MCP 服务。",
+      "configLabel": "MCP JSON 配置",
+      "hint": "格式示例：{ \"mcpServers\": { \"name\": { \"command\": \"...\", \"args\": [] } } }。使用 \"url\" 表示 HTTP 传输；可加 \"disabled\": true 禁用服务。",
+      "saving": "保存中...",
+      "toast": {
+        "saveSuccess": "MCP 配置已保存",
+        "saveError": "保存失败：{{message}}"
       }
     }
   },

@@ -111,7 +111,7 @@ export class ChatSession {
       })
 
       // 构建 Agent 和消息
-      const agent = builder.buildAgent(chatUid, this.abortController.signal)
+      const agent = await builder.buildAgent(chatUid, this.abortController.signal)
       const messages = builder.buildMessages(contextMessages, userMessageContent)
       const context = builder.buildContext(chatUid)
 
