@@ -1,5 +1,4 @@
-import { createFileRoute, useRouter } from '@tanstack/react-router'
-import { ChevronDown, ChevronRight, Clock, Code2, FolderTree, Info, Key, Lock, Package, Settings2, Terminal, Wrench, Zap } from 'lucide-react'
+import { ChevronDown, ChevronRight, Clock, Code2, Download, FolderTree, Info, Key, Lock, Package, Settings2, Sparkles, Star, Terminal, Wrench, Zap } from 'lucide-react'
 import { useCallback, useState } from 'react'
 import { toast } from 'sonner'
 import { MarkdownRenderer } from '@/components/markdown/markdown-renderer'
@@ -10,18 +9,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useI18n } from '@/i18n/provider'
-import { getConfig, updateConfig } from '@/lib/config'
+import { updateConfig } from '@/lib/config'
 import { trpcClient } from '@/lib/trpc-client'
-
-export const Route = createFileRoute('/setting/skills')({
-  component: RouteComponent,
-  loader: async () => {
-    const skills = await trpcClient.skill.list()
-    const config = await getConfig()
-    return { skills, config }
-  },
-})
 
 // ─── 权限标签 ────────────────────────────────────────────────────────────────
 
@@ -277,6 +268,7 @@ function ConfigForm({
 // ─── Skill 卡片 ──────────────────────────────────────────────────────────────
 
 type Skill = Awaited<ReturnType<typeof trpcClient.skill.list>>[number]
+type ConfigData = Awaited<ReturnType<typeof import('@/lib/config').getConfig>>
 
 function SkillCard({ skill }: { skill: Skill }) {
   const { t } = useI18n()
@@ -448,8 +440,7 @@ function SkillCard({ skill }: { skill: Skill }) {
 
 // ─── 页面 ────────────────────────────────────────────────────────────────────
 
-function RouteComponent() {
-  const { skills, config } = Route.useLoaderData()
+export function SkillsPage({ skills, config }: { skills: Skill[], config: ConfigData }) {
   const { t } = useI18n()
   const [contextStrategy, setContextStrategy] = useState<'eager' | 'lazy'>(config.skillsContextStrategy ?? 'eager')
 
@@ -459,112 +450,240 @@ function RouteComponent() {
   const handleContextStrategyChange = useCallback(async (value: 'eager' | 'lazy') => {
     setContextStrategy(value)
     await updateConfig('skillsContextStrategy', value)
-    toast.success('Skills 上下文策略已更新，将在下次对话时生效')
-  }, [])
+    toast.success(t('skillsPage.context.toastUpdated'))
+  }, [t])
+
+  const storeSkills = [
+    {
+      id: 'writing-assistant',
+      name: t('skillsPage.store.items.writing.name'),
+      desc: t('skillsPage.store.items.writing.desc'),
+      category: t('skillsPage.store.items.writing.category'),
+    },
+    {
+      id: 'data-analyst',
+      name: t('skillsPage.store.items.data.name'),
+      desc: t('skillsPage.store.items.data.desc'),
+      category: t('skillsPage.store.items.data.category'),
+    },
+    {
+      id: 'frontend-helper',
+      name: t('skillsPage.store.items.frontend.name'),
+      desc: t('skillsPage.store.items.frontend.desc'),
+      category: t('skillsPage.store.items.frontend.category'),
+    },
+  ]
 
   return (
-    <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">{t('settings.skills.title')}</h1>
-        <p className="text-muted-foreground mt-1">
-          {t('settings.skills.description')}
-          {t('settings.skills.count', { total: skills.length, builtin: builtinSkills.length, user: userSkills.length })}
-        </p>
-      </div>
-
-      {/* Skills 上下文策略配置 */}
-      <div className="max-w-2xl rounded-lg border bg-card p-5 mb-6">
-        <div className="space-y-4">
-          <div className="flex items-start gap-3">
-            <div className="mt-0.5 shrink-0 rounded-md border p-1.5 bg-background">
-              <Zap className="size-4 text-muted-foreground" />
-            </div>
-            <div className="flex-1">
-              <h2 className="text-sm font-semibold">Skills 上下文策略</h2>
-              <p className="text-xs text-muted-foreground mt-1">
-                控制 AI 在聊天时如何感知 skills 信息
-              </p>
-            </div>
-          </div>
-
-          <div className="space-y-3 pl-11">
-            <div className="flex items-center gap-3">
-              <Label className="text-sm min-w-[70px]">加载方式</Label>
-              <Select value={contextStrategy} onValueChange={handleContextStrategyChange}>
-                <SelectTrigger className="w-[200px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="eager">
-                    <div className="flex flex-col py-1">
-                      <span className="font-medium">急迫加载</span>
-                      <span className="text-xs text-muted-foreground">AI 直接看到所有 skills 的完整信息</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="lazy">
-                    <div className="flex flex-col py-1">
-                      <span className="font-medium">渐进式加载</span>
-                      <span className="text-xs text-muted-foreground">AI 先看摘要，需要时再查看详情</span>
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground space-y-1.5">
-              <p>
-                •
-                <strong>急迫加载</strong>
-                ：AI 在聊天开始时就能看到所有 skills 的完整提示词，可以直接使用
-              </p>
-              <p>
-                •
-                <strong>渐进式加载</strong>
-                ：AI 只看到 skills 的名称和描述，需要时通过工具查看详情，节省 token
-              </p>
-            </div>
-          </div>
+    <div className="h-full overflow-y-auto">
+      <div className="max-w-6xl mx-auto p-6">
+        {/* 页面头部 */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold tracking-tight">{t('skillsPage.title')}</h1>
+          <p className="text-muted-foreground mt-2">
+            {t('skillsPage.description')}
+          </p>
         </div>
+
+        <Tabs defaultValue="installed" className="space-y-6">
+          <TabsList className="bg-muted/50 p-1">
+            <TabsTrigger value="installed" className="gap-2">
+              <Package className="h-4 w-4" />
+              {t('skillsPage.tabs.installed')}
+              {skills.length > 0 && (
+                <Badge variant="secondary" className="ml-1 text-xs">
+                  {skills.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="store" className="gap-2">
+              <Sparkles className="h-4 w-4" />
+              {t('skillsPage.tabs.store')}
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="installed" className="space-y-6 mt-6">
+            {/* Skills 上下文策略配置 */}
+            <div className="rounded-xl border bg-gradient-to-br from-primary/5 to-background p-6">
+              <div className="flex items-start gap-4">
+                <div className="shrink-0 rounded-lg border bg-background p-3 shadow-sm">
+                  <Zap className="size-5 text-primary" />
+                </div>
+                <div className="flex-1 space-y-4">
+                  <div>
+                    <h2 className="text-lg font-semibold">{t('skillsPage.context.title')}</h2>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {t('skillsPage.context.description')}
+                    </p>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <Label className="text-sm font-medium min-w-20">{t('skillsPage.context.modeLabel')}</Label>
+                      <Select value={contextStrategy} onValueChange={handleContextStrategyChange}>
+                        <SelectTrigger className="w-100">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="w-full">
+                          <SelectItem value="eager">
+                            <div className="flex flex-col gap-1 py-1 w-full">
+                              <div className="flex items-center gap-2">
+                                <Zap className="h-3.5 w-3.5" />
+                                <span className="font-medium">{t('skillsPage.context.eagerTitle')}</span>
+                                <span className="text-xs text-muted-foreground">{t('skillsPage.context.eagerDesc')}</span>
+                              </div>
+
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="lazy">
+                            <div className="flex flex-col gap-1 py-1 w-full">
+                              <div className="flex items-center gap-2">
+                                <Clock className="h-3.5 w-3.5" />
+                                <span className="font-medium">{t('skillsPage.context.lazyTitle')}</span>
+                                <span className="text-xs text-muted-foreground">{t('skillsPage.context.lazyDesc')}</span>
+                              </div>
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="rounded-lg bg-background/60 border p-4 text-sm space-y-2">
+                      <div className="flex gap-2">
+                        <div className="rounded-md bg-primary/10 p-1.5 mt-0.5">
+                          <Zap className="h-3 w-3 text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-medium">{t('skillsPage.context.eagerTitle')}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {t('skillsPage.context.eagerTip')}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <div className="rounded-md bg-muted p-1.5 mt-0.5">
+                          <Clock className="h-3 w-3" />
+                        </div>
+                        <div>
+                          <p className="font-medium">{t('skillsPage.context.lazyTitle')}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {t('skillsPage.context.lazyTip')}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 技能列表 */}
+            {skills.length === 0
+              ? (
+                  <div className="flex flex-col items-center justify-center py-24 text-muted-foreground gap-3 border-2 border-dashed rounded-xl">
+                    <Package className="size-16 opacity-20" />
+                    <div className="text-center">
+                      <p className="text-base font-medium">{t('settings.skills.empty')}</p>
+                      <p className="text-sm mt-1">前往商店安装 Skills</p>
+                    </div>
+                    <Button variant="outline" onClick={() => {}} className="gap-2">
+                      <Sparkles className="h-4 w-4" />
+                      浏览商店
+                    </Button>
+                  </div>
+                )
+              : (
+                  <div className="space-y-8">
+                    {/* 内置 Skills */}
+                    {builtinSkills.length > 0 && (
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-2">
+                          <div className="h-px flex-1 bg-border" />
+                          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide px-4">
+                            {t('settings.skills.builtin')}
+                          </h2>
+                          <div className="h-px flex-1 bg-border" />
+                        </div>
+                        <div className="grid gap-4">
+                          {builtinSkills.map(skill => (
+                            <SkillCard key={skill.name} skill={skill} />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 用户 Skills */}
+                    {userSkills.length > 0 && (
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-2">
+                          <div className="h-px flex-1 bg-border" />
+                          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide px-4">
+                            {t('settings.skills.user')}
+                          </h2>
+                          <div className="h-px flex-1 bg-border" />
+                        </div>
+                        <div className="grid gap-4">
+                          {userSkills.map(skill => (
+                            <SkillCard key={skill.name} skill={skill} />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+          </TabsContent>
+
+          <TabsContent value="store" className="mt-6">
+            <div className="space-y-6">
+              {/* 商店头部 */}
+              <div className="rounded-xl border bg-gradient-to-br from-primary/10 via-background to-background p-8">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="rounded-lg bg-primary p-2.5">
+                    <Sparkles className="h-6 w-6 text-primary-foreground" />
+                  </div>
+                  <h2 className="text-2xl font-bold">{t('skillsPage.store.title')}</h2>
+                </div>
+                <p className="text-muted-foreground max-w-2xl">{t('skillsPage.store.description')}</p>
+              </div>
+
+              {/* 技能卡片网格 */}
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {storeSkills.map(skill => (
+                  <article key={skill.id} className="group rounded-xl border bg-card p-5 flex flex-col gap-4 hover:shadow-lg hover:border-primary/50 transition-all duration-300">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="rounded-md bg-primary/10 p-1.5">
+                            <Star className="h-3.5 w-3.5 text-primary fill-primary" />
+                          </div>
+                          <Badge variant="secondary" className="text-xs">{skill.category}</Badge>
+                        </div>
+                        <h3 className="font-semibold text-base group-hover:text-primary transition-colors">{skill.name}</h3>
+                      </div>
+                    </div>
+                    <p className="text-sm text-muted-foreground leading-6 flex-1">{skill.desc}</p>
+                    <div className="flex items-center justify-between pt-2 border-t">
+                      <div className="flex items-center gap-1">
+                        {[1, 2, 3, 4, 5].map(i => (
+                          <Star
+                            key={i}
+                            className={`h-3.5 w-3.5 ${i <= 4 ? 'text-amber-500 fill-amber-500' : 'text-gray-300'}`}
+                          />
+                        ))}
+                        <span className="text-xs text-muted-foreground ml-1.5">4.8</span>
+                      </div>
+                      <Button size="sm" className="gap-1.5 shadow-sm">
+                        <Download className="h-3.5 w-3.5" />
+                        {t('skillsPage.store.install')}
+                      </Button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
-
-      {skills.length === 0
-        ? (
-            <div className="flex flex-col items-center justify-center py-16 text-muted-foreground gap-2">
-              <Package className="size-10 opacity-30" />
-              <p className="text-sm">{t('settings.skills.empty')}</p>
-            </div>
-          )
-        : (
-            <div className="max-w-2xl space-y-6">
-              {/* 内置 Skills */}
-              {builtinSkills.length > 0 && (
-                <div className="space-y-3">
-                  <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                    {t('settings.skills.builtin')}
-                  </h2>
-                  {builtinSkills.map(skill => (
-                    <SkillCard key={skill.name} skill={skill} />
-                  ))}
-                </div>
-              )}
-
-              {builtinSkills.length > 0 && userSkills.length > 0 && (
-                <Separator />
-              )}
-
-              {/* 用户 Skills */}
-              {userSkills.length > 0 && (
-                <div className="space-y-3">
-                  <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                    {t('settings.skills.user')}
-                  </h2>
-                  {userSkills.map(skill => (
-                    <SkillCard key={skill.name} skill={skill} />
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
     </div>
   )
 }

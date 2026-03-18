@@ -10,12 +10,12 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WelcomeRouteImport } from './routes/welcome'
+import { Route as SkillsRouteImport } from './routes/skills'
 import { Route as SkillStoreRouteImport } from './routes/skill-store'
 import { Route as SettingRouteImport } from './routes/setting'
 import { Route as PreviewRouteImport } from './routes/preview'
+import { Route as AgentsRouteImport } from './routes/agents'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as SettingSkillsRouteImport } from './routes/setting/skills'
-import { Route as SettingSkillLogsRouteImport } from './routes/setting/skill-logs'
 import { Route as SettingProviderRouteImport } from './routes/setting/provider'
 import { Route as SettingMcpRouteImport } from './routes/setting/mcp'
 import { Route as SettingHelpRouteImport } from './routes/setting/help'
@@ -25,6 +25,11 @@ import { Route as ChatIdRouteImport } from './routes/chat/$id'
 const WelcomeRoute = WelcomeRouteImport.update({
   id: '/welcome',
   path: '/welcome',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SkillsRoute = SkillsRouteImport.update({
+  id: '/skills',
+  path: '/skills',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SkillStoreRoute = SkillStoreRouteImport.update({
@@ -42,20 +47,15 @@ const PreviewRoute = PreviewRouteImport.update({
   path: '/preview',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AgentsRoute = AgentsRouteImport.update({
+  id: '/agents',
+  path: '/agents',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
-} as any)
-const SettingSkillsRoute = SettingSkillsRouteImport.update({
-  id: '/skills',
-  path: '/skills',
-  getParentRoute: () => SettingRoute,
-} as any)
-const SettingSkillLogsRoute = SettingSkillLogsRouteImport.update({
-  id: '/skill-logs',
-  path: '/skill-logs',
-  getParentRoute: () => SettingRoute,
 } as any)
 const SettingProviderRoute = SettingProviderRouteImport.update({
   id: '/provider',
@@ -85,97 +85,99 @@ const ChatIdRoute = ChatIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/agents': typeof AgentsRoute
   '/preview': typeof PreviewRoute
   '/setting': typeof SettingRouteWithChildren
   '/skill-store': typeof SkillStoreRoute
+  '/skills': typeof SkillsRoute
   '/welcome': typeof WelcomeRoute
   '/chat/$id': typeof ChatIdRoute
   '/setting/general': typeof SettingGeneralRoute
   '/setting/help': typeof SettingHelpRoute
   '/setting/mcp': typeof SettingMcpRoute
   '/setting/provider': typeof SettingProviderRoute
-  '/setting/skill-logs': typeof SettingSkillLogsRoute
-  '/setting/skills': typeof SettingSkillsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/agents': typeof AgentsRoute
   '/preview': typeof PreviewRoute
   '/setting': typeof SettingRouteWithChildren
   '/skill-store': typeof SkillStoreRoute
+  '/skills': typeof SkillsRoute
   '/welcome': typeof WelcomeRoute
   '/chat/$id': typeof ChatIdRoute
   '/setting/general': typeof SettingGeneralRoute
   '/setting/help': typeof SettingHelpRoute
   '/setting/mcp': typeof SettingMcpRoute
   '/setting/provider': typeof SettingProviderRoute
-  '/setting/skill-logs': typeof SettingSkillLogsRoute
-  '/setting/skills': typeof SettingSkillsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/agents': typeof AgentsRoute
   '/preview': typeof PreviewRoute
   '/setting': typeof SettingRouteWithChildren
   '/skill-store': typeof SkillStoreRoute
+  '/skills': typeof SkillsRoute
   '/welcome': typeof WelcomeRoute
   '/chat/$id': typeof ChatIdRoute
   '/setting/general': typeof SettingGeneralRoute
   '/setting/help': typeof SettingHelpRoute
   '/setting/mcp': typeof SettingMcpRoute
   '/setting/provider': typeof SettingProviderRoute
-  '/setting/skill-logs': typeof SettingSkillLogsRoute
-  '/setting/skills': typeof SettingSkillsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/agents'
     | '/preview'
     | '/setting'
     | '/skill-store'
+    | '/skills'
     | '/welcome'
     | '/chat/$id'
     | '/setting/general'
     | '/setting/help'
     | '/setting/mcp'
     | '/setting/provider'
-    | '/setting/skill-logs'
-    | '/setting/skills'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/agents'
     | '/preview'
     | '/setting'
     | '/skill-store'
+    | '/skills'
     | '/welcome'
     | '/chat/$id'
     | '/setting/general'
     | '/setting/help'
     | '/setting/mcp'
     | '/setting/provider'
-    | '/setting/skill-logs'
-    | '/setting/skills'
   id:
     | '__root__'
     | '/'
+    | '/agents'
     | '/preview'
     | '/setting'
     | '/skill-store'
+    | '/skills'
     | '/welcome'
     | '/chat/$id'
     | '/setting/general'
     | '/setting/help'
     | '/setting/mcp'
     | '/setting/provider'
-    | '/setting/skill-logs'
-    | '/setting/skills'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AgentsRoute: typeof AgentsRoute
   PreviewRoute: typeof PreviewRoute
   SettingRoute: typeof SettingRouteWithChildren
   SkillStoreRoute: typeof SkillStoreRoute
+  SkillsRoute: typeof SkillsRoute
   WelcomeRoute: typeof WelcomeRoute
   ChatIdRoute: typeof ChatIdRoute
 }
@@ -187,6 +189,13 @@ declare module '@tanstack/react-router' {
       path: '/welcome'
       fullPath: '/welcome'
       preLoaderRoute: typeof WelcomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/skills': {
+      id: '/skills'
+      path: '/skills'
+      fullPath: '/skills'
+      preLoaderRoute: typeof SkillsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/skill-store': {
@@ -210,26 +219,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PreviewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/agents': {
+      id: '/agents'
+      path: '/agents'
+      fullPath: '/agents'
+      preLoaderRoute: typeof AgentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/setting/skills': {
-      id: '/setting/skills'
-      path: '/skills'
-      fullPath: '/setting/skills'
-      preLoaderRoute: typeof SettingSkillsRouteImport
-      parentRoute: typeof SettingRoute
-    }
-    '/setting/skill-logs': {
-      id: '/setting/skill-logs'
-      path: '/skill-logs'
-      fullPath: '/setting/skill-logs'
-      preLoaderRoute: typeof SettingSkillLogsRouteImport
-      parentRoute: typeof SettingRoute
     }
     '/setting/provider': {
       id: '/setting/provider'
@@ -274,8 +276,6 @@ interface SettingRouteChildren {
   SettingHelpRoute: typeof SettingHelpRoute
   SettingMcpRoute: typeof SettingMcpRoute
   SettingProviderRoute: typeof SettingProviderRoute
-  SettingSkillLogsRoute: typeof SettingSkillLogsRoute
-  SettingSkillsRoute: typeof SettingSkillsRoute
 }
 
 const SettingRouteChildren: SettingRouteChildren = {
@@ -283,8 +283,6 @@ const SettingRouteChildren: SettingRouteChildren = {
   SettingHelpRoute: SettingHelpRoute,
   SettingMcpRoute: SettingMcpRoute,
   SettingProviderRoute: SettingProviderRoute,
-  SettingSkillLogsRoute: SettingSkillLogsRoute,
-  SettingSkillsRoute: SettingSkillsRoute,
 }
 
 const SettingRouteWithChildren =
@@ -292,9 +290,11 @@ const SettingRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AgentsRoute: AgentsRoute,
   PreviewRoute: PreviewRoute,
   SettingRoute: SettingRouteWithChildren,
   SkillStoreRoute: SkillStoreRoute,
+  SkillsRoute: SkillsRoute,
   WelcomeRoute: WelcomeRoute,
   ChatIdRoute: ChatIdRoute,
 }

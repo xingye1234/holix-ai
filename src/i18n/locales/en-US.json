@@ -226,7 +226,64 @@
   },
   "chat": {
     "searchPlaceholder": "Search chats...",
-    "renamePlaceholder": "Enter new conversation name"
+    "renamePlaceholder": "Enter new conversation name",
+    "sidebar": {
+      "title": "Chats",
+      "newChat": "New Chat",
+      "skills": "Skills",
+      "agents": "Agents",
+      "collapse": "Collapse sidebar",
+      "expand": "Expand sidebar",
+      "switchToArticle": "Switch to article layout",
+      "switchToChat": "Switch to chat layout"
+    }
+  },
+  "skillsPage": {
+    "title": "Skills",
+    "description": "Manage installed skills and the skill store in one place.",
+    "tabs": {
+      "installed": "Installed",
+      "store": "Store"
+    },
+    "context": {
+      "title": "Skills Context Strategy",
+      "description": "Control how the AI perceives skills in chat.",
+      "modeLabel": "Mode",
+      "eagerTitle": "Eager Loading",
+      "eagerDesc": "AI can directly see full details of all skills",
+      "eagerTip": "AI sees full skill prompts at chat start and can use them directly",
+      "lazyTitle": "Progressive Loading",
+      "lazyDesc": "AI sees summaries first and loads details when needed",
+      "lazyTip": "AI only sees skill names and descriptions first, saving tokens",
+      "toastUpdated": "Skills context strategy updated and will take effect in the next conversation"
+    },
+    "store": {
+      "title": "Skill Store",
+      "description": "Browse and install skills you need. This is currently a simple store sample page.",
+      "install": "Install",
+      "items": {
+        "writing": {
+          "name": "Writing Assistant",
+          "desc": "Improve copywriting, expand drafts, and polish tone for everyday writing.",
+          "category": "Productivity"
+        },
+        "data": {
+          "name": "Data Analyst",
+          "desc": "Quickly generate analysis ideas, summarize conclusions, and suggest actions.",
+          "category": "Analytics"
+        },
+        "frontend": {
+          "name": "Frontend Helper",
+          "desc": "Assist with component development, styling, and page structure optimization.",
+          "category": "Development"
+        }
+      }
+    }
+  },
+  "agents": {
+    "title": "Agent",
+    "description": "Manage and create your custom agents here (planned).",
+    "createSoon": "Create Agent (Coming Soon)"
   },
   "prompt": {
     "inputPlaceholder": "Enter prompt content here...",

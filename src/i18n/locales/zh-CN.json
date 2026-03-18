@@ -226,7 +226,64 @@
   },
   "chat": {
     "searchPlaceholder": "搜索聊天...",
-    "renamePlaceholder": "输入新的会话名称"
+    "renamePlaceholder": "输入新的会话名称",
+    "sidebar": {
+      "title": "对话",
+      "newChat": "新聊天",
+      "skills": "技能",
+      "agents": "Agent",
+      "collapse": "收起侧边栏",
+      "expand": "展开侧边栏",
+      "switchToArticle": "切换为文章布局",
+      "switchToChat": "切换为聊天布局"
+    }
+  },
+  "skillsPage": {
+    "title": "Skills",
+    "description": "统一管理已安装技能与技能商店。",
+    "tabs": {
+      "installed": "已安装",
+      "store": "商店"
+    },
+    "context": {
+      "title": "Skills 上下文策略",
+      "description": "控制 AI 在聊天时如何感知 skills 信息",
+      "modeLabel": "加载方式",
+      "eagerTitle": "急迫加载",
+      "eagerDesc": "AI 直接看到所有 skills 的完整信息",
+      "eagerTip": "AI 在聊天开始时就能看到所有 skills 的完整提示词，可以直接使用",
+      "lazyTitle": "渐进式加载",
+      "lazyDesc": "AI 先看摘要，需要时再查看详情",
+      "lazyTip": "AI 只看到 skills 的名称和描述，需要时通过工具查看详情，节省 token",
+      "toastUpdated": "Skills 上下文策略已更新，将在下次对话时生效"
+    },
+    "store": {
+      "title": "技能商店",
+      "description": "浏览并安装你需要的技能。这里先提供一个简易商店示例页面。",
+      "install": "安装",
+      "items": {
+        "writing": {
+          "name": "写作助手",
+          "desc": "优化文案、扩写内容、润色语气，适合日常写作和内容创作。",
+          "category": "效率"
+        },
+        "data": {
+          "name": "数据分析师",
+          "desc": "快速生成数据分析思路、汇总结论，并给出可执行建议。",
+          "category": "分析"
+        },
+        "frontend": {
+          "name": "前端助手",
+          "desc": "协助完成组件开发、样式调整与页面结构优化。",
+          "category": "开发"
+        }
+      }
+    }
+  },
+  "agents": {
+    "title": "Agent",
+    "description": "在这里管理和创建你的专属 Agent（规划中）。",
+    "createSoon": "新建 Agent（即将支持）"
   },
   "prompt": {
     "inputPlaceholder": "在此输入提示词内容...",
