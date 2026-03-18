@@ -1,8 +1,9 @@
 import {
   AlertCircle,
   Bot,
-  Check,
   Copy,
+  Download,
+  Expand,
   OctagonX,
   Sparkles,
   User,
@@ -14,10 +15,11 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu'
 import { useMessageById } from '@/hooks/message'
 import { command } from '@/lib/command'
+import { openMessagePreviewWindow, saveMessagesToFile } from '@/lib/message-utils'
 import { formatWithLocalTZ } from '@/lib/time'
 import { cn } from '@/lib/utils'
-import useUI from '@/store/ui'
 import useMessageSelection from '@/store/message-selection'
+import useUI from '@/store/ui'
 import { MessageFooter } from './footer'
 import { GeneratingIndicator } from './generating'
 import { MessageMarkdown } from './markdown'
@@ -111,6 +113,35 @@ export const MessageItem = memo(({ id, index, onDelete }: MessageItemProps) => {
 
   const deleteHandler = useCallback(() => onDelete?.(id), [onDelete, id])
 
+  const handlePreview = useCallback(() => {
+    const win = openMessagePreviewWindow([
+      {
+        id,
+        role: message.role,
+        content,
+        createdAt: message.createdAt,
+      },
+    ])
+
+    if (!win)
+      toast.error('新窗口打开失败，请检查系统设置')
+  }, [content, id, message.createdAt, message.role])
+
+  const handleExport = useCallback(async () => {
+    const result = await saveMessagesToFile({
+      messages: [{ id, role: message.role, content, createdAt: message.createdAt }],
+      format: 'md',
+      suggestedName: `message-${id}.md`,
+    })
+
+    if (result.canceled) {
+      toast.info('已取消导出')
+      return
+    }
+
+    toast.success(`导出成功：${result.filePath}`)
+  }, [content, id, message.createdAt, message.role])
+
   // ── system 消息（两种布局相同） ──────────────────────────────────────────
   if (isSystem) {
     return (
@@ -180,6 +211,14 @@ export const MessageItem = memo(({ id, index, onDelete }: MessageItemProps) => {
                     <ContextMenuItem onClick={() => content && navigator.clipboard.writeText(content)}>
                       <Copy className="w-3.5 h-3.5 mr-2" />
                       复制消息
+                    </ContextMenuItem>
+                    <ContextMenuItem onClick={handlePreview}>
+                      <Expand className="w-3.5 h-3.5 mr-2" />
+                      放大查看
+                    </ContextMenuItem>
+                    <ContextMenuItem onClick={handleExport}>
+                      <Download className="w-3.5 h-3.5 mr-2" />
+                      导出消息
                     </ContextMenuItem>
                     <ContextMenuItem variant="destructive" onClick={deleteHandler}>
                       删除消息
@@ -263,6 +302,14 @@ export const MessageItem = memo(({ id, index, onDelete }: MessageItemProps) => {
                           <Copy className="w-3.5 h-3.5 mr-2" />
                           复制消息
                         </ContextMenuItem>
+                        <ContextMenuItem onClick={handlePreview}>
+                          <Expand className="w-3.5 h-3.5 mr-2" />
+                          放大查看
+                        </ContextMenuItem>
+                        <ContextMenuItem onClick={handleExport}>
+                          <Download className="w-3.5 h-3.5 mr-2" />
+                          导出消息
+                        </ContextMenuItem>
                         <ContextMenuItem variant="destructive" onClick={deleteHandler}>
                           删除消息
                         </ContextMenuItem>
@@ -319,24 +366,24 @@ export const MessageItem = memo(({ id, index, onDelete }: MessageItemProps) => {
           />
         )}
         <Avatar className="w-8 h-8 border shrink-0 shadow-sm mt-0.5">
-        {isUser
-          ? (
-              <>
-                <AvatarImage src="" />
-                <AvatarFallback className="bg-primary text-primary-foreground">
-                  <User className="w-4 h-4" />
-                </AvatarFallback>
-              </>
-            )
-          : (
-              <>
-                <AvatarImage src="" />
-                <AvatarFallback className="bg-secondary text-secondary-foreground">
-                  <Bot className="w-4 h-4" />
-                </AvatarFallback>
-              </>
-            )}
-      </Avatar>
+          {isUser
+            ? (
+                <>
+                  <AvatarImage src="" />
+                  <AvatarFallback className="bg-primary text-primary-foreground">
+                    <User className="w-4 h-4" />
+                  </AvatarFallback>
+                </>
+              )
+            : (
+                <>
+                  <AvatarImage src="" />
+                  <AvatarFallback className="bg-secondary text-secondary-foreground">
+                    <Bot className="w-4 h-4" />
+                  </AvatarFallback>
+                </>
+              )}
+        </Avatar>
       </div>
 
       {/* 气泡 + 取消按钮 */}
@@ -427,6 +474,14 @@ export const MessageItem = memo(({ id, index, onDelete }: MessageItemProps) => {
                 >
                   <Copy className="w-3.5 h-3.5 mr-2" />
                   复制消息
+                </ContextMenuItem>
+                <ContextMenuItem onClick={handlePreview}>
+                  <Expand className="w-3.5 h-3.5 mr-2" />
+                  放大查看
+                </ContextMenuItem>
+                <ContextMenuItem onClick={handleExport}>
+                  <Download className="w-3.5 h-3.5 mr-2" />
+                  导出消息
                 </ContextMenuItem>
                 <ContextMenuItem variant="destructive" onClick={deleteHandler}>
                   删除消息

@@ -1,4 +1,5 @@
-import { Copy, Download, Trash2, X } from 'lucide-react'
+import type { MessageExportFormat } from '@/lib/message-utils'
+import { Copy, Download, Expand, Trash2, X } from 'lucide-react'
 import { useCallback } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -8,12 +9,18 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import {
+  openMessagePreviewWindow,
+  saveMessagesToFile,
+  toExportableMessage,
+} from '@/lib/message-utils'
+import { useMessageStore } from '@/store/message'
 import useMessageSelection from '@/store/message-selection'
 
 interface SelectionToolbarProps {
   /** 批量删除处理函数 */
   onDeleteSelected?: (messageIds: string[]) => void
-  /** 批量导出处理函数 */
+  /** 保留兼容：旧版导出回调 */
   onExportSelected?: (messageIds: string[]) => void
 }
 
@@ -23,8 +30,14 @@ export function SelectionToolbar({
 }: SelectionToolbarProps) {
   const selectedCount = useMessageSelection(state => state.getSelectedCount())
   const selectedMessageIds = useMessageSelection(state => state.selectedMessageIds)
-  const clearSelection = useMessageSelection(state => state.clearSelection)
   const disableSelectionMode = useMessageSelection(state => state.disableSelectionMode)
+
+  const messages = useMessageStore(state => state.messages)
+
+  const selectedMessages = Array.from(selectedMessageIds)
+    .map(id => messages[id])
+    .filter(Boolean)
+    .map(toExportableMessage)
 
   const handleClose = () => {
     disableSelectionMode()
@@ -45,20 +58,39 @@ export function SelectionToolbar({
     if (selectedCount === 0)
       return
 
-    // 这里需要获取消息内容并复制
-    // 由于我们只有 ID，需要从父组件传入消息内容
-    toast.info('复制功能开发中...')
-  }, [selectedCount])
+    const text = selectedMessages.map(msg => msg.content).join('\n\n---\n\n')
+    await navigator.clipboard.writeText(text)
+    toast.success(`已复制 ${selectedCount} 条消息`)
+  }, [selectedCount, selectedMessages])
 
-  const handleExport = useCallback(() => {
+  const handleExport = useCallback(async (format: MessageExportFormat) => {
     if (selectedCount === 0)
       return
 
-    const ids = Array.from(selectedMessageIds)
-    onExportSelected?.(ids)
+    onExportSelected?.(Array.from(selectedMessageIds))
 
-    toast.info('导出功能开发中...')
-  }, [selectedCount, selectedMessageIds, onExportSelected])
+    const result = await saveMessagesToFile({
+      messages: selectedMessages,
+      format,
+      suggestedName: `messages-${Date.now()}.${format}`,
+    })
+
+    if (result.canceled) {
+      toast.info('已取消导出')
+      return
+    }
+
+    toast.success(`导出成功：${result.filePath}`)
+  }, [onExportSelected, selectedCount, selectedMessageIds, selectedMessages])
+
+  const handlePreview = useCallback(() => {
+    if (selectedCount === 0)
+      return
+
+    const win = openMessagePreviewWindow(selectedMessages)
+    if (!win)
+      toast.error('新窗口打开失败，请检查系统设置')
+  }, [selectedCount, selectedMessages])
 
   if (selectedCount === 0)
     return null
@@ -68,12 +100,15 @@ export function SelectionToolbar({
       <div className="flex items-center justify-between px-4 py-2 max-w-4xl mx-auto">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium">
-            已选择 <span className="text-primary">{selectedCount}</span> 条消息
+            已选择
+            {' '}
+            <span className="text-primary">{selectedCount}</span>
+            {' '}
+            条消息
           </span>
         </div>
 
         <div className="flex items-center gap-1">
-          {/* 复制按钮 */}
           <Button
             variant="ghost"
             size="sm"
@@ -84,7 +119,16 @@ export function SelectionToolbar({
             <span className="hidden sm:inline">复制</span>
           </Button>
 
-          {/* 导出菜单 */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handlePreview}
+            className="gap-1.5 h-8"
+          >
+            <Expand className="w-4 h-4" />
+            <span className="hidden sm:inline">放大查看</span>
+          </Button>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -97,19 +141,18 @@ export function SelectionToolbar({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={handleExport}>
+              <DropdownMenuItem onClick={() => handleExport('txt')}>
                 导出为文本
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleExport}>
+              <DropdownMenuItem onClick={() => handleExport('md')}>
                 导出为 Markdown
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleExport}>
+              <DropdownMenuItem onClick={() => handleExport('json')}>
                 导出为 JSON
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* 删除按钮 */}
           <Button
             variant="ghost"
             size="sm"
@@ -120,10 +163,8 @@ export function SelectionToolbar({
             <span className="hidden sm:inline">删除</span>
           </Button>
 
-          {/* 分隔线 */}
           <div className="w-px h-6 bg-border mx-1" />
 
-          {/* 关闭按钮 */}
           <Button
             variant="ghost"
             size="sm"
