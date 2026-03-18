@@ -11,6 +11,7 @@ import { createAgent } from 'langchain'
 import { configStore } from '../../platform/config'
 import { logger } from '../../platform/logger'
 import { contextSchema } from '../context'
+import { loadMcpTools } from '../mcp/tools'
 import { createToolRegistry } from '../tools/tool-registry'
 
 /**
@@ -46,13 +47,15 @@ export class SessionBuilder {
   /**
    * 构建 LangChain Agent
    */
-  buildAgent(chatUid: string, signal?: AbortSignal) {
+  async buildAgent(chatUid: string, signal?: AbortSignal) {
     // 构建工具
     const toolRegistry = createToolRegistry({
       strategy: this.config.toolLoadingStrategy || 'eager',
       coreSkills: this.config.coreSkills,
     })
-    const tools = toolRegistry.buildTools()
+    const builtInTools = toolRegistry.buildTools()
+    const mcpTools = await loadMcpTools()
+    const tools = [...builtInTools, ...mcpTools]
 
     // 构建 System Prompt
     const systemPrompt = this.buildSystemPrompt(toolRegistry)

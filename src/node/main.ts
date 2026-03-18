@@ -12,6 +12,7 @@ import { onCommandForClient } from './platform/commands'
 import { configStore } from './platform/config'
 import { AppLifecycle, LifecyclePhase } from './platform/lifecycle'
 import { logger } from './platform/logger'
+import { mcpStore } from './platform/mcp'
 import { setupAppMenu } from './platform/menu'
 import { providerStore } from './platform/provider'
 import { setupAppTray } from './platform/tray'
@@ -31,6 +32,7 @@ if (!gotSingleInstanceLock) {
 const router = createRouter()
 configStore.use(router)
 providerStore.use(router)
+mcpStore.use(router)
 onCommandForClient(router)
 onUpdateWaitResponse(router)
 onChannelRouter(router)
@@ -42,7 +44,7 @@ if (import.meta.env.PROD) {
     createStaticMiddleware({
       root: resolve(import.meta.dirname, '../client'),
       prefix: '/',
-      ignorePaths: ['/api/**', '/channel/**', '/trpc/**', '/command/**', '/config/**', '/providers/**', '/window/**'],
+      ignorePaths: ['/api/**', '/channel/**', '/trpc/**', '/command/**', '/config/**', '/providers/**', '/mcp/**', '/window/**'],
     }),
   )
 }
@@ -191,6 +193,12 @@ async function bootstrap() {
       {
         name: 'Initialize provider store',
         execute: () => providerStore.init(),
+        critical: true,
+        timeout: 3000,
+      },
+      {
+        name: 'Initialize MCP store',
+        execute: () => mcpStore.init(),
         critical: true,
         timeout: 3000,
       },
