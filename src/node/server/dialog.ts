@@ -1,3 +1,4 @@
+import { writeFile } from 'node:fs/promises'
 import { dialog } from 'electron'
 import { z } from 'zod'
 import { procedure, router } from './trpc'
@@ -35,6 +36,39 @@ export const dialogRouter = router({
       }
 
       return { canceled: false, filePaths: result.filePaths }
+    }),
+
+  // 保存文件
+  saveFile: procedure()
+    .input(
+      z.object({
+        title: z.string().optional(),
+        defaultPath: z.string().optional(),
+        defaultFileName: z.string().optional(),
+        filters: z
+          .array(
+            z.object({
+              name: z.string(),
+              extensions: z.array(z.string()),
+            }),
+          )
+          .optional(),
+        content: z.string(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const result = await dialog.showSaveDialog({
+        title: input.title || '保存文件',
+        defaultPath: input.defaultPath || input.defaultFileName,
+        filters: input.filters,
+      })
+
+      if (result.canceled || !result.filePath) {
+        return { canceled: true, filePath: null }
+      }
+
+      await writeFile(result.filePath, input.content, 'utf-8')
+      return { canceled: false, filePath: result.filePath }
     }),
 
   // 选择文件夹
