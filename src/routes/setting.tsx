@@ -49,6 +49,10 @@ function AppLayoutComponent() {
       path: '/setting/provider',
     },
     {
+      name: t('settings.nav.mcp'),
+      path: '/setting/mcp',
+    },
+    {
       name: t('settings.nav.skills'),
       path: '/setting/skills',
     },
