@@ -10,6 +10,12 @@ export default defineConfig(() => {
     build: {
       outDir: './.holix/client',
       chunkSizeWarningLimit: 1500,
+      rollupOptions: {
+        input: {
+          main: path.resolve(__dirname, 'index.html'),
+          preview: path.resolve(__dirname, 'preview.html'),
+        },
+      },
     },
     resolve: {
       alias: {

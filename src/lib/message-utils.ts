@@ -126,6 +126,6 @@ export function getMessagePreviewSession(sessionId: string) {
 
 export function openMessagePreviewWindow(messages: ExportableMessage[]) {
   const sessionId = createMessagePreviewSession(messages)
-  const url = `${window.location.origin}/preview?session=${encodeURIComponent(sessionId)}`
+  const url = `${window.location.origin}/preview.html?session=${encodeURIComponent(sessionId)}`
   return window.open(url, '_blank', 'popup=yes,width=1200,height=900,menubar=no,toolbar=no,location=no')
 }
