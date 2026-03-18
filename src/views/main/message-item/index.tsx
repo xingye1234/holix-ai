@@ -179,9 +179,9 @@ export const MessageItem = memo(({ id, index, onDelete }: MessageItemProps) => {
     return (
       <div
         className={cn(
-          'w-full max-w-3xl mx-auto px-6 py-4 group transition-all duration-200 relative',
-          isSelected && 'bg-accent/50',
-          isSelectionMode && 'hover:bg-accent/30',
+          'w-full max-w-3xl mx-auto px-6 py-4 group transition-all duration-200 relative rounded-lg',
+          isSelected && 'bg-primary/10 border-l-4 border-primary shadow-sm',
+          isSelectionMode && 'hover:bg-accent/20 rounded-md',
         )}
         data-message-id={id}
         data-message-index={index}
@@ -347,10 +347,10 @@ export const MessageItem = memo(({ id, index, onDelete }: MessageItemProps) => {
   return (
     <div
       className={cn(
-        'flex w-full gap-3 px-4 py-3 group transition-all duration-200',
+        'flex w-full gap-3 px-4 py-3 group transition-all duration-200 rounded-md -mx-2',
         isUser ? 'flex-row-reverse' : 'flex-row',
-        isSelected && 'bg-accent/50',
-        isSelectionMode && 'hover:bg-accent/30',
+        isSelected && 'bg-primary/10 border-l-4 border-primary shadow-sm',
+        isSelectionMode && 'hover:bg-accent/20',
       )}
       data-message-id={id}
       data-message-index={index}

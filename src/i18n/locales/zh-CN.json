@@ -235,5 +235,28 @@
   "selector": {
     "selectProvider": "选择供应商",
     "selectModel": "选择模型"
+  },
+  "preview": {
+    "title": "消息预览",
+    "noMessages": "未找到可预览的消息内容。",
+    "closeWindow": "关闭窗口",
+    "fileNamePlaceholder": "导出文件名",
+    "export": "导出",
+    "exportAsText": "导出为文本",
+    "exportAsMarkdown": "导出为 Markdown",
+    "exportAsJson": "导出为 JSON",
+    "print": "打印",
+    "focusMode": "专注模式",
+    "exitFocus": "退出专注",
+    "showMenu": "显示菜单",
+    "refresh": "刷新",
+    "exportCanceled": "已取消导出",
+    "exportSuccess": "导出成功：{{filePath}}",
+    "exportFailed": "导出失败",
+    "role": {
+      "assistant": "AI 助手",
+      "user": "用户",
+      "system": "系统"
+    }
   }
 }

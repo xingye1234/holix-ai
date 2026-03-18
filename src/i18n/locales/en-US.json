@@ -235,5 +235,28 @@
   "selector": {
     "selectProvider": "Select provider",
     "selectModel": "Select model"
+  },
+  "preview": {
+    "title": "Message Preview",
+    "noMessages": "No message content available for preview.",
+    "closeWindow": "Close Window",
+    "fileNamePlaceholder": "Export file name",
+    "export": "Export",
+    "exportAsText": "Export as Text",
+    "exportAsMarkdown": "Export as Markdown",
+    "exportAsJson": "Export as JSON",
+    "print": "Print",
+    "focusMode": "Focus Mode",
+    "exitFocus": "Exit Focus",
+    "showMenu": "Show Menu",
+    "refresh": "Refresh",
+    "exportCanceled": "Export canceled",
+    "exportSuccess": "Export successful: {{filePath}}",
+    "exportFailed": "Export failed",
+    "role": {
+      "assistant": "AI Assistant",
+      "user": "User",
+      "system": "System"
+    }
   }
 }
