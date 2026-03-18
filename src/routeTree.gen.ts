@@ -16,8 +16,6 @@ import { Route as SettingRouteImport } from './routes/setting'
 import { Route as PreviewRouteImport } from './routes/preview'
 import { Route as AgentsRouteImport } from './routes/agents'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as SettingSkillsRouteImport } from './routes/setting/skills'
-import { Route as SettingSkillLogsRouteImport } from './routes/setting/skill-logs'
 import { Route as SettingProviderRouteImport } from './routes/setting/provider'
 import { Route as SettingHelpRouteImport } from './routes/setting/help'
 import { Route as SettingGeneralRouteImport } from './routes/setting/general'
@@ -58,16 +56,6 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SettingSkillsRoute = SettingSkillsRouteImport.update({
-  id: '/skills',
-  path: '/skills',
-  getParentRoute: () => SettingRoute,
-} as any)
-const SettingSkillLogsRoute = SettingSkillLogsRouteImport.update({
-  id: '/skill-logs',
-  path: '/skill-logs',
-  getParentRoute: () => SettingRoute,
-} as any)
 const SettingProviderRoute = SettingProviderRouteImport.update({
   id: '/provider',
   path: '/provider',
@@ -101,8 +89,6 @@ export interface FileRoutesByFullPath {
   '/setting/general': typeof SettingGeneralRoute
   '/setting/help': typeof SettingHelpRoute
   '/setting/provider': typeof SettingProviderRoute
-  '/setting/skill-logs': typeof SettingSkillLogsRoute
-  '/setting/skills': typeof SettingSkillsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -116,8 +102,6 @@ export interface FileRoutesByTo {
   '/setting/general': typeof SettingGeneralRoute
   '/setting/help': typeof SettingHelpRoute
   '/setting/provider': typeof SettingProviderRoute
-  '/setting/skill-logs': typeof SettingSkillLogsRoute
-  '/setting/skills': typeof SettingSkillsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -132,8 +116,6 @@ export interface FileRoutesById {
   '/setting/general': typeof SettingGeneralRoute
   '/setting/help': typeof SettingHelpRoute
   '/setting/provider': typeof SettingProviderRoute
-  '/setting/skill-logs': typeof SettingSkillLogsRoute
-  '/setting/skills': typeof SettingSkillsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -149,8 +131,6 @@ export interface FileRouteTypes {
     | '/setting/general'
     | '/setting/help'
     | '/setting/provider'
-    | '/setting/skill-logs'
-    | '/setting/skills'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -164,8 +144,6 @@ export interface FileRouteTypes {
     | '/setting/general'
     | '/setting/help'
     | '/setting/provider'
-    | '/setting/skill-logs'
-    | '/setting/skills'
   id:
     | '__root__'
     | '/'
@@ -179,8 +157,6 @@ export interface FileRouteTypes {
     | '/setting/general'
     | '/setting/help'
     | '/setting/provider'
-    | '/setting/skill-logs'
-    | '/setting/skills'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -245,20 +221,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/setting/skills': {
-      id: '/setting/skills'
-      path: '/skills'
-      fullPath: '/setting/skills'
-      preLoaderRoute: typeof SettingSkillsRouteImport
-      parentRoute: typeof SettingRoute
-    }
-    '/setting/skill-logs': {
-      id: '/setting/skill-logs'
-      path: '/skill-logs'
-      fullPath: '/setting/skill-logs'
-      preLoaderRoute: typeof SettingSkillLogsRouteImport
-      parentRoute: typeof SettingRoute
-    }
     '/setting/provider': {
       id: '/setting/provider'
       path: '/provider'
@@ -294,16 +256,12 @@ interface SettingRouteChildren {
   SettingGeneralRoute: typeof SettingGeneralRoute
   SettingHelpRoute: typeof SettingHelpRoute
   SettingProviderRoute: typeof SettingProviderRoute
-  SettingSkillLogsRoute: typeof SettingSkillLogsRoute
-  SettingSkillsRoute: typeof SettingSkillsRoute
 }
 
 const SettingRouteChildren: SettingRouteChildren = {
   SettingGeneralRoute: SettingGeneralRoute,
   SettingHelpRoute: SettingHelpRoute,
   SettingProviderRoute: SettingProviderRoute,
-  SettingSkillLogsRoute: SettingSkillLogsRoute,
-  SettingSkillsRoute: SettingSkillsRoute,
 }
 
 const SettingRouteWithChildren =

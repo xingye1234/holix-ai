@@ -519,28 +519,29 @@ export function SkillsManagementPage({ skills, config }: { skills: Skill[], conf
 
                   <div className="space-y-3">
                     <div className="flex items-center gap-3 flex-wrap">
-                      <Label className="text-sm font-medium min-w-[80px]">{t('skillsPage.context.modeLabel')}</Label>
+                      <Label className="text-sm font-medium min-w-20">{t('skillsPage.context.modeLabel')}</Label>
                       <Select value={contextStrategy} onValueChange={handleContextStrategyChange}>
-                        <SelectTrigger className="w-[240px]">
+                        <SelectTrigger className="w-100">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="w-full">
                           <SelectItem value="eager">
-                            <div className="flex flex-col gap-1 py-1">
+                            <div className="flex flex-col gap-1 py-1 w-full">
                               <div className="flex items-center gap-2">
                                 <Zap className="h-3.5 w-3.5" />
                                 <span className="font-medium">{t('skillsPage.context.eagerTitle')}</span>
+                                <span className="text-xs text-muted-foreground">{t('skillsPage.context.eagerDesc')}</span>
                               </div>
-                              <span className="text-xs text-muted-foreground">{t('skillsPage.context.eagerDesc')}</span>
+
                             </div>
                           </SelectItem>
                           <SelectItem value="lazy">
-                            <div className="flex flex-col gap-1 py-1">
+                            <div className="flex flex-col gap-1 py-1 w-full">
                               <div className="flex items-center gap-2">
                                 <Clock className="h-3.5 w-3.5" />
                                 <span className="font-medium">{t('skillsPage.context.lazyTitle')}</span>
+                                <span className="text-xs text-muted-foreground">{t('skillsPage.context.lazyDesc')}</span>
                               </div>
-                              <span className="text-xs text-muted-foreground">{t('skillsPage.context.lazyDesc')}</span>
                             </div>
                           </SelectItem>
                         </SelectContent>
