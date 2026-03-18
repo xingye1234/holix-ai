@@ -3,17 +3,15 @@ import { createFileRoute } from '@tanstack/react-router'
 import { AnimatePresence } from 'framer-motion'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
+import { SelectionToolbar } from '@/components/message-selection'
 import { ChatContext } from '@/context/chat'
 import { SettingsPanelProvider } from '@/context/settings-panel'
-import { updateConfig } from '@/lib/config'
-import { trpcClient } from '@/lib/trpc-client'
 import { useMessageShortcuts } from '@/hooks/use-message-shortcuts'
+import { updateConfig } from '@/lib/config'
 import useChat from '@/store/chat'
-import useMessageSelection from '@/store/message-selection'
 import ChatPanel from '@/views/chat/right-panel'
 import { MainContent } from '@/views/main/content'
 import MainFooter from '@/views/main/footer'
-import { SelectionToolbar } from '@/components/message-selection'
 
 export const Route = createFileRoute('/chat/$id')({
   component: Component,
@@ -48,7 +46,6 @@ function Component() {
         scrollToBottomRef,
       }
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [chat, id, isAtBottom],
   )
 
@@ -64,7 +61,7 @@ function Component() {
 
   // 处理批量删除选中的消息
   const handleDeleteSelected = useCallback(
-    async (messageIds: string[]) => {
+    async (_messageIds: string[]) => {
       if (!chat)
         return
 
@@ -87,18 +84,6 @@ function Component() {
     [chat],
   )
 
-  // 处理批量导出选中的消息
-  const handleExportSelected = useCallback(
-    (messageIds: string[]) => {
-      if (!chat)
-        return
-
-      // TODO: 实现批量导出逻辑
-      toast.info('批量导出功能开发中...')
-    },
-    [chat],
-  )
-
   // 获取当前聊天的所有消息ID
   const messageIds = useMemo(() => chat?.messages ?? [], [chat?.messages])
 
@@ -114,7 +99,6 @@ function Component() {
             {/* Selection Toolbar */}
             <SelectionToolbar
               onDeleteSelected={handleDeleteSelected}
-              onExportSelected={handleExportSelected}
             />
             <MainContent />
             <MainFooter />
