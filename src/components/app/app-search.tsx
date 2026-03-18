@@ -1,10 +1,11 @@
-import type { Message } from '@/node/database/schema/chat'
+import type { SearchResult } from '@/types/updates/search-results'
 import { useNavigate } from '@tanstack/react-router'
 import { MessageSquare, Monitor, Moon, Plus, SearchIcon, Settings, Sun } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { usePlatform } from '@/hooks/platform'
 import logger from '@/lib/logger'
 import { trpcClient } from '@/lib/trpc-client'
+import useChat from '@/store/chat'
 import { useTheme } from '../theme-provider'
 import {
   CommandDialog,
@@ -22,10 +23,14 @@ export default function AppSearch() {
   const { isMacOS } = usePlatform()
   const { setTheme } = useTheme()
   const navigate = useNavigate()
+  const searchQuery = useChat(state => state.searchQuery)
+  const setSearchQuery = useChat(state => state.setSearchQuery)
 
-  const [searchQuery, setSearchQuery] = useState('')
   const [isComposing, setIsComposing] = useState(false)
-  const [searchResults, setSearchResults] = useState<Array<{ rank: number, message: Message }>>([])
+  const [searchResults, setSearchResults] = useState<SearchResult>({
+    messageList: [],
+    chatList: [],
+  })
   const [isSearching, setIsSearching] = useState(false)
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -43,25 +48,32 @@ export default function AppSearch() {
 
   const performSearch = useCallback(async (query: string) => {
     if (!query.trim()) {
-      setSearchResults([])
+      setSearchResults({ messageList: [], chatList: [] })
       setIsSearching(false)
       return
     }
 
     setIsSearching(true)
     try {
-      const results = await trpcClient.message.searchBm25({ keyword: query, limit: 10 })
+      const [messageResults, chatResults] = await Promise.all([
+        trpcClient.message.searchBm25({ keyword: query, limit: 10 }),
+        trpcClient.chat.search({ keyword: query, limit: 10 }),
+      ])
 
       logger.info('Search results:', {
         query,
-        results,
+        messageResults,
+        chatResults,
       })
 
-      setSearchResults(results as Array<{ rank: number, message: Message }>)
+      setSearchResults({
+        messageList: messageResults,
+        chatList: chatResults,
+      })
     }
     catch (error) {
       console.error('Search failed:', error)
-      setSearchResults([])
+      setSearchResults({ messageList: [], chatList: [] })
     }
     finally {
       setIsSearching(false)
@@ -104,21 +116,15 @@ export default function AppSearch() {
     command()
   }
 
-  const handleSelectMessage = (chatUid: string, messageId: string) => {
-    runCommand(() =>
-      navigate({
-        to: `/chat/$id`,
-        params: { id: chatUid },
-        hash: `msg-${messageId}`,
-      }),
-    )
+  const handleSelectMessage = (chatUid: string) => {
+    runCommand(() => navigate({ to: `/chat/$id`, params: { id: chatUid } }))
   }
 
   // Reset search when dialog closes
   useEffect(() => {
     if (!open) {
       setSearchQuery('')
-      setSearchResults([])
+      setSearchResults({ messageList: [], chatList: [] })
     }
   }, [open])
 
@@ -147,13 +153,28 @@ export default function AppSearch() {
         <CommandList>
           <CommandEmpty>{isSearching ? 'Searching...' : 'No results found.'}</CommandEmpty>
 
-          {searchResults.length > 0 && (
+          {searchResults.chatList.length > 0 && (
+            <CommandGroup heading="Chat">
+              {searchResults.chatList.map(({ chat }) => (
+                <CommandItem
+                  key={chat.uid}
+                  value={`msg-${chat.uid}-${chat.title}`}
+                  onSelect={() => handleSelectMessage(chat.uid)}
+                >
+                  <MessageSquare className="mr-2 size-4 shrink-0" />
+                  <span className="truncate">{chat.title}</span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          )}
+
+          {searchResults.messageList.length > 0 && (
             <CommandGroup heading="Messages">
-              {searchResults.map(({ message: msg }) => (
+              {searchResults.messageList.map(({ message: msg }) => (
                 <CommandItem
                   key={msg.uid}
                   value={`msg-${msg.uid}-${msg.content}`}
-                  onSelect={() => handleSelectMessage(msg.chatUid, msg.uid)}
+                  onSelect={() => handleSelectMessage(msg.chatUid)}
                 >
                   <MessageSquare className="mr-2 size-4 shrink-0" />
                   <span className="truncate">{msg.content}</span>
