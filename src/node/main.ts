@@ -12,6 +12,7 @@ import { onCommandForClient } from './platform/commands'
 import { configStore } from './platform/config'
 import { AppLifecycle, LifecyclePhase } from './platform/lifecycle'
 import { logger } from './platform/logger'
+import { markMainLogRendererReady } from './platform/main-log-forwarder'
 import { mcpStore } from './platform/mcp'
 import { setupAppMenu } from './platform/menu'
 import { providerStore } from './platform/provider'
@@ -85,6 +86,9 @@ async function starting() {
       execute: () => {
         if (!window) {
           window = new AppWindow()
+          window.webContents.once('dom-ready', () => {
+            markMainLogRendererReady()
+          })
           window.on('closed', () => {
             window = null
           })

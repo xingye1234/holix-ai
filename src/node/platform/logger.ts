@@ -2,6 +2,7 @@ import { join } from 'node:path'
 import process from 'node:process'
 import { app } from 'electron'
 import { APP_DATA_PATH } from '../constant'
+import { setupMainLogForwarder } from './main-log-forwarder'
 
 // eslint-disable-next-line ts/no-require-imports, perfectionist/sort-imports
 const logger: typeof import('electron-log') = require('electron-log')
@@ -10,6 +11,17 @@ const logger: typeof import('electron-log') = require('electron-log')
  */
 function getLogPath(): string {
   return join(APP_DATA_PATH, 'logs')
+}
+
+function getDateKey(date = new Date()): string {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+function getDailyLogFileName(date = new Date()): string {
+  return `main-${getDateKey(date)}.log`
 }
 
 let isInitialized = false
@@ -27,7 +39,7 @@ if (!isInitialized) {
   logger.initialize()
 
   // 设置日志文件路径
-  logger.transports.file.resolvePathFn = () => join(logPath, 'main.log')
+  logger.transports.file.resolvePathFn = () => join(logPath, getDailyLogFileName())
 
   // ============================================
   // 日志级别配置
@@ -56,9 +68,10 @@ if (!isInitialized) {
   logger.transports.file.maxSize = 10 * 1024 * 1024
 
   // 日志文件归档配置（保留最近 7 天的日志）
-  logger.transports.file.archiveLogFn = (_file) => {
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0]
-    return join(logPath, 'archive', `main-${timestamp}.log`)
+  logger.transports.file.archiveLogFn = () => {
+    const now = new Date()
+    const stamp = now.toISOString().replace(/[:.]/g, '-')
+    return join(logPath, 'archive', `${getDailyLogFileName(now).replace('.log', '')}-${stamp}.log`)
   }
 
   // ============================================
@@ -84,14 +97,16 @@ if (!isInitialized) {
   logger.info(`Platform: ${process.platform} ${process.arch}`)
   logger.info('='.repeat(60))
 
+  setupMainLogForwarder(logger as unknown as Record<string, unknown>)
+
   isInitialized = true
 }
 
 /**
  * 获取主日志文件完整路径
  */
-function getMainLogFile(): string {
-  return join(getLogPath(), 'main.log')
+function getMainLogFile(date = new Date()): string {
+  return join(getLogPath(), getDailyLogFileName(date))
 }
 
 export { getLogPath, getMainLogFile, logger }
