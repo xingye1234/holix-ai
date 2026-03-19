@@ -13,6 +13,17 @@ function getLogPath(): string {
   return join(APP_DATA_PATH, 'logs')
 }
 
+function getDateKey(date = new Date()): string {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+function getDailyLogFileName(date = new Date()): string {
+  return `main-${getDateKey(date)}.log`
+}
+
 let isInitialized = false
 
 if (!isInitialized) {
@@ -28,7 +39,7 @@ if (!isInitialized) {
   logger.initialize()
 
   // 设置日志文件路径
-  logger.transports.file.resolvePathFn = () => join(logPath, 'main.log')
+  logger.transports.file.resolvePathFn = () => join(logPath, getDailyLogFileName())
 
   // ============================================
   // 日志级别配置
@@ -57,9 +68,10 @@ if (!isInitialized) {
   logger.transports.file.maxSize = 10 * 1024 * 1024
 
   // 日志文件归档配置（保留最近 7 天的日志）
-  logger.transports.file.archiveLogFn = (_file) => {
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0]
-    return join(logPath, 'archive', `main-${timestamp}.log`)
+  logger.transports.file.archiveLogFn = () => {
+    const now = new Date()
+    const stamp = now.toISOString().replace(/[:.]/g, '-')
+    return join(logPath, 'archive', `${getDailyLogFileName(now).replace('.log', '')}-${stamp}.log`)
   }
 
   // ============================================
@@ -93,8 +105,8 @@ if (!isInitialized) {
 /**
  * 获取主日志文件完整路径
  */
-function getMainLogFile(): string {
-  return join(getLogPath(), 'main.log')
+function getMainLogFile(date = new Date()): string {
+  return join(getLogPath(), getDailyLogFileName(date))
 }
 
 export { getLogPath, getMainLogFile, logger }
