@@ -2,6 +2,7 @@ import { join } from 'node:path'
 import process from 'node:process'
 import { app } from 'electron'
 import { APP_DATA_PATH } from '../constant'
+import { setupMainLogForwarder } from './main-log-forwarder'
 
 // eslint-disable-next-line ts/no-require-imports, perfectionist/sort-imports
 const logger: typeof import('electron-log') = require('electron-log')
@@ -83,6 +84,8 @@ if (!isInitialized) {
   logger.info(`Node version: ${process.versions.node}`)
   logger.info(`Platform: ${process.platform} ${process.arch}`)
   logger.info('='.repeat(60))
+
+  setupMainLogForwarder(logger as unknown as Record<string, unknown>)
 
   isInitialized = true
 }
