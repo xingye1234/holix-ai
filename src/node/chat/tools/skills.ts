@@ -4,18 +4,30 @@ import z from 'zod'
 import { logger } from '../../platform/logger'
 import { skillManager } from '../skills/manager'
 
+interface BuildLoadSkillToolOptions {
+  enabledSkillNames?: string[]
+}
+
 /**
  * 构建 loadSkillTool：每次会话开始时动态生成，反映热重载后的最新 skills 列表
  */
-export function buildLoadSkillTool() {
-  const availableSkillsList = skillManager
+export function buildLoadSkillTool(options?: BuildLoadSkillToolOptions) {
+  const enabledSkillNames = new Set(options?.enabledSkillNames ?? skillManager.listSkills().map(s => s.name))
+  const availableSkills = skillManager
     .listSkills()
+    .filter(s => enabledSkillNames.has(s.name))
+
+  const availableSkillsList = availableSkills
     .map((s: LoadedSkill) => `- ${s.name}: ${s.description}`)
     .join('\n') || '(暂无已安装的 skills)'
 
   return tool(
     async ({ skillName }) => {
       logger.info(`[loadSkillTool] Loading skill: ${skillName}`)
+
+      if (!enabledSkillNames.has(skillName)) {
+        return `Skill "${skillName}" is disabled in current settings.`
+      }
 
       const skill = skillManager.getSkill(skillName)
 
