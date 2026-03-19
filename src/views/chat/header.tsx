@@ -27,7 +27,7 @@ export function AsideChatHeader() {
       {/* 新建会话按钮 */}
       <Link
         to="/"
-        className="w-full mb-3"
+        className="w-full mb-4"
         activeProps={{
           className: 'pointer-events-none',
         }}
@@ -42,7 +42,7 @@ export function AsideChatHeader() {
       </Link>
 
       {/* 功能链接 */}
-      <div className="space-y-0.5">
+      <div className="space-y-2">
         <Link
           to="/skills"
           className="h-9 w-full flex items-center justify-start gap-2 rounded-md px-2 text-sm font-normal text-foreground/90 hover:bg-muted hover:text-foreground transition-colors"
