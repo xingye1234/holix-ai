@@ -9,7 +9,7 @@ const LOG_LEVELS: MainLogLevel[] = ['error', 'warn', 'info', 'verbose', 'debug',
 const PATCH_FLAG = '__main_log_forwarder_patched__'
 
 let rendererReady = false
-const prebootLogs: MainLogEntry[] = []
+const prebookLogs: MainLogEntry[] = []
 
 function buildLine(level: MainLogLevel, timestamp: number, text: string) {
   const date = new Date(timestamp)
@@ -37,7 +37,7 @@ function pushLog(level: MainLogLevel, args: unknown[]) {
     return
   }
 
-  prebootLogs.push(item)
+  prebookLogs.push(item)
 }
 
 export function setupMainLogForwarder(logger: LoggerLike) {
@@ -64,8 +64,8 @@ export function markMainLogRendererReady() {
 
   rendererReady = true
 
-  if (prebootLogs.length > 0) {
-    update('main-process.logs', { logs: prebootLogs.slice() })
-    prebootLogs.length = 0
+  if (prebookLogs.length > 0) {
+    update('main-process.logs', { logs: prebookLogs.slice() })
+    prebookLogs.length = 0
   }
 }
