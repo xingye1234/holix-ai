@@ -9,7 +9,7 @@ export function AsideChatHeader() {
   const toggleSidebar = useUI(state => state.toggleSidebar)
 
   return (
-    <header className="px-3 py-3 bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 sticky top-0 z-10">
+    <header className="px-3 py-3 bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 sticky top-0 z-10 border-b">
       {/* 标题栏：标题 + 收起按钮 */}
       <div className="flex items-center justify-between mb-3">
         <h1 className="text-sm font-semibold text-foreground">{t('chat.sidebar.title')}</h1>
@@ -27,7 +27,7 @@ export function AsideChatHeader() {
       {/* 新建会话按钮 */}
       <Link
         to="/"
-        className="w-full mb-4"
+        className="w-full mb-4 block"
         activeProps={{
           className: 'pointer-events-none',
         }}
