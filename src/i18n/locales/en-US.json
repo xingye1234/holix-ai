@@ -20,6 +20,7 @@
   "settings": {
     "title": "Settings",
     "desc": "Manage your application settings here. Select a category from the sidebar to get started.",
+    "btn": "Return to the chat",
     "nav": {
       "general": "General",
       "provider": "Providers",

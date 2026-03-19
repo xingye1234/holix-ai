@@ -1,6 +1,6 @@
 import { createFileRoute, Link, Outlet, useNavigate } from '@tanstack/react-router'
 import { ArrowLeft } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Item, ItemContent, ItemTitle } from '@/components/ui/item'
 import { Separator } from '@/components/ui/separator'
@@ -59,8 +59,8 @@ function AppLayoutComponent() {
   ]
 
   return (
-    <div className="w-full h-full overflow-y-auto overflow-x-hidden">
-      <div className="w-full px-6 lg:px-8 py-6 max-w-6xl mx-auto">
+    <div className="w-full h-full overflow-hidden">
+      <div className="w-full px-6 lg:px-8 py-6 max-w-6xl mx-auto h-full flex flex-col min-h-0">
         <div className="flex items-center gap-4 mb-2">
           <h1 className="text-3xl font-bold">{t('settings.title')}</h1>
           {currentChatId && (
@@ -71,7 +71,7 @@ function AppLayoutComponent() {
               className="gap-2"
             >
               <ArrowLeft className="w-4 h-4" />
-              返回聊天
+              {t('settings.btn')}
             </Button>
           )}
         </div>
@@ -79,8 +79,8 @@ function AppLayoutComponent() {
           {t('settings.desc')}
         </span>
         <Separator className="my-4" />
-        <div className="flex w-full h-full gap-4">
-          <ul className="w-48 space-y-2 shrink-0">
+        <div className="flex w-full flex-1 min-h-0 gap-4 relative">
+          <ul className="w-48 space-y-2 shrink-0 self-start">
             {settingList.map(setting => (
               <li key={setting.path}>
                 <Item asChild>
@@ -98,7 +98,9 @@ function AppLayoutComponent() {
               </li>
             ))}
           </ul>
-          <div className="text-neutral-700 flex-1 min-w-0">
+          <div
+            className="text-neutral-700 flex-1 min-w-0 min-h-0 overflow-y-auto"
+          >
             <Outlet />
           </div>
         </div>
