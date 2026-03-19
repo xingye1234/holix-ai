@@ -293,13 +293,17 @@
       "prompt": "Prompt",
       "promptPlaceholder": "Define the role, constraints, response style, and execution rules.",
       "skills": "Bound Skills",
-      "skillsPlaceholder": "Select one or more skills",
+      "skillsPlaceholder": "Select skills (names only to keep selector compact)",
       "map": "MAP (Capability Tuning)",
       "mapPlaceholder": "Enter MAP tuning JSON",
       "mapHint": "Use JSON for capability tuning weights, for example planning/reasoning/toolUse.",
       "submit": "Create Agent",
       "openCreate": "Create Agent",
-      "dialogDescription": "Configure name, prompt, skills and MAP tuning for this agent."
+      "dialogDescription": "Configure name, prompt, skills and MAP tuning for this agent.",
+      "mcps": "Bound MCPs",
+      "mcpsPlaceholder": "Select MCP servers to bind",
+      "noMcpHint": "No MCP servers available. Configure MCP in settings first.",
+      "model": "AI Provider & Model"
     },
     "validation": {
       "nameRequired": "Please enter an agent name.",
@@ -317,7 +321,9 @@
       "customTitle": "Custom Agents",
       "emptyCustom": "No custom agents yet. Click \"Create Agent\" to add one.",
       "builtinBadge": "Built-in",
-      "customBadge": "Custom"
+      "customBadge": "Custom",
+      "noMcps": "No MCP bound",
+      "noModel": "No default model set"
     }
   },
   "prompt": {

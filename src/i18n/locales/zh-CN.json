@@ -293,13 +293,17 @@
       "prompt": "提示词",
       "promptPlaceholder": "定义角色、约束、输出风格和执行规则。",
       "skills": "绑定 Skills",
-      "skillsPlaceholder": "选择一个或多个技能",
+      "skillsPlaceholder": "选择技能（仅显示名称，避免过长）",
       "map": "MAP（能力调优）",
       "mapPlaceholder": "输入 MAP 调优 JSON",
       "mapHint": "使用 JSON 配置能力权重，例如 planning / reasoning / toolUse。",
       "submit": "创建 Agent",
       "openCreate": "创建 Agent",
-      "dialogDescription": "配置 Agent 的名称、提示词、技能绑定与 MAP 调优参数。"
+      "dialogDescription": "配置 Agent 的名称、提示词、技能绑定与 MAP 调优参数。",
+      "mcps": "绑定 MCP",
+      "mcpsPlaceholder": "选择要绑定的 MCP 服务",
+      "noMcpHint": "当前没有可用 MCP，请先到设置页配置。",
+      "model": "AI 平台与模型"
     },
     "validation": {
       "nameRequired": "请输入 Agent 名称。",
@@ -317,7 +321,9 @@
       "customTitle": "自定义 Agent",
       "emptyCustom": "暂未创建自定义 Agent，点击“创建 Agent”开始。",
       "builtinBadge": "内置",
-      "customBadge": "自定义"
+      "customBadge": "自定义",
+      "noMcps": "未绑定 MCP",
+      "noModel": "未指定默认模型"
     }
   },
   "prompt": {

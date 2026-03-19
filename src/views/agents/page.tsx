@@ -1,7 +1,8 @@
 import type { Skill } from '@/routes/agents'
-import { Bot, Brain, Plus, Sparkles } from 'lucide-react'
+import { Bot, Brain, Cpu, Plus, Sparkles } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
+import ProviderModelSelector from '@/components/provider-model-selector'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
@@ -17,6 +18,9 @@ interface AgentDraft {
   description: string
   prompt: string
   skills: string[]
+  mcps: string[]
+  provider: string
+  model: string
   map: string
 }
 
@@ -30,6 +34,9 @@ const BUILTIN_AGENTS: AgentItem[] = [
     description: 'Balanced default assistant for common Q&A and daily tasks.',
     prompt: 'You are a helpful and concise assistant.',
     skills: [],
+    mcps: [],
+    provider: '',
+    model: '',
     map: '{"planning":0.6,"reasoning":0.6,"toolUse":0.5}',
     isBuiltin: true,
   },
@@ -38,6 +45,9 @@ const BUILTIN_AGENTS: AgentItem[] = [
     description: 'Focused on coding, debugging and code review tasks.',
     prompt: 'You are a senior software engineer helping with coding tasks.',
     skills: ['code-reader', 'file-system'],
+    mcps: [],
+    provider: '',
+    model: '',
     map: '{"planning":0.7,"reasoning":0.9,"toolUse":0.8}',
     isBuiltin: true,
   },
@@ -49,6 +59,9 @@ function initialDraft(): AgentDraft {
     description: '',
     prompt: '',
     skills: [],
+    mcps: [],
+    provider: '',
+    model: '',
     map: '{\n  "planning": 0.8,\n  "reasoning": 0.7,\n  "toolUse": 0.9\n}',
   }
 }
@@ -78,11 +91,29 @@ function AgentCard({ agent }: { agent: AgentItem }) {
             : <span className="text-xs text-muted-foreground">{t('agents.list.noSkills')}</span>}
         </div>
       </div>
+
+      <div className="space-y-1">
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('agents.form.mcps')}</p>
+        <div className="flex flex-wrap gap-2">
+          {agent.mcps.length > 0
+            ? agent.mcps.map(mcp => <Badge key={mcp} variant="secondary">{mcp}</Badge>)
+            : <span className="text-xs text-muted-foreground">{t('agents.list.noMcps')}</span>}
+        </div>
+      </div>
+
+      <div className="space-y-1">
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('agents.form.model')}</p>
+        <p className="text-sm text-muted-foreground">
+          {agent.provider && agent.model
+            ? `${agent.provider} / ${agent.model}`
+            : t('agents.list.noModel')}
+        </p>
+      </div>
     </div>
   )
 }
 
-export function AgentsPage({ skills }: { skills: Skill[] }) {
+export function AgentsPage({ skills, mcpServers }: { skills: Skill[], mcpServers: string[] }) {
   const { t } = useI18n()
 
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -91,10 +122,18 @@ export function AgentsPage({ skills }: { skills: Skill[] }) {
 
   const skillOptions = useMemo(
     () => skills.map(skill => ({
-      label: skill.description ? `${skill.name} · ${skill.description}` : skill.name,
+      label: skill.name,
       value: skill.name,
     })),
     [skills],
+  )
+
+  const mcpOptions = useMemo(
+    () => mcpServers.map(server => ({
+      label: server,
+      value: server,
+    })),
+    [mcpServers],
   )
 
   function updateField<K extends keyof AgentDraft>(key: K, value: AgentDraft[K]) {
@@ -125,6 +164,9 @@ export function AgentsPage({ skills }: { skills: Skill[] }) {
       description: form.description.trim(),
       prompt: form.prompt.trim(),
       skills: form.skills,
+      mcps: form.mcps,
+      provider: form.provider,
+      model: form.model,
       map: form.map,
       isBuiltin: false,
     }
@@ -156,7 +198,7 @@ export function AgentsPage({ skills }: { skills: Skill[] }) {
                 </Button>
               </DialogTrigger>
 
-              <DialogContent className="sm:max-w-2xl">
+              <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-auto">
                 <DialogHeader>
                   <DialogTitle className="flex items-center gap-2">
                     <Sparkles className="h-4 w-4 text-primary" />
@@ -183,8 +225,37 @@ export function AgentsPage({ skills }: { skills: Skill[] }) {
                         value={form.skills}
                         onChange={value => updateField('skills', value)}
                         placeholder={t('agents.form.skillsPlaceholder')}
+                        className="w-full"
                       />
                     </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>{t('agents.form.mcps')}</Label>
+                    <MultiSelect
+                      options={mcpOptions}
+                      value={form.mcps}
+                      onChange={value => updateField('mcps', value)}
+                      placeholder={t('agents.form.mcpsPlaceholder')}
+                      className="w-full"
+                      disabled={mcpOptions.length === 0}
+                    />
+                    {mcpOptions.length === 0 && (
+                      <p className="text-xs text-muted-foreground">{t('agents.form.noMcpHint')}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-1.5">
+                      <Cpu className="h-4 w-4" />
+                      {t('agents.form.model')}
+                    </Label>
+                    <ProviderModelSelector
+                      triggerOnInitialize
+                      onProviderChange={provider => updateField('provider', provider)}
+                      onModelChange={model => updateField('model', model)}
+                      className="flex-wrap"
+                    />
                   </div>
 
                   <div className="space-y-2">
