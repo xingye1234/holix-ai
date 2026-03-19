@@ -4,7 +4,6 @@ import { CheckIcon, ChevronDownIcon } from 'lucide-react'
 import * as React from 'react'
 
 import { cn } from '@/lib/utils'
-import { SelectTrigger } from './select'
 
 interface Option { value: string, label: React.ReactNode }
 
@@ -44,12 +43,19 @@ export function MultiSelect({
   return (
     <Popover.Root open={open} onOpenChange={setOpen}>
       <Popover.Trigger asChild>
-        <SelectTrigger size={size} className={cn(className)} disabled={disabled}>
-          <span data-slot="select-value">
-            {selectedLabels.length > 0 ? selectedLabels.join(', ') : placeholder}
-          </span>
+        <button
+          type="button"
+          data-size={size}
+          className={cn(
+            'border-input text-left text-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 dark:hover:bg-input/50 flex w-full items-center justify-between gap-2 rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 data-[size=default]:h-9 data-[size=sm]:h-8',
+            selectedLabels.length === 0 && 'text-muted-foreground',
+            className,
+          )}
+          disabled={disabled}
+        >
+          <span className="line-clamp-1">{selectedLabels.length > 0 ? selectedLabels.join(', ') : placeholder}</span>
           <ChevronDownIcon className="size-4 opacity-50" />
-        </SelectTrigger>
+        </button>
       </Popover.Trigger>
 
       <Popover.Content sideOffset={8} align="start" className="z-50">

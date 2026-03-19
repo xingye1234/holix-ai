@@ -283,8 +283,48 @@
   },
   "agents": {
     "title": "Agent",
-    "description": "在这里管理和创建你的专属 Agent（规划中）。",
-    "createSoon": "新建 Agent（即将支持）"
+    "description": "在这里创建并调优你的专属 Agent。",
+    "form": {
+      "title": "创建 Agent",
+      "name": "名称",
+      "namePlaceholder": "例如：产品策略助手",
+      "description": "描述",
+      "descriptionPlaceholder": "说明这个 Agent 的定位、职责和使用场景。",
+      "prompt": "提示词",
+      "promptPlaceholder": "定义角色、约束、输出风格和执行规则。",
+      "skills": "绑定 Skills",
+      "skillsPlaceholder": "选择技能（仅显示名称，避免过长）",
+      "map": "MAP（能力调优）",
+      "mapPlaceholder": "输入 MAP 调优 JSON",
+      "mapHint": "使用 JSON 配置能力权重，例如 planning / reasoning / toolUse。",
+      "submit": "创建 Agent",
+      "openCreate": "创建 Agent",
+      "dialogDescription": "配置 Agent 的名称、提示词、技能绑定与 MAP 调优参数。",
+      "mcps": "绑定 MCP",
+      "mcpsPlaceholder": "选择要绑定的 MCP 服务",
+      "noMcpHint": "当前没有可用 MCP，请先到设置页配置。",
+      "model": "AI 平台与模型"
+    },
+    "validation": {
+      "nameRequired": "请输入 Agent 名称。",
+      "promptRequired": "请输入 Agent 提示词。",
+      "mapJsonInvalid": "MAP 必须是合法的 JSON。"
+    },
+    "toast": {
+      "created": "Agent 创建成功（本地预览）。"
+    },
+    "list": {
+      "title": "已创建 Agent",
+      "noDescription": "暂无描述",
+      "noSkills": "未绑定 Skills",
+      "builtinTitle": "内置 Agent",
+      "customTitle": "自定义 Agent",
+      "emptyCustom": "暂未创建自定义 Agent，点击“创建 Agent”开始。",
+      "builtinBadge": "内置",
+      "customBadge": "自定义",
+      "noMcps": "未绑定 MCP",
+      "noModel": "未指定默认模型"
+    }
   },
   "prompt": {
     "inputPlaceholder": "在此输入提示词内容...",
