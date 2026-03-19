@@ -8,11 +8,13 @@ import {
   getChatByUid,
   searchChats,
   updateChat,
+  updateChatContextSettings,
   updateChatModel,
   updateChatPrompts,
   updateChatWorkspace,
   updatePendingMessages,
 } from '../database/chat-operations'
+import { getChatSkillSettings, setChatSkillSettings } from '../database/chat-skill-settings'
 import { update } from '../platform/update'
 import { procedure, router } from './trpc'
 
@@ -145,6 +147,27 @@ export const chatRouter = router({
       const chat = await updateChatContextSettings(input.chatUid, input.contextSettings)
       update('chat.updated', chat)
       return chat
+    }),
+
+  getSkillSettings: procedure()
+    .input(z.object({ chatUid: z.string() }))
+    .query(({ input }) => {
+      return getChatSkillSettings(input.chatUid)
+    }),
+
+  updateSkillSettings: procedure()
+    .input(
+      z.object({
+        chatUid: z.string(),
+        disabledSkills: z.array(z.string()),
+        enabledSkills: z.array(z.string()),
+      }),
+    )
+    .mutation(({ input }) => {
+      return setChatSkillSettings(input.chatUid, {
+        disabledSkills: input.disabledSkills,
+        enabledSkills: input.enabledSkills,
+      })
     }),
 
   // 更新工作区配置

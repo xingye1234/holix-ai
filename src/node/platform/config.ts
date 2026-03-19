@@ -13,6 +13,7 @@ export interface ConfigData {
   minimizeToTray: boolean
   closeToTray: boolean
   skillsContextStrategy: 'eager' | 'lazy'
+  disabledSkills: string[]
 }
 
 export class Config extends Store<ConfigData> {
@@ -31,6 +32,7 @@ export class Config extends Store<ConfigData> {
         minimizeToTray: true,
         closeToTray: true,
         skillsContextStrategy: 'eager',
+        disabledSkills: [],
       },
     })
   }

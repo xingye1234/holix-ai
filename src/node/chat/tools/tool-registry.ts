@@ -29,6 +29,9 @@ export interface ToolRegistryConfig {
 
   /** 是否启用 Context7 */
   enableContext7?: boolean
+
+  /** 全局禁用的 Skills */
+  disabledSkills?: string[]
 }
 
 /**
@@ -42,6 +45,7 @@ export class ToolRegistry {
       strategy: config?.strategy || 'eager', // 默认保持现有行为
       coreSkills: config?.coreSkills || [],
       enableContext7: config?.enableContext7 ?? true,
+      disabledSkills: config?.disabledSkills || [],
     }
   }
 
@@ -66,8 +70,9 @@ export class ToolRegistry {
     ]
 
     // Skill 管理工具（始终加载）
+    const enabledSkillNames = this.getEnabledSkills().map(s => s.name)
     const skillManagementTools = [
-      buildLoadSkillTool(),
+      buildLoadSkillTool(enabledSkillNames.length > 0 ? { enabledSkillNames } : undefined),
       reloadSkillsTool,
     ]
 
@@ -118,7 +123,10 @@ export class ToolRegistry {
    * 加载所有 Skill 工具
    */
   private loadAllSkillTools(): DynamicStructuredTool[] {
-    const tools = skillManager.getAllTools()
+    const enabledSkills = this.getEnabledSkills()
+    const tools = enabledSkills.length > 0
+      ? enabledSkills.flatMap(skill => skill.tools)
+      : skillManager.getAllTools()
     logger.debug(`[ToolRegistry] Loaded all skill tools: ${tools.length}`)
     return tools
   }
@@ -132,7 +140,7 @@ export class ToolRegistry {
 
     for (const skillName of coreSkills) {
       const skill = skillManager.getSkill(skillName)
-      if (skill) {
+      if (skill && !this.isSkillDisabled(skill.name)) {
         tools.push(...skill.tools)
         logger.debug(`[ToolRegistry] Loaded core skill: ${skillName} (${skill.tools.length} tools)`)
       }
@@ -157,6 +165,7 @@ export class ToolRegistry {
       case 'lazy': {
         // 渐进式加载：只提供 skills 摘要，让 AI 使用 load_skill 工具按需加载
         const summary = skillManager.getSkillsSummary()
+          .filter(s => !this.isSkillDisabled(s.name))
         if (summary.length === 0) {
           return []
         }
@@ -181,7 +190,9 @@ ${skillsList}
         return this.getCoreSkillPrompts()
 
       default:
-        return skillManager.getSystemPrompts()
+        return this.getEnabledSkills().length > 0
+          ? this.getEnabledSkills().filter(s => s.prompt).map(s => `[Skill: ${s.name}]\n${s.prompt}`)
+          : skillManager.getSystemPrompts()
     }
   }
 
@@ -194,7 +205,7 @@ ${skillsList}
 
     for (const skillName of coreSkills) {
       const skill = skillManager.getSkill(skillName)
-      if (skill && skill.prompt) {
+      if (skill && !this.isSkillDisabled(skill.name) && skill.prompt) {
         prompts.push(`[Skill: ${skill.name}]\n${skill.prompt}`)
       }
     }
@@ -215,6 +226,15 @@ ${skillsList}
    */
   getConfig(): ToolRegistryConfig {
     return { ...this.config }
+  }
+
+  private isSkillDisabled(skillName: string): boolean {
+    return (this.config.disabledSkills || []).includes(skillName)
+  }
+
+  private getEnabledSkills() {
+    const skills = (skillManager as any).listSkills?.() ?? []
+    return skills.filter((skill: any) => !this.isSkillDisabled(skill.name))
   }
 }
 

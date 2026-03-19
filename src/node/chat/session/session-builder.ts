@@ -9,6 +9,7 @@ import type { ToolLoadingStrategy } from '../tools/tool-registry'
 import { AIMessage, HumanMessage, SystemMessage as LangChainSystemMessage } from '@langchain/core/messages'
 import { createAgent } from 'langchain'
 import { configStore } from '../../platform/config'
+import { getChatSkillSettings } from '../../database/chat-skill-settings'
 import { logger } from '../../platform/logger'
 import { contextSchema } from '../context'
 import { loadMcpTools } from '../mcp/tools'
@@ -48,10 +49,21 @@ export class SessionBuilder {
    * 构建 LangChain Agent
    */
   async buildAgent(chatUid: string, signal?: AbortSignal) {
+    const chatSkillSettings = getChatSkillSettings(chatUid)
+    const globallyDisabled = new Set(configStore.get('disabledSkills') || [])
+
+    for (const skillName of chatSkillSettings.enabledSkills) {
+      globallyDisabled.delete(skillName)
+    }
+    for (const skillName of chatSkillSettings.disabledSkills) {
+      globallyDisabled.add(skillName)
+    }
+
     // 构建工具
     const toolRegistry = createToolRegistry({
       strategy: this.config.toolLoadingStrategy || 'eager',
       coreSkills: this.config.coreSkills,
+      disabledSkills: Array.from(globallyDisabled),
     })
     const builtInTools = toolRegistry.buildTools()
     const mcpTools = await loadMcpTools()

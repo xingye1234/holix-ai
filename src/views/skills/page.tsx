@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
+import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useI18n } from '@/i18n/provider'
 import { updateConfig } from '@/lib/config'
@@ -270,7 +271,15 @@ function ConfigForm({
 type Skill = Awaited<ReturnType<typeof trpcClient.skill.list>>[number]
 type ConfigData = Awaited<ReturnType<typeof import('@/lib/config').getConfig>>
 
-function SkillCard({ skill }: { skill: Skill }) {
+function SkillCard({
+  skill,
+  disabled,
+  onToggleDisabled,
+}: {
+  skill: Skill
+  disabled: boolean
+  onToggleDisabled: (skillName: string, disabled: boolean) => void
+}) {
   const { t } = useI18n()
   const [expanded, setExpanded] = useState(false)
   const hasDetails = skill.tools.length > 0 || skill.declarations.length > 0 || skill.prompt || (skill.config?.length ?? 0) > 0 || skill.availableResourceDirs.length > 0 || skill.allDirEntries.length > 0
@@ -307,6 +316,9 @@ function SkillCard({ skill }: { skill: Skill }) {
                 {t('settings.skills.card.toolCount', { count: skill.toolCount })}
               </Badge>
             )}
+            <Badge variant={disabled ? 'destructive' : 'secondary'} className="text-[10px] px-1.5 py-0">
+              {disabled ? '已禁用' : '已启用'}
+            </Badge>
           </div>
           <p className="text-sm text-muted-foreground mt-1 leading-snug">{skill.description}</p>
           <p className="text-[11px] text-muted-foreground mt-1 font-mono break-all">
@@ -320,6 +332,19 @@ function SkillCard({ skill }: { skill: Skill }) {
             {expanded ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
           </span>
         )}
+
+        <div
+          className="shrink-0"
+          onClick={event => event.stopPropagation()}
+        >
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">禁用</span>
+            <Switch
+              checked={disabled}
+              onCheckedChange={checked => onToggleDisabled(skill.name, checked)}
+            />
+          </div>
+        </div>
       </div>
 
       {/* 展开详情 */}
@@ -443,6 +468,7 @@ function SkillCard({ skill }: { skill: Skill }) {
 export function SkillsPage({ skills, config }: { skills: Skill[], config: ConfigData }) {
   const { t } = useI18n()
   const [contextStrategy, setContextStrategy] = useState<'eager' | 'lazy'>(config.skillsContextStrategy ?? 'eager')
+  const [disabledSkills, setDisabledSkills] = useState<string[]>(config.disabledSkills ?? [])
 
   const builtinSkills = skills.filter(s => s.isBuiltin)
   const userSkills = skills.filter(s => !s.isBuiltin)
@@ -452,6 +478,16 @@ export function SkillsPage({ skills, config }: { skills: Skill[], config: Config
     await updateConfig('skillsContextStrategy', value)
     toast.success(t('skillsPage.context.toastUpdated'))
   }, [t])
+
+  const handleToggleSkillDisabled = useCallback(async (skillName: string, disabled: boolean) => {
+    const next = disabled
+      ? Array.from(new Set([...disabledSkills, skillName]))
+      : disabledSkills.filter(name => name !== skillName)
+
+    setDisabledSkills(next)
+    await updateConfig('disabledSkills', next)
+    toast.success(disabled ? `已禁用 ${skillName}` : `已启用 ${skillName}`)
+  }, [disabledSkills])
 
   const storeSkills = [
     {
@@ -606,7 +642,12 @@ export function SkillsPage({ skills, config }: { skills: Skill[], config: Config
                         </div>
                         <div className="grid gap-4">
                           {builtinSkills.map(skill => (
-                            <SkillCard key={skill.name} skill={skill} />
+                            <SkillCard
+                              key={skill.name}
+                              skill={skill}
+                              disabled={disabledSkills.includes(skill.name)}
+                              onToggleDisabled={handleToggleSkillDisabled}
+                            />
                           ))}
                         </div>
                       </div>
@@ -624,7 +665,12 @@ export function SkillsPage({ skills, config }: { skills: Skill[], config: Config
                         </div>
                         <div className="grid gap-4">
                           {userSkills.map(skill => (
-                            <SkillCard key={skill.name} skill={skill} />
+                            <SkillCard
+                              key={skill.name}
+                              skill={skill}
+                              disabled={disabledSkills.includes(skill.name)}
+                              onToggleDisabled={handleToggleSkillDisabled}
+                            />
                           ))}
                         </div>
                       </div>
