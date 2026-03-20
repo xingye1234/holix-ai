@@ -80,24 +80,33 @@ describe('createLmm', () => {
     }))
   })
 
-  describe('Anthropic Provider', () => {
+  describe('anthropic Provider', () => {
     it('should create Anthropic adapter for claude-3-opus', () => {
       const result = createLlm('claude-3-opus')
       expect(result._modelType).toBe('anthropic')
-      expect(mockCreateAnthropicAdapter).toHaveBeenCalledWith('claude-3-opus', undefined)
+      expect(mockCreateAnthropicAdapter).toHaveBeenCalledWith(
+        'claude-3-opus',
+        undefined,
+      )
     })
 
     it('should create Anthropic adapter for claude-3.5-sonnet', () => {
       const result = createLlm('claude-3.5-sonnet')
       expect(result._modelType).toBe('anthropic')
-      expect(mockCreateAnthropicAdapter).toHaveBeenCalledWith('claude-3.5-sonnet', undefined)
+      expect(mockCreateAnthropicAdapter).toHaveBeenCalledWith(
+        'claude-3.5-sonnet',
+        undefined,
+      )
     })
 
     it('should create Anthropic adapter with explicit provider config', () => {
       const config = { apiKey: 'test-key', provider: 'anthropic' }
       const result = createLlm('claude-3-opus', config)
       expect(result._modelType).toBe('anthropic')
-      expect(mockCreateAnthropicAdapter).toHaveBeenCalledWith('claude-3-opus', config)
+      expect(mockCreateAnthropicAdapter).toHaveBeenCalledWith(
+        'claude-3-opus',
+        config,
+      )
     })
 
     it('should handle case-insensitive provider name', () => {
@@ -107,7 +116,7 @@ describe('createLmm', () => {
     })
   })
 
-  describe('OpenAI Provider', () => {
+  describe('openAI Provider', () => {
     it('should create OpenAI adapter for gpt-4', () => {
       const result = createLlm('gpt-4')
       expect(result._modelType).toBe('openai')
@@ -117,13 +126,19 @@ describe('createLmm', () => {
     it('should create OpenAI adapter for gpt-3.5-turbo', () => {
       const result = createLlm('gpt-3.5-turbo')
       expect(result._modelType).toBe('openai')
-      expect(mockCreateOpenAIAdapter).toHaveBeenCalledWith('gpt-3.5-turbo', undefined)
+      expect(mockCreateOpenAIAdapter).toHaveBeenCalledWith(
+        'gpt-3.5-turbo',
+        undefined,
+      )
     })
 
     it('should create OpenAI adapter for o1 models', () => {
       const result = createLlm('o1-preview')
       expect(result._modelType).toBe('openai')
-      expect(mockCreateOpenAIAdapter).toHaveBeenCalledWith('o1-preview', undefined)
+      expect(mockCreateOpenAIAdapter).toHaveBeenCalledWith(
+        'o1-preview',
+        undefined,
+      )
     })
 
     it('should create OpenAI adapter with explicit provider config', () => {
@@ -134,38 +149,52 @@ describe('createLmm', () => {
     })
   })
 
-  describe('Gemini Provider', () => {
+  describe('gemini Provider', () => {
     it('should create Gemini adapter for gemini-1.5-pro', () => {
       const result = createLlm('gemini-1.5-pro')
       expect(result._modelType).toBe('gemini')
-      expect(mockCreateGeminiAdapter).toHaveBeenCalledWith('gemini-1.5-pro', undefined)
+      expect(mockCreateGeminiAdapter).toHaveBeenCalledWith(
+        'gemini-1.5-pro',
+        undefined,
+      )
     })
 
     it('should create Gemini adapter for gemini-2.0-flash', () => {
       const result = createLlm('gemini-2.0-flash')
       expect(result._modelType).toBe('gemini')
-      expect(mockCreateGeminiAdapter).toHaveBeenCalledWith('gemini-2.0-flash', undefined)
+      expect(mockCreateGeminiAdapter).toHaveBeenCalledWith(
+        'gemini-2.0-flash',
+        undefined,
+      )
     })
 
     it('should create Gemini adapter with explicit provider config', () => {
       const config = { apiKey: 'test-key', provider: 'gemini' }
       const result = createLlm('gemini-1.5-pro', config)
       expect(result._modelType).toBe('gemini')
-      expect(mockCreateGeminiAdapter).toHaveBeenCalledWith('gemini-1.5-pro', config)
+      expect(mockCreateGeminiAdapter).toHaveBeenCalledWith(
+        'gemini-1.5-pro',
+        config,
+      )
     })
   })
 
-  describe('Ollama Provider', () => {
+  describe('ollama Provider', () => {
     it('should create Ollama adapter for llama3', () => {
       const result = createLlm('llama3', { provider: 'ollama' })
       expect(result._modelType).toBe('ollama')
-      expect(mockCreateOllamaAdapter).toHaveBeenCalledWith('llama3', { provider: 'ollama' })
+      expect(mockCreateOllamaAdapter).toHaveBeenCalledWith('llama3', {
+        provider: 'ollama',
+      })
     })
 
     it('should create Ollama adapter for mistral', () => {
       const result = createLlm('mistral')
       expect(result._modelType).toBe('ollama')
-      expect(mockCreateOllamaAdapter).toHaveBeenCalledWith('mistral', undefined)
+      expect(mockCreateOllamaAdapter).toHaveBeenCalledWith(
+        'mistral',
+        undefined,
+      )
     })
 
     it('should create Ollama adapter with explicit provider config', () => {
@@ -176,7 +205,7 @@ describe('createLmm', () => {
     })
   })
 
-  describe('OpenAI-Compatible Providers', () => {
+  describe('openAI-Compatible Providers', () => {
     it('should create OpenAI adapter for zhipu models', () => {
       const result = createLlm('glm-4')
       expect(result._modelType).toBe('openai')
@@ -186,23 +215,32 @@ describe('createLmm', () => {
     it('should create OpenAI adapter for deepseek models', () => {
       const result = createLlm('deepseek-chat')
       expect(result._modelType).toBe('openai')
-      expect(mockCreateOpenAIAdapter).toHaveBeenCalledWith('deepseek-chat', undefined)
+      expect(mockCreateOpenAIAdapter).toHaveBeenCalledWith(
+        'deepseek-chat',
+        undefined,
+      )
     })
 
     it('should create OpenAI adapter for moonshot models', () => {
       const result = createLlm('moonshot-v1-8k')
       expect(result._modelType).toBe('openai')
-      expect(mockCreateOpenAIAdapter).toHaveBeenCalledWith('moonshot-v1-8k', undefined)
+      expect(mockCreateOpenAIAdapter).toHaveBeenCalledWith(
+        'moonshot-v1-8k',
+        undefined,
+      )
     })
 
     it('should create OpenAI adapter for qwen models', () => {
       const result = createLlm('qwen-turbo')
       expect(result._modelType).toBe('openai')
-      expect(mockCreateOpenAIAdapter).toHaveBeenCalledWith('qwen-turbo', undefined)
+      expect(mockCreateOpenAIAdapter).toHaveBeenCalledWith(
+        'qwen-turbo',
+        undefined,
+      )
     })
   })
 
-  describe('Config Handling', () => {
+  describe('config Handling', () => {
     it('should pass config to adapter', () => {
       const config = {
         apiKey: 'test-api-key',
@@ -218,17 +256,23 @@ describe('createLmm', () => {
     it('should handle empty config', () => {
       const result = createLlm('claude-3-opus', {})
       expect(result._modelType).toBe('anthropic')
-      expect(mockCreateAnthropicAdapter).toHaveBeenCalledWith('claude-3-opus', {})
+      expect(mockCreateAnthropicAdapter).toHaveBeenCalledWith(
+        'claude-3-opus',
+        {},
+      )
     })
 
     it('should handle undefined config', () => {
       const result = createLlm('claude-3-opus', undefined)
       expect(result._modelType).toBe('anthropic')
-      expect(mockCreateAnthropicAdapter).toHaveBeenCalledWith('claude-3-opus', undefined)
+      expect(mockCreateAnthropicAdapter).toHaveBeenCalledWith(
+        'claude-3-opus',
+        undefined,
+      )
     })
   })
 
-  describe('Error Handling', () => {
+  describe('error Handling', () => {
     it('should throw error for unknown model without provider', () => {
       expect(() => createLlm('unknown-model')).toThrowError(
         'Cannot infer provider for model: unknown-model',
@@ -238,7 +282,9 @@ describe('createLmm', () => {
     it('should not throw error when provider is explicitly set', () => {
       const result = createLlm('unknown-model', { provider: 'openai' })
       expect(result._modelType).toBe('openai')
-      expect(mockCreateOpenAIAdapter).toHaveBeenCalledWith('unknown-model', { provider: 'openai' })
+      expect(mockCreateOpenAIAdapter).toHaveBeenCalledWith('unknown-model', {
+        provider: 'openai',
+      })
     })
 
     it('should use explicit provider over inferred provider', () => {
@@ -250,13 +296,17 @@ describe('createLmm', () => {
     })
   })
 
-  describe('Fallback Behavior', () => {
+  describe('fallback Behavior', () => {
     it('should default to OpenAI adapter for unhandled provider', () => {
       // This test ensures that if a provider is added to inferProvider but
       // not handled in createLlm, it falls back to OpenAI adapter
-      const result = createLlm('some-model', { provider: 'unknown-provider' as any })
+      const result = createLlm('some-model', {
+        provider: 'unknown-provider' as any,
+      })
       expect(result._modelType).toBe('openai')
-      expect(mockCreateOpenAIAdapter).toHaveBeenCalledWith('some-model', { provider: 'unknown-provider' })
+      expect(mockCreateOpenAIAdapter).toHaveBeenCalledWith('some-model', {
+        provider: 'unknown-provider',
+      })
     })
   })
 })
