@@ -1,5 +1,5 @@
-import { readFile, readdir, stat, unlink, writeFile } from 'node:fs/promises'
-import { join, resolve } from 'node:path'
+import { readdir, stat, unlink, writeFile } from 'node:fs/promises'
+import { resolve } from 'node:path'
 import { logger } from '../platform/logger'
 import { BUILTIN_AGENTS } from './builtin'
 import type { Agent, CreateAgentInput, ListOptions, UpdateAgentInput } from './types'

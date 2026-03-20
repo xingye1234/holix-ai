@@ -1,4 +1,4 @@
-import { Bot, ChevronsUpDown, Sparkles } from 'lucide-react'
+import { Bot, Sparkles } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useI18n } from '@/i18n/provider'
 import { trpcClient } from '@/lib/trpc-client'
@@ -82,18 +82,18 @@ export function AgentSelector({
           >
             {selectedAgent
               ? (
-                <>
-                  <Sparkles className="h-3.5 w-3.5" />
-                  <span className="text-xs">{selectedAgent.name}</span>
-                </>
-              )
+                  <>
+                    <Sparkles className="h-3.5 w-3.5" />
+                    <span className="text-xs">{selectedAgent.name}</span>
+                  </>
+                )
               : (
-                <>
-                  <Bot className="h-3.5 w-3.5" />
-                  <span className="text-xs">{t('chat.sidebar.agents')}</span>
-                </>
-              )}
-            </Button>
+                  <>
+                    <Bot className="h-3.5 w-3.5" />
+                    <span className="text-xs">{t('chat.sidebar.agents')}</span>
+                  </>
+                )}
+          </Button>
         </PopoverTrigger>
         <PopoverContent className="w-64 p-0" align="start">
           <Command>

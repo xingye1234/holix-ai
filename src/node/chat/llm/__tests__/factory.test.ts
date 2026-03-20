@@ -1,4 +1,3 @@
-/* eslint-disable import/first */
 /**
  * LLM Factory 单元测试
  * 测试 createLlm 工厂函数的提供商选择和适配器创建逻辑

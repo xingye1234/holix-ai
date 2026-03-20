@@ -161,13 +161,13 @@ Stores runtime metadata like favorites and usage statistics using SQLite.
 ```typescript
 interface Agent {
   // Identity
-  id: string              // Derived from filename
-  name: string            // From file
-  version: string         // Default: "1.0.0"
+  id: string // Derived from filename
+  name: string // From file
+  version: string // Default: "1.0.0"
 
   // Metadata
   description: string
-  category: string        // Default: "general"
+  category: string // Default: "general"
   tags: string[]
 
   // Core

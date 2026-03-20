@@ -1,4 +1,3 @@
-/* eslint-disable import/first */
 /**
  * LLM Adapters 单元测试
  * 测试各个 LLM 适配器的配置和初始化逻辑

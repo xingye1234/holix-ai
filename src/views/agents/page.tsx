@@ -310,8 +310,10 @@ export function AgentsPage({
         case 'created':
           return 0 // Not available in current schema
         case 'lastUsed':
-          if (!a.lastUsedAt) return 1
-          if (!b.lastUsedAt) return -1
+          if (!a.lastUsedAt)
+            return 1
+          if (!b.lastUsedAt)
+            return -1
           return b.lastUsedAt - a.lastUsedAt
         case 'useCount':
           return (b.useCount || 0) - (a.useCount || 0)
@@ -779,7 +781,10 @@ export function AgentsPage({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Settings2 className="h-4 w-4 text-primary" />
-              {t('agents.form.editTitle')} - {selectedAgent?.name}
+              {t('agents.form.editTitle')}
+              {' '}
+              -
+              {selectedAgent?.name}
             </DialogTitle>
             <DialogDescription>{t('agents.form.editDialogDescription')}</DialogDescription>
           </DialogHeader>

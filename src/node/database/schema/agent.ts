@@ -1,7 +1,6 @@
 import type { InferInsertModel, InferSelectModel } from 'drizzle-orm'
-import { index } from 'drizzle-orm/sqlite-core'
+import { index, sqliteTableCreator } from 'drizzle-orm/sqlite-core'
 import * as t from 'drizzle-orm/sqlite-core'
-import { sqliteTableCreator } from 'drizzle-orm/sqlite-core'
 
 export const sqliteTable = sqliteTableCreator(name => name)
 
@@ -20,7 +19,7 @@ export const agentMetadata = sqliteTable(
     createdAt: t.integer('created_at').notNull(),
     updatedAt: t.integer('updated_at').notNull(),
   },
-  (table) => ({
+  table => ({
     nameIdx: index('idx_agent_metadata_name').on(table.name),
     favoriteIdx: index('idx_agent_metadata_favorite').on(table.favorite),
     lastUsedIdx: index('idx_agent_metadata_last_used').on(table.lastUsedAt),

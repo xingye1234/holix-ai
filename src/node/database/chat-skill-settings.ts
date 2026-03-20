@@ -35,4 +35,3 @@ export function setChatSkillSettings(chatUid: string, settings: ChatSkillSetting
   kvSet(chatSkillSettingsKey(chatUid), normalized)
   return normalized
 }
-

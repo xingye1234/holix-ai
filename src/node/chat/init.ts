@@ -73,7 +73,8 @@ export function initChat() {
 
         // TODO: 应用 Agent 的 skills 和 mcps
         // 这需要在 session orchestration 层面支持
-      } else {
+      }
+      else {
         logger.warn(`[Chat] Agent ${agentName} not found`)
       }
     }
@@ -100,8 +101,6 @@ export function initChat() {
     const contextMessages = contextSettings.timeWindowHours != null
       ? contextMessagesRaw.filter(msg => msg.createdAt >= Date.now() - contextSettings.timeWindowHours! * 60 * 60 * 1000)
       : contextMessagesRaw
-
-    const systemMessages = chat.prompts || []
 
     // 使用 SessionOrchestrator 启动会话（异步处理，不阻塞）
     const requestId = await sessionOrchestrator.startSession({

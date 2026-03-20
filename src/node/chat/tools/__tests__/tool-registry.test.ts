@@ -1,4 +1,3 @@
-/* eslint-disable import/first */
 /**
  * ToolRegistry 单元测试
  * 测试 Skills 渐进式披露的三种策略：eager、lazy、smart
@@ -110,7 +109,6 @@ vi.mock('../system', () => ({
 // Import after mocks
 // ============================================
 
-// eslint-disable-next-line perfectionist/sort-named-imports
 import { ToolRegistry, createToolRegistry } from '../tool-registry'
 
 describe('toolRegistry', () => {
