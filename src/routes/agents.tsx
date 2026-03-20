@@ -11,7 +11,13 @@ export interface Skill {
 export const Route = createFileRoute('/agents')({
   component: RouteComponent,
   loader: async () => {
-    const skills = await trpcClient.skill.list()
+    const [skillsRes, agentsRes] = await Promise.allSettled([
+      trpcClient.skill.list(),
+      trpcClient.agent.list(),
+    ])
+
+    const skills = skillsRes.status === 'fulfilled' ? skillsRes.value : []
+    const agents = agentsRes.status === 'fulfilled' ? agentsRes.value : []
 
     let mcpServers: string[] = []
     try {
@@ -27,12 +33,13 @@ export const Route = createFileRoute('/agents')({
         name: skill.name,
         description: skill.description,
       })),
+      agents,
       mcpServers,
     }
   },
 })
 
 function RouteComponent() {
-  const { skills, mcpServers } = Route.useLoaderData()
-  return <AgentsPage skills={skills} mcpServers={mcpServers} />
+  const { skills, agents, mcpServers } = Route.useLoaderData()
+  return <AgentsPage initialAgents={agents} skills={skills} mcpServers={mcpServers} />
 }

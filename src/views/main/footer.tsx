@@ -8,6 +8,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { Editor } from '@/components/editor/editor'
 import { SelectionToggle } from '@/components/message-selection'
+import AgentSelector from '@/components/agent-selector'
 import ProviderModelSelector from '@/components/provider-model-selector'
 import { Button } from '@/components/ui/button'
 import { useChatContext } from '@/context/chat'
@@ -27,6 +28,9 @@ export default function MainFooter() {
     chat?.provider ?? undefined,
   )
   const [__, setModel] = useState<string | undefined>(chat?.model ?? undefined)
+  const [selectedAgent, setSelectedAgent] = useState<string | undefined>(
+    undefined,
+  )
   const onTextChange = useCallback((text: string) => {
     setValue(text)
   }, [])
@@ -125,16 +129,16 @@ export default function MainFooter() {
   const onSend = useCallback(() => {
     if (!chat || value.trim().length === 0)
       return
-    // 这里可以调用发送消息的逻辑
 
     command('chat.message', {
       chatId: chat.uid,
       content: value,
+      agent: selectedAgent,
     })
 
     // 清空输入框
     editorRef.current?.clear({ focus: true })
-  }, [chat, value])
+  }, [chat, value, selectedAgent])
 
   const onSaveDraft = useCallback(() => {
     // Ctrl+S 保存草稿：弹窗确认并保存为 pendingMessage
@@ -292,15 +296,18 @@ export default function MainFooter() {
         />
       </div>
 
-      <div className="flex items-center h-(--app-chat-input-footer-height) px-2">
-        <div>
-          <ProviderModelSelector
-            initialProvider={chat?.provider}
-            initialModel={chat?.model}
-            onProviderChange={handleProviderChange}
-            onModelChange={handleModelChange}
-          />
-        </div>
+      <div className="flex items-center h-(--app-chat-input-footer-height) px-2 gap-2">
+        <AgentSelector
+          value={selectedAgent}
+          onChange={setSelectedAgent}
+          disabled={!chat}
+        />
+        <ProviderModelSelector
+          initialProvider={chat?.provider}
+          initialModel={chat?.model}
+          onProviderChange={handleProviderChange}
+          onModelChange={handleModelChange}
+        />
         <Button className="ml-auto" disabled={!chat || value.trim().length === 0} onClick={onSend}>
           <Send />
           Send
