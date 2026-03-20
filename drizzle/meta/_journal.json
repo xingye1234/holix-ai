@@ -36,6 +36,13 @@
       "when": 1773804899723,
       "tag": "0004_chat_context_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1742438400000,
+      "tag": "0005_agent_metadata",
+      "breakpoints": true
     }
   ]
 }

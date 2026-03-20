@@ -22,3 +22,14 @@ export const SCHEME = 'holix'
 export const BUILTIN_SKILLS_PATH = app.isPackaged
   ? join(process.resourcesPath, 'builtin-skills')
   : join(process.cwd(), 'skills')
+
+/**
+ * 自定义 agents 目录
+ * - 存储在 .holixai/agents/
+ */
+export const AGENTS_PATH = join(userDataDir, 'agents')
+
+// Ensure agents directory exists
+if (!existsSync(AGENTS_PATH)) {
+  mkdirSync(AGENTS_PATH, { recursive: true })
+}

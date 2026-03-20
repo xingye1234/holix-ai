@@ -1,3 +1,4 @@
+import { agentRouter } from './agent'
 import { approvalRouter } from './approval'
 import { chatRouter } from './chat'
 import { dialogRouter } from './dialog'
@@ -14,6 +15,7 @@ export const appRouter = router({
   skill: skillRouter,
   workspace: workspaceRouter,
   approval: approvalRouter,
+  agent: agentRouter,
 })
 
 // 导出类型
