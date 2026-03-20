@@ -34,7 +34,7 @@ export function deserializeChat(raw: RawChat): Chat {
  * 序列化 Chat 对象
  * 将对象字段转换为 JSON 字符串用于存储
  */
-export function serializeChat(chat: Partial<Chat>): Partial<RawChat> {
+export function serializeChat<T extends Partial<Chat>>(chat: T): T {
   const result: any = { ...chat }
 
   if ('prompts' in chat && chat.prompts !== undefined) {

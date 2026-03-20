@@ -5,6 +5,8 @@
  * Provides common mocks for Electron, logger, database, etc.
  */
 
+import { beforeAll, afterAll, beforeEach } from 'vitest'
+
 // ─── Mock electron（electron-log/renderer 依赖链）────────────────────────────
 vi.mock('electron', () => ({
   app: {
@@ -39,3 +41,7 @@ vi.mock('./platform/logger', () => ({
   getLogPath: vi.fn(),
   getMainLogFile: vi.fn(),
 }))
+
+// ─── 测试数据库设置 ────────────────────────────────────────────────────────────
+// 注意：测试数据库仅在需要的测试文件中手动初始化
+// 这样可以避免所有测试都承担数据库初始化的开销

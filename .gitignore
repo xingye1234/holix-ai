@@ -13,3 +13,10 @@ pnpm-debug.log*
 *.iml
 .holixai
 .claude
+
+# Test databases
+*.test.db
+*.test.db-shm
+*.test.db-wal
+test-data/
+coverage/
