@@ -5,6 +5,30 @@
 import { describe, expect, it, vi } from 'vitest'
 
 // ============================================
+// Type Definitions
+// ============================================
+
+interface MessagePayload {
+  chatId: string
+  content: string
+  replyTo: string | null
+}
+
+interface AbortPayload {
+  requestId: string | null
+  chatId: string | null
+}
+
+interface TestContextMessage {
+  role: string
+  content: string
+  kind: string
+  status: string
+  seq: number
+  createdAt: number
+}
+
+// ============================================
 // Hoisted Mocks (must be before imports)
 // ============================================
 
@@ -22,7 +46,7 @@ const mockGetLatestMessages = vi.hoisted(() => vi.fn())
 const mockUpdateLastMessagePreview = vi.hoisted(() => vi.fn())
 const mockUpdate = vi.hoisted(() => vi.fn())
 const mockProviderStore = vi.hoisted(() => ({
-  get: vi.fn(() => ({ providers: [] })),
+  get: vi.fn(() => ({ providers: [] as Array<{ name: string; apiType: string; apiKey: string; baseUrl: string }> })),
 }))
 const mockCreateLlm = vi.hoisted(() => vi.fn())
 
@@ -123,11 +147,11 @@ describe('initChat', () => {
   function getHandlers() {
     const messageHandler = mockOnCommand.mock.calls.find(
       call => call[0] === 'chat.message',
-    )?.[1]
+    )?.[1] as ((payload: MessagePayload) => Promise<void>) | undefined
 
     const abortHandler = mockOnCommand.mock.calls.find(
       call => call[0] === 'chat.abort',
-    )?.[1]
+    )?.[1] as ((payload: AbortPayload) => Promise<void>) | undefined
 
     return { messageHandler, abortHandler }
   }
@@ -139,7 +163,7 @@ describe('initChat', () => {
       if (!messageHandler)
         return
 
-      const payload = {
+      const payload: MessagePayload = {
         chatId: 'chat-123',
         content: 'Hello AI',
         replyTo: null,
@@ -162,11 +186,13 @@ describe('initChat', () => {
       if (!messageHandler)
         return
 
-      await messageHandler({
+      const payload: MessagePayload = {
         chatId: 'chat-456',
         content: 'Test message',
         replyTo: null,
-      })
+      }
+
+      await messageHandler(payload)
 
       expect(mockUpdate).toHaveBeenCalledWith('message.created', {
         chatUid: 'chat-456',
@@ -180,11 +206,13 @@ describe('initChat', () => {
       if (!messageHandler)
         return
 
-      await messageHandler({
+      const payload: MessagePayload = {
         chatId: 'chat-789',
         content: 'Preview test',
         replyTo: null,
-      })
+      }
+
+      await messageHandler(payload)
 
       expect(mockUpdate).toHaveBeenCalledWith('chat.updated', {
         chatUid: 'chat-789',
@@ -200,11 +228,13 @@ describe('initChat', () => {
       if (!messageHandler)
         return
 
-      await messageHandler({
+      const payload: MessagePayload = {
         chatId: 'non-existent',
         content: 'Test',
         replyTo: null,
-      })
+      }
+
+      await messageHandler(payload)
 
       // Should not start session if chat not found
       expect(mockSessionOrchestrator.startSession).not.toHaveBeenCalled()
@@ -224,11 +254,13 @@ describe('initChat', () => {
       if (!messageHandler)
         return
 
-      await messageHandler({
+      const payload: MessagePayload = {
         chatId: 'chat-no-provider',
         content: 'Test',
         replyTo: null,
-      })
+      }
+
+      await messageHandler(payload)
 
       // Should not start session if provider not found
       expect(mockSessionOrchestrator.startSession).not.toHaveBeenCalled()
@@ -237,22 +269,22 @@ describe('initChat', () => {
     it('should apply context time window filter', async () => {
       const now = Date.now()
       const oldMessage = {
-        role: 'user',
+        role: 'user' as const,
         content: 'Old message',
-        kind: 'message',
-        status: 'done',
+        kind: 'message' as const,
+        status: 'done' as const,
         seq: 1,
         createdAt: now - 25 * 60 * 60 * 1000, // 25 hours ago
-      } as any
+      }
 
       const recentMessage = {
-        role: 'assistant',
+        role: 'assistant' as const,
         content: 'Recent message',
-        kind: 'message',
-        status: 'done',
+        kind: 'message' as const,
+        status: 'done' as const,
         seq: 2,
         createdAt: now - 1 * 60 * 60 * 1000, // 1 hour ago
-      } as any
+      }
 
       mockGetChatByUid.mockResolvedValue({
         uid: 'chat-time-window',
@@ -271,29 +303,36 @@ describe('initChat', () => {
       if (!messageHandler)
         return
 
-      await messageHandler({
+      const payload: MessagePayload = {
         chatId: 'chat-time-window',
         content: 'Test',
         replyTo: null,
-      })
+      }
 
-      const startCall = mockSessionOrchestrator.startSession.mock.calls[0]
-      const contextMessages = startCall[0].contextMessages
+      await messageHandler(payload)
+
+      const startCall = mockSessionOrchestrator.startSession.mock.calls[0] as unknown as [{ contextMessages?: TestContextMessage[] }] | undefined
+
+      if (!startCall)
+        return
+
+      const contextMessages = startCall?.[0]?.contextMessages
 
       // Should only include recent message within time window
+      expect(Array.isArray(contextMessages)).toBe(true)
       expect(contextMessages).toHaveLength(1)
-      expect(contextMessages[0].content).toBe('Recent message')
+      expect(contextMessages?.[0].content).toBe('Recent message')
     })
 
     it('should apply max messages limit', async () => {
       const messages = Array.from({ length: 20 }, (_, i) => ({
-        role: i % 2 === 0 ? 'user' : 'assistant',
+        role: (i % 2 === 0 ? 'user' : 'assistant') as 'user' | 'assistant',
         content: `Message ${i}`,
-        kind: 'message',
-        status: 'done',
+        kind: 'message' as const,
+        status: 'done' as const,
         seq: i + 1,
         createdAt: Date.now() - i * 1000,
-      })) as any[]
+      }))
 
       mockGetChatByUid.mockResolvedValue({
         uid: 'chat-max-messages',
@@ -312,11 +351,13 @@ describe('initChat', () => {
       if (!messageHandler)
         return
 
-      await messageHandler({
+      const payload: MessagePayload = {
         chatId: 'chat-max-messages',
         content: 'Test',
         replyTo: null,
-      })
+      }
+
+      await messageHandler(payload)
 
       expect(mockGetLatestMessages).toHaveBeenCalledWith('chat-max-messages', 5)
     })
@@ -331,10 +372,12 @@ describe('initChat', () => {
 
       mockSessionOrchestrator.abortSession.mockReturnValue(true)
 
-      await abortHandler({
+      const payload: AbortPayload = {
         requestId: 'req-to-abort',
         chatId: null,
-      })
+      }
+
+      await abortHandler(payload)
 
       expect(mockSessionOrchestrator.abortSession).toHaveBeenCalledWith('req-to-abort')
     })
@@ -347,10 +390,12 @@ describe('initChat', () => {
 
       mockSessionOrchestrator.abortChatSessions.mockReturnValue(3)
 
-      await abortHandler({
+      const payload: AbortPayload = {
         requestId: null,
         chatId: 'chat-to-abort',
-      })
+      }
+
+      await abortHandler(payload)
 
       expect(mockSessionOrchestrator.abortChatSessions).toHaveBeenCalledWith('chat-to-abort')
     })
@@ -363,11 +408,13 @@ describe('initChat', () => {
 
       mockSessionOrchestrator.abortSession.mockReturnValue(false)
 
-      // Should not throw
-      await expect(abortHandler({
+      const payload: AbortPayload = {
         requestId: 'non-existent',
         chatId: null,
-      })).resolves.toBeUndefined()
+      }
+
+      // Should not throw
+      await expect(abortHandler(payload)).resolves.toBeUndefined()
     })
   })
 })
