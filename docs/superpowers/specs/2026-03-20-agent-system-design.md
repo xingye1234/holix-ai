@@ -109,11 +109,20 @@ export const agentRouter = router({
 
 #### 3. Metadata Storage (`src/node/database/agent-metadata.ts`)
 
-Stores runtime metadata like favorites and usage statistics.
+Stores runtime metadata like favorites and usage statistics using SQLite.
 
-Options:
-- **A**: SQLite table (recommended for consistency)
-- **B**: lowdb file (simpler, matches configStore pattern)
+**Database Schema**:
+```typescript
+// agent_metadata table
+{
+  id: integer primary key,
+  name: text unique not null,
+  favorite: integer default 0,
+  useCount: integer default 0,
+  lastUsedAt: integer,
+  createdAt: integer not null
+}
+```
 
 ## Data Models
 
@@ -292,9 +301,9 @@ updateAgentMetadata(agent.name, { lastUsedAt: Date.now(), useCount: +1 })
 
 ## Open Questions
 
-1. **Metadata Storage**: SQLite vs lowdb for agent metadata?
-2. **Agent Variables**: How should variables be substituted in prompts?
-3. **Agent Testing**: Should we add a "test" feature in UI?
+1. **Metadata Storage**: ✅ SQLite table (for consistency with existing database)
+2. **Agent Variables**: To be implemented in Phase 2 (prompt substitution logic)
+3. **Agent Testing**: ✅ Node-level testing only, UI testing deferred
 
 ## Dependencies
 
