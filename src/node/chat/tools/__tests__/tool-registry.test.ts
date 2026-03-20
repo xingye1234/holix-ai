@@ -63,21 +63,9 @@ const mockConfigStore = vi.hoisted(() => ({
   getData: vi.fn(() => ({})),
 }))
 
-const mockLogger = vi.hoisted(() => ({
-  info: vi.fn(),
-  debug: vi.fn(),
-  warn: vi.fn(),
-  error: vi.fn(),
-}))
-
 // ============================================
 // Module Mocks (must be before imports)
 // ============================================
-
-// Mock logger module to avoid electron-log initialization issues
-vi.mock('../../../platform/logger', () => ({
-  logger: mockLogger,
-}))
 
 // Mock config store to avoid database initialization
 vi.mock('../../../platform/config', () => ({
@@ -95,14 +83,6 @@ vi.mock('../../../constant', () => ({
   BUILTIN_SKILLS_PATH: '/mock/skills',
   userDataDir: '/mock/user-data',
   databaseUrl: ':memory:',
-}))
-
-// Mock electron
-vi.mock('electron', () => ({
-  app: {
-    isPackaged: false,
-    getPath: vi.fn(() => '/mock/path'),
-  },
 }))
 
 vi.mock('../chat', () => ({

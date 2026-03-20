@@ -6,16 +6,6 @@ import type { DraftContent } from '../../../database/schema/chat'
 import { describe, expect, it, vi } from 'vitest'
 import { ToolCallTracker } from '../tool-call-tracker'
 
-// Mock logger to avoid Electron dependency
-vi.mock('../../../platform/logger', () => ({
-  logger: {
-    debug: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-  },
-}))
-
 describe('toolCallTracker', () => {
   const tracker = new ToolCallTracker()
 

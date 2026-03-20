@@ -21,10 +21,6 @@ import { loadJsTools } from '../adapters/js'
 
 // ─── Mocks ────────────────────────────────────────────────────────────────────
 
-vi.mock('../../../platform/logger', () => ({
-  logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
-}))
-
 // getSkillConfig 可控返回
 const mockGetSkillConfig = vi.fn((_skillName: string, _fieldKeys: string[]): Record<string, unknown> => ({}))
 

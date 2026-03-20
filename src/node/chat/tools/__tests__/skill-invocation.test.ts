@@ -9,10 +9,6 @@ vi.mock('../../../database/skill-invocation-log', () => ({
   recordSkillInvocation: (...args: unknown[]) => mockRecordSkillInvocation(...(args as Parameters<typeof mockRecordSkillInvocation>)),
 }))
 
-vi.mock('../../../platform/logger', () => ({
-  logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
-}))
-
 describe('wrapWithSkillInvocationLog', () => {
   it('记录成功调用的参数和结果', async () => {
     const tool = new DynamicStructuredToolImpl({

@@ -6,15 +6,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { StreamProcessor } from '../stream-processor'
 
 // Mock dependencies
-vi.mock('../../../platform/logger', () => ({
-  logger: {
-    debug: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-  },
-}))
-
 vi.mock('../../events/chat-event-emitter', () => ({
   chatEventEmitter: {
     emitMessageStreaming: vi.fn(),

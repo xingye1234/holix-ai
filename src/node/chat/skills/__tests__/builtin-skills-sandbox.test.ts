@@ -6,10 +6,6 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { loadJsTools } from '../adapters/js'
 
-vi.mock('../../../platform/logger', () => ({
-  logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
-}))
-
 vi.mock('../../../database/skill-config', () => ({
   getSkillConfig: () => ({}),
   setSkillConfigField: vi.fn(),

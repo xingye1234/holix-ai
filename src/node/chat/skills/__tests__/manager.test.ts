@@ -13,15 +13,6 @@ import { scanSkillsDir } from '../loader'
 
 // ─── Mock 依赖 ────────────────────────────────────────────────────────────────
 
-vi.mock('../../../platform/logger', () => ({
-  logger: {
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    debug: vi.fn(),
-  },
-}))
-
 // mock adapters 避免 langchain 在单元测试中被实例化
 vi.mock('../adapters/js', () => ({
   loadJsTools: vi.fn(() => []),

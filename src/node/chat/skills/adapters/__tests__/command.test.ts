@@ -7,15 +7,6 @@ import { commandToTool, scriptToTool } from '../command'
 
 // ─── Mock 依赖 ────────────────────────────────────────────────────────────────
 
-vi.mock('../../../../platform/logger', () => ({
-  logger: {
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    debug: vi.fn(),
-  },
-}))
-
 // skill-config 的依赖链包含 Electron，必须 mock
 vi.mock('../../../../database/skill-config', () => ({
   getSkillConfig: vi.fn(() => ({})),

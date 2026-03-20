@@ -54,10 +54,6 @@ vi.mock('../../../database/kv-operations', () => ({
   kvGetObject: vi.fn(),
 }))
 
-vi.mock('../../../platform/logger', () => ({
-  logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
-}))
-
 const mockRecordSkillInvocation = vi.hoisted(() => vi.fn())
 
 vi.mock('../../../database/skill-invocation-log', () => ({

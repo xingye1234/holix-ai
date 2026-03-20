@@ -9,45 +9,11 @@
  * Mock 策略：
  * - `../../database/chat-operations` → 完全 mock，控制返回值
  * - `../../platform/update`          → spy，验证 IPC 通知
- * - `@/lib/logger` (electron-log)    → 静默
+ *
+ * 通用 mocks（electron, logger, database/connect）已在 test-setup.ts 中统一配置
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-// ─── Mock electron（electron-log/renderer 依赖链）────────────────────────────
-vi.mock('electron', () => ({
-  app: {
-    isPackaged: false,
-    getPath: vi.fn(() => '/tmp'),
-    setLoginItemSettings: vi.fn(),
-  },
-  net: { fetch: vi.fn() },
-}))
-
-// ─── Mock better-sqlite3（避免原生模块加载问题）────────────────────────────────
-vi.mock('better-sqlite3', () => ({
-  default: vi.fn(),
-}))
-
-// ─── Mock database/connect（防止 top-level 代码执行）──────────────────────────
-vi.mock('../../database/connect', () => ({
-  sqlite: {},
-  db: {},
-  getDatabase: vi.fn(),
-  migrateDb: vi.fn(),
-}))
-
-// ─── Mock 前端 logger（server/chat.ts 通过 @/lib/logger 引入）────────────────
-vi.mock('@/lib/logger', () => ({
-  default: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
-}))
-
-// ─── Mock 平台 logger（server/platform/update.ts 通过 ../platform/logger 引入）────
-vi.mock('../../platform/logger', () => ({
-  logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
-  getLogPath: vi.fn(),
-  getMainLogFile: vi.fn(),
-}))
 
 // ─── Mock 数据库操作 ─────────────────────────────────────────────────────────
 vi.mock('../../database/chat-operations', () => ({
