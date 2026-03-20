@@ -1,3 +1,4 @@
+/* eslint-disable import/first */
 /**
  * chatRouter 单元测试
  *
@@ -13,12 +14,6 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-// ─── 被测模块 ─────────────────────────────────────────────────────────────────
-import * as chatOps from '../../database/chat-operations'
-import { update } from '../../platform/update'
-import { chatRouter } from '../chat'
-import { createCaller } from '../trpc'
-
 // ─── Mock electron（electron-log/renderer 依赖链）────────────────────────────
 vi.mock('electron', () => ({
   app: {
@@ -29,9 +24,29 @@ vi.mock('electron', () => ({
   net: { fetch: vi.fn() },
 }))
 
+// ─── Mock better-sqlite3（避免原生模块加载问题）────────────────────────────────
+vi.mock('better-sqlite3', () => ({
+  default: vi.fn(),
+}))
+
+// ─── Mock database/connect（防止 top-level 代码执行）──────────────────────────
+vi.mock('../../database/connect', () => ({
+  sqlite: {},
+  db: {},
+  getDatabase: vi.fn(),
+  migrateDb: vi.fn(),
+}))
+
 // ─── Mock 前端 logger（server/chat.ts 通过 @/lib/logger 引入）────────────────
 vi.mock('@/lib/logger', () => ({
   default: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
+}))
+
+// ─── Mock 平台 logger（server/platform/update.ts 通过 ../platform/logger 引入）────
+vi.mock('../../platform/logger', () => ({
+  logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
+  getLogPath: vi.fn(),
+  getMainLogFile: vi.fn(),
 }))
 
 // ─── Mock 数据库操作 ─────────────────────────────────────────────────────────
@@ -72,9 +87,19 @@ function makeChat(overrides = {}) {
     pendingMessages: null,
     prompts: [] as any,
     workspace: null,
+    contextSettings: {
+      maxMessages: 10,
+      timeWindowHours: 24,
+    },
     ...overrides,
   }
 }
+
+// ─── 被测模块 ─────────────────────────────────────────────────────────────────
+import * as chatOps from '../../database/chat-operations'
+import { update } from '../../platform/update'
+import { chatRouter } from '../chat'
+import { createCaller } from '../trpc'
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
