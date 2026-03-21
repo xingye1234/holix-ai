@@ -4,6 +4,7 @@ import { logger } from '../platform/logger'
 import { BUILTIN_AGENTS } from './builtin'
 import type { Agent, CreateAgentInput, ListOptions, UpdateAgentInput } from './types'
 import { loadAndValidateAgentFile, validateAgentData, validateMap } from './validator'
+import { AGENTS_PATH } from '../constant'
 
 export class Agents {
   private agentsDir: string
@@ -365,7 +366,6 @@ export class Agents {
     const filePath = this.getAgentFilePath(agent.name)
 
     // Remove runtime fields before saving
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { id, isBuiltin, createdAt, updatedAt, ...saveData } = agent
 
     await writeFile(filePath, JSON.stringify(saveData, null, 2), 'utf-8')
@@ -399,3 +399,5 @@ export class Agents {
     return order === 'desc' ? sorted.reverse() : sorted
   }
 }
+
+export const agents = new Agents(AGENTS_PATH)

@@ -16,7 +16,6 @@ import {
   Upload,
   X,
 } from 'lucide-react'
-import type { Agent } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { useI18n } from '@/i18n/provider'
@@ -478,8 +477,8 @@ export function AgentsPage({
 
   const handleImportAgent = async () => {
     try {
-      const parsed = JSON.parse(importJson)
-      const result = await trpcClient.agent.import({ json: importJson })
+      JSON.parse(importJson) // validate JSON before sending
+      await trpcClient.agent.import({ json: importJson })
       await loadAgents()
       setImportJson('')
       setImportDialogOpen(false)

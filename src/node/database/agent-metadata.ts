@@ -26,6 +26,8 @@ export async function getOrCreateAgentMetadata(name: string): Promise<AgentMetad
     name,
     favorite: false,
     useCount: 0,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
   }).returning()
   return result[0]
 }
@@ -49,6 +51,8 @@ export async function updateAgentMetadata(
     const result = await db.insert(agentMetadata).values({
       name,
       ...updates,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
     }).returning()
     return result[0]
   }

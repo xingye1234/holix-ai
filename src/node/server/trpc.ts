@@ -125,7 +125,9 @@ export function router<T extends Router>(routes: T): T {
  */
 export type CallerType<T extends Router> = {
   [K in keyof T]: T[K] extends Procedure<infer TInput, infer TOutput>
-    ? (input: TInput) => Promise<TOutput>
+    ? undefined extends TInput
+      ? (input?: TInput) => Promise<TOutput>
+      : (input: TInput) => Promise<TOutput>
     : T[K] extends Router
       ? CallerType<T[K]>
       : never;
