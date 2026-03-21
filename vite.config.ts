@@ -10,6 +10,8 @@ export default defineConfig(() => {
     build: {
       outDir: './.holix/client',
       chunkSizeWarningLimit: 1500,
+      // 启用 source maps
+      sourcemap: true,
       rollupOptions: {
         input: {
           index: path.resolve(__dirname, 'index.html'),

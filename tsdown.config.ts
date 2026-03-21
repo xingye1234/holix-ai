@@ -42,6 +42,8 @@ export default defineConfig({
       }
 
       ctx.options.minify = !isDev
+      // 在开发和生产环境都启用 source maps
+      ctx.options.sourcemap = true
     },
   },
   external: [

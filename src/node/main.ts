@@ -1,5 +1,7 @@
 import { resolve } from 'node:path'
 import process from 'node:process'
+// 启用 source map 支持
+import 'source-map-support/register'
 import { createRouter } from '@holix/router'
 import { createStaticMiddleware } from '@holix/static'
 import { app, protocol, shell } from 'electron'
