@@ -359,7 +359,10 @@
     "generationError": "Generation error",
     "workspaceFiles": "Workspace files",
     "scrollToBottom": "Scroll to bottom",
-    "settings": "Settings"
+    "settings": "Settings",
+    "preview": "Preview",
+    "delete": "Delete message",
+    "stopGeneration": "Stop generating"
   },
   "selector": {
     "selectProvider": "Select provider",

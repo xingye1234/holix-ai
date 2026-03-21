@@ -359,7 +359,10 @@
     "generationError": "生成出错",
     "workspaceFiles": "工作区文件",
     "scrollToBottom": "回到底部",
-    "settings": "设置"
+    "settings": "设置",
+    "preview": "放大查看",
+    "delete": "删除消息",
+    "stopGeneration": "停止生成"
   },
   "selector": {
     "selectProvider": "选择供应商",
