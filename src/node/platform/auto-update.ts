@@ -2,7 +2,7 @@ import type { UpdateInfo as ElectronUpdateInfo, ProgressInfo, UpdateDownloadedEv
 import { logger } from './logger'
 import { update } from './update'
 
-// eslint-disable-next-line ts/no-require-imports, perfectionist/sort-imports
+// eslint-disable-next-line ts/no-require-imports
 const { autoUpdater }: typeof import('electron-updater') = require('electron-updater')
 
 export function initAutoUpdater() {

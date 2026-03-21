@@ -5,6 +5,7 @@ export type SendChatMessageCommand = Command<'chat.message', {
   chatId: string
   content: string // 本次消息文本
   replyTo?: string | null // 可选：引用的消息 id
+  agent?: string // 可选：使用的 agent 名称
 }>
 
 // 结束会话（可用于中止或标记会话完成）

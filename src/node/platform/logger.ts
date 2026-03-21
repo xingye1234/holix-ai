@@ -4,7 +4,7 @@ import { app } from 'electron'
 import { APP_DATA_PATH } from '../constant'
 import { setupMainLogForwarder } from './main-log-forwarder'
 
-// eslint-disable-next-line ts/no-require-imports, perfectionist/sort-imports
+// eslint-disable-next-line ts/no-require-imports
 const logger: typeof import('electron-log') = require('electron-log')
 /**
  * 获取日志文件路径

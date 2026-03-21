@@ -1,4 +1,3 @@
-/* eslint-disable import/first */
 /**
  * chatRouter 单元测试
  *

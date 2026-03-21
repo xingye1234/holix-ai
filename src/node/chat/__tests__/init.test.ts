@@ -46,7 +46,7 @@ const mockGetLatestMessages = vi.hoisted(() => vi.fn())
 const mockUpdateLastMessagePreview = vi.hoisted(() => vi.fn())
 const mockUpdate = vi.hoisted(() => vi.fn())
 const mockProviderStore = vi.hoisted(() => ({
-  get: vi.fn(() => ({ providers: [] as Array<{ name: string; apiType: string; apiKey: string; baseUrl: string }> })),
+  get: vi.fn(() => ({ providers: [] as Array<{ name: string, apiType: string, apiKey: string, baseUrl: string }> })),
 }))
 const mockCreateLlm = vi.hoisted(() => vi.fn())
 

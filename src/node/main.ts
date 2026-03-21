@@ -5,8 +5,9 @@ import 'source-map-support/register'
 import { createRouter } from '@holix/router'
 import { createStaticMiddleware } from '@holix/static'
 import { app, protocol, shell } from 'electron'
+import { agents } from './agents'
 import { initChat } from './chat/init'
-import { SCHEME } from './constant'
+import { AGENTS_PATH, SCHEME } from './constant'
 import { migrateDb } from './database/connect'
 import { initAutoUpdater } from './platform/auto-update'
 import { onChannelRouter } from './platform/channel'
@@ -205,6 +206,12 @@ async function bootstrap() {
       {
         name: 'Initialize MCP store',
         execute: () => mcpStore.init(),
+        critical: true,
+        timeout: 3000,
+      },
+      {
+        name: 'Initialize agents',
+        execute: () => agents.init(),
         critical: true,
         timeout: 3000,
       },
