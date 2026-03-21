@@ -211,6 +211,14 @@
         "docs": "Documentation",
         "feedback": "Feedback",
         "github": "GitHub Repository"
+      },
+      "fonts": {
+        "title": "Open Source Font Credits",
+        "description": "This app uses the following open source fonts. Thanks to the authors for their contributions.",
+        "interDescription": "A modern variable sans-serif typeface optimized for screen readability",
+        "interAuthor": "Designed by Rasmus Andersson",
+        "interLicense": "License: SIL Open Font License 1.1",
+        "viewSource": "View Source"
       }
     },
     "mcp": {
@@ -339,8 +347,19 @@
     "inputPlaceholder": "Ask anything",
     "draftSaved": "Saved as draft",
     "draftError": "Failed to save draft",
+    "saveDraftPrompt": "Save as draft?",
     "canceling": "Canceling generation...",
-    "cancelError": "Cannot cancel: missing request ID"
+    "cancelError": "Cannot cancel: missing request ID",
+    "previewFailed": "Failed to open window, please check system settings",
+    "copied": "Copied",
+    "copy": "Copy message",
+    "export": "Export message",
+    "toolResult": "Result",
+    "toolDenied": "Denial reason",
+    "generationError": "Generation error",
+    "workspaceFiles": "Workspace files",
+    "scrollToBottom": "Scroll to bottom",
+    "settings": "Settings"
   },
   "selector": {
     "selectProvider": "Select provider",

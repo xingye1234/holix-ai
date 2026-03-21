@@ -12,12 +12,14 @@ import ProviderModelSelector from '@/components/provider-model-selector'
 import { Button } from '@/components/ui/button'
 import { useChatContext } from '@/context/chat'
 import { useSettingsPanel } from '@/context/settings-panel'
+import { useI18n } from '@/i18n/provider'
 import { command } from '@/lib/command'
 import { trpcClient } from '@/lib/trpc-client'
 import { estimateTokens, formatTokenCount } from '../../share/token'
 import DraftsView from './drafts'
 
 export default function MainFooter() {
+  const { t } = useI18n()
   const editorRef = useRef<EditorHandle>(null)
   const [value, setValue] = useState('')
   const { chat, pendingMessages, isAtBottom, scrollToBottomRef } = useChatContext()
@@ -78,7 +80,7 @@ export default function MainFooter() {
       ? {
           sources: [{
             trigger: '#' as const,
-            title: '工作区文件',
+            title: t('message.workspaceFiles'),
             suggestions: workspaceFileSuggestions,
           }],
         }
@@ -144,10 +146,10 @@ export default function MainFooter() {
 
     saveDraftInProgress.current = true
 
-    toast('保存为草稿？', {
+    toast(t('message.saveDraftPrompt'), {
       position: 'bottom-center',
       action: {
-        label: '保存',
+        label: t('common.save'),
         onClick: async () => {
           try {
             const pending: PendingMessage = {
@@ -163,11 +165,11 @@ export default function MainFooter() {
               pendingMessages: [...pendingMessages, pending],
             })
 
-            toast.success('已保存为草稿')
+            toast.success(t('message.draftSaved'))
           }
           catch (err) {
             console.error('Failed to save draft:', err)
-            toast.error('保存草稿失败')
+            toast.error(t('message.draftError'))
           }
           finally {
             saveDraftInProgress.current = false
@@ -176,7 +178,7 @@ export default function MainFooter() {
       },
 
       cancel: {
-        label: '取消',
+        label: t('common.cancel'),
         onClick() {
           saveDraftInProgress.current = false
         },
@@ -245,7 +247,7 @@ export default function MainFooter() {
               onClick={() => scrollToBottomRef.current?.()}
             >
               <ChevronsDown className="h-3.5 w-3.5" />
-              回到底部
+              {t('message.scrollToBottom')}
             </Button>
           </motion.div>
         )}
@@ -258,7 +260,7 @@ export default function MainFooter() {
           <Coins className="w-4 h-4" />
           <span>{formatTokenCount(estimatedTokens)}</span>
           <SelectionToggle />
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={toggleSettingsPanel} title="设置">
+          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={toggleSettingsPanel} title={t('message.settings')}>
             <Settings className="w-4 h-4" />
           </Button>
         </div>
@@ -266,8 +268,8 @@ export default function MainFooter() {
       <div className="h-(--app-chat-input-height) my-(--app-chat-input-gap) px-2">
         <Editor
           ref={editorRef}
-          placeholder="请输入问题"
-          ariaPlaceholder="请输入问题"
+          placeholder={t('message.inputPlaceholder')}
+          ariaPlaceholder={t('message.inputPlaceholder')}
           rootClassName="min-h-(--app-chat-input-height)"
           wrapperClassName="h-(--app-chat-input-height)"
           onError={(err) => {

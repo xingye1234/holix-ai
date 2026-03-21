@@ -4,6 +4,7 @@
  */
 import { Check, Copy, Download } from 'lucide-react'
 import { useState } from 'react'
+import { useI18n } from '@/i18n/provider'
 import { Button } from '@/components/ui/button'
 import { formatWithLocalTZ } from '@/lib/time'
 import { cn } from '@/lib/utils'
@@ -15,6 +16,7 @@ interface MessageFooterProps {
 }
 
 export function MessageFooter({ content, createdAt, className }: MessageFooterProps) {
+  const { t } = useI18n()
   const [copied, setCopied] = useState(false)
   const tokenCount = content ? Math.ceil(content.length / 4) : 0
 
@@ -51,7 +53,7 @@ export function MessageFooter({ content, createdAt, className }: MessageFooterPr
           size="sm"
           className="h-6 w-6 p-0 opacity-0 group-hover:opacity-50 hover:opacity-100! transition-opacity"
           onClick={handleCopy}
-          title={copied ? '已复制' : '复制消息'}
+          title={copied ? t('message.copied') : t('message.copy')}
         >
           {copied
             ? <Check className="w-3 h-3 text-green-500" />
@@ -61,7 +63,7 @@ export function MessageFooter({ content, createdAt, className }: MessageFooterPr
           variant="ghost"
           size="sm"
           className="h-6 w-6 p-0 opacity-0 group-hover:opacity-50 hover:opacity-100! transition-opacity"
-          title="导出消息"
+          title={t('message.export')}
           onClick={() => {
             // TODO: 实现导出功能
           }}

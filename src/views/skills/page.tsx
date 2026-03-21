@@ -511,7 +511,7 @@ export function SkillsPage({ skills, config }: { skills: Skill[], config: Config
   ]
 
   return (
-    <div className="h-full overflow-y-auto">
+    <div className="h-full overflow-y-auto w-full">
       <div className="max-w-6xl mx-auto p-6">
         {/* 页面头部 */}
         <div className="mb-8">

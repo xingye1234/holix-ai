@@ -211,6 +211,14 @@
         "docs": "使用文档",
         "feedback": "问题反馈",
         "github": "GitHub 仓库"
+      },
+      "fonts": {
+        "title": "开源字体致谢",
+        "description": "本应用使用了以下开源字体，感谢作者的贡献。",
+        "interDescription": "专为屏幕阅读优化的现代无衬线可变字体",
+        "interAuthor": "设计者：Rasmus Andersson",
+        "interLicense": "许可证：SIL Open Font License 1.1",
+        "viewSource": "查看来源"
       }
     },
     "mcp": {
@@ -339,8 +347,19 @@
     "inputPlaceholder": "请输入问题",
     "draftSaved": "已保存为草稿",
     "draftError": "保存草稿失败",
+    "saveDraftPrompt": "保存为草稿？",
     "canceling": "正在取消生成...",
-    "cancelError": "无法取消：缺少请求ID"
+    "cancelError": "无法取消：缺少请求ID",
+    "previewFailed": "新窗口打开失败，请检查系统设置",
+    "copied": "已复制",
+    "copy": "复制消息",
+    "export": "导出消息",
+    "toolResult": "结果",
+    "toolDenied": "拒绝原因",
+    "generationError": "生成出错",
+    "workspaceFiles": "工作区文件",
+    "scrollToBottom": "回到底部",
+    "settings": "设置"
   },
   "selector": {
     "selectProvider": "选择供应商",

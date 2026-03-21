@@ -10,6 +10,7 @@
 import type { DraftSegment } from '@/node/database/schema/chat'
 import { CheckCircle2, ChevronDown, ChevronRight, Loader2, Terminal, XCircle } from 'lucide-react'
 import { memo, useState } from 'react'
+import { useI18n } from '@/i18n/provider'
 import { cn } from '@/lib/utils'
 
 /**
@@ -29,6 +30,7 @@ interface ToolCallCardProps {
 }
 
 export const ToolCallCard = memo(({ pair, isStreaming }: ToolCallCardProps) => {
+  const { t } = useI18n()
   const { request, result } = pair
   const [argsOpen, setArgsOpen] = useState(false)
   const [resultOpen, setResultOpen] = useState(true)
@@ -123,7 +125,7 @@ export const ToolCallCard = memo(({ pair, isStreaming }: ToolCallCardProps) => {
           >
             {resultOpen ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
             <span className="text-[10px] uppercase tracking-wide">
-              {isDenied ? '拒绝原因' : '结果'}
+              {isDenied ? t('message.toolDenied') : t('message.toolResult')}
             </span>
           </button>
           {resultOpen && (

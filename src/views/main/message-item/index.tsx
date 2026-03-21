@@ -1,29 +1,16 @@
-import {
-  AlertCircle,
-  Bot,
-  Copy,
-  Download,
-  Expand,
-  OctagonX,
-  Sparkles,
-  User,
-} from 'lucide-react'
+import { Sparkles } from 'lucide-react'
 import { memo, useCallback, useMemo } from 'react'
 import { toast } from 'sonner'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Checkbox } from '@/components/ui/checkbox'
-import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu'
+import { useI18n } from '@/i18n/provider'
 import { useMessageById } from '@/hooks/message'
 import { command } from '@/lib/command'
 import { openMessagePreviewWindow, saveMessagesToFile } from '@/lib/message-utils'
-import { formatWithLocalTZ } from '@/lib/time'
 import { cn } from '@/lib/utils'
 import useMessageSelection from '@/store/message-selection'
 import useUI from '@/store/ui'
-import { MessageFooter } from './footer'
-import { GeneratingIndicator } from './generating'
-import { MessageMarkdown } from './markdown'
-import { pairToolCallSegments, ToolCallCard } from './tool-call-card'
+import { ArticleLayout } from './article-layout'
+import { ChatLayout } from './chat-layout'
+import { pairToolCallSegments } from './tool-call-card'
 
 interface MessageItemProps {
   id: string
@@ -33,30 +20,14 @@ interface MessageItemProps {
 
 // ✅ Telegram 架构：只有该消息更新时才重渲染
 export const MessageItem = memo(({ id, index, onDelete }: MessageItemProps) => {
+  const { t } = useI18n()
   const message = useMessageById(id)
   const layoutMode = useUI(state => state.layoutMode)
-
-  // 消息选择相关状态
   const isSelectionMode = useMessageSelection(state => state.isSelectionMode)
-  const isSelected = useMessageSelection(state => state.isMessageSelected(id))
-  const toggleMessageSelection = useMessageSelection(state => state.toggleMessageSelection)
 
-  if (!message)
-    return null
-
-  const isUser = message.role === 'user'
-  const isSystem = message.role === 'system'
-  const isError = message.status === 'error'
-  const isStreaming = message.status === 'streaming'
-  const isPending = message.status === 'pending'
-  const generating = !isUser && (isStreaming || isPending)
-
-  // 工具调用状态
-  const isToolRunning = message.toolStatus?.running ?? false
-  const runningTools = message.toolStatus?.tools ?? []
-
-  /** 最终展示内容 */
   const content = useMemo(() => {
+    if (!message)
+      return ''
     if (message.content)
       return message.content
     if (message.draftContent) {
@@ -67,10 +38,11 @@ export const MessageItem = memo(({ id, index, onDelete }: MessageItemProps) => {
         .join('')
     }
     return ''
-  }, [message.content, message.draftContent])
+  }, [message?.content, message?.draftContent])
 
-  /** 配对好的工具调用（请求 + 结果） */
   const toolCallPairs = useMemo(() => {
+    if (!message)
+      return []
     if (message.toolCalls?.length) {
       return message.toolCalls.map((call) => {
         const request = {
@@ -96,60 +68,59 @@ export const MessageItem = memo(({ id, index, onDelete }: MessageItemProps) => {
         return { request, result }
       })
     }
-    if (!message.draftContent)
-      return []
-    return pairToolCallSegments(message.draftContent)
-  }, [message.draftContent, message.toolCalls])
+    return message.draftContent ? pairToolCallSegments(message.draftContent) : []
+  }, [message?.draftContent, message?.toolCalls])
 
-  const handleCancelGeneration = useCallback(() => {
-    if (message.requestId) {
+  const onCancelGeneration = useCallback(() => {
+    if (message?.requestId) {
       command('chat.abort', { requestId: message.requestId })
-      toast.success('正在取消生成...')
+      toast.success(t('message.canceling'))
     }
     else {
-      toast.error('无法取消：缺少请求ID')
+      toast.error(t('message.cancelError'))
     }
-  }, [message.requestId])
+  }, [message?.requestId])
 
-  const deleteHandler = useCallback(() => onDelete?.(id), [onDelete, id])
-
-  const handlePreview = useCallback(() => {
-    const win = openMessagePreviewWindow([
-      {
-        id,
-        role: message.role,
-        content,
-        createdAt: message.createdAt,
-      },
-    ])
-
+  const onPreview = useCallback(() => {
+    if (!message)
+      return
+    const win = openMessagePreviewWindow([{ id, role: message.role, content, createdAt: message.createdAt }])
     if (!win)
-      toast.error('新窗口打开失败，请检查系统设置')
-  }, [content, id, message.createdAt, message.role])
+      toast.error(t('message.previewFailed'))
+  }, [content, id, message?.createdAt, message?.role])
 
-  const handleExport = useCallback(async () => {
+  const onExport = useCallback(async () => {
+    if (!message)
+      return
     const result = await saveMessagesToFile({
       messages: [{ id, role: message.role, content, createdAt: message.createdAt }],
       format: 'md',
       suggestedName: `message-${id}.md`,
     })
+    if (result.canceled)
+      toast.info(t('preview.exportCanceled'))
+    else
+      toast.success(t('preview.exportSuccess', { filePath: result.filePath }))
+  }, [content, id, message?.createdAt, message?.role])
 
-    if (result.canceled) {
-      toast.info('已取消导出')
-      return
-    }
+  const handleDelete = useCallback(() => onDelete?.(id), [onDelete, id])
 
-    toast.success(`导出成功：${result.filePath}`)
-  }, [content, id, message.createdAt, message.role])
+  if (!message)
+    return null
 
-  // ── system 消息（两种布局相同） ──────────────────────────────────────────
+  const isUser = message.role === 'user'
+  const isSystem = message.role === 'system'
+  const isError = message.status === 'error'
+  const isStreaming = message.status === 'streaming'
+  const isPending = message.status === 'pending'
+  const generating = !isUser && (isStreaming || isPending)
+  const isToolRunning = message.toolStatus?.running ?? false
+  const runningTools = message.toolStatus?.tools ?? []
+
   if (isSystem) {
     return (
       <div
-        className={cn(
-          'flex justify-center my-4 transition-all duration-200',
-          isSelectionMode && 'opacity-50',
-        )}
+        className={cn('flex justify-center my-4 transition-all duration-200', isSelectionMode && 'opacity-50')}
         data-message-id={id}
         data-message-index={index}
       >
@@ -161,353 +132,28 @@ export const MessageItem = memo(({ id, index, onDelete }: MessageItemProps) => {
     )
   }
 
-  // ── 工具调用列表（两种布局共用） ─────────────────────────────────────────
-  const toolCallList = !isUser && toolCallPairs.length > 0 && (
-    <div className="flex flex-col gap-1.5 mb-2 w-full">
-      {toolCallPairs.map(pair => (
-        <ToolCallCard
-          key={pair.request.id}
-          pair={pair}
-          isStreaming={isStreaming}
-        />
-      ))}
-    </div>
-  )
-
-  // ── Article 布局（ChatGPT 风格）─────────────────────────────────────────
-  if (layoutMode === 'article') {
-    return (
-      <div
-        className={cn(
-          'w-full max-w-3xl mx-auto px-6 py-4 group transition-all duration-200 relative rounded-lg',
-          isSelected && 'bg-primary/10 border-l-4 border-primary shadow-sm',
-          isSelectionMode && 'hover:bg-accent/20 rounded-md',
-        )}
-        data-message-id={id}
-        data-message-index={index}
-      >
-        {isUser
-          ? (
-            /* 用户消息：右对齐气泡 */
-              <div className="flex justify-end items-start gap-2">
-                {/* 选择模式下的 checkbox */}
-                {isSelectionMode && (
-                  <Checkbox
-                    checked={isSelected}
-                    onCheckedChange={() => toggleMessageSelection(id)}
-                    className="mt-2"
-                  />
-                )}
-                <ContextMenu>
-                  <ContextMenuTrigger asChild>
-                    <div className="max-w-[75%] bg-primary text-primary-foreground rounded-2xl rounded-tr-none px-4 py-2.5 text-sm transition-all duration-200 cursor-pointer" onClick={() => isSelectionMode && toggleMessageSelection(id)} style={{ boxShadow: 'var(--message-user-shadow)' }}>
-                      <p className="leading-relaxed whitespace-pre-wrap wrap-break-word">{content}</p>
-                      <div className="flex items-center justify-end mt-1">
-                        <span className="text-[10px] opacity-40">{formatWithLocalTZ(message.createdAt, 'HH:mm')}</span>
-                      </div>
-                    </div>
-                  </ContextMenuTrigger>
-                  <ContextMenuContent>
-                    <ContextMenuItem onClick={() => content && navigator.clipboard.writeText(content)}>
-                      <Copy className="w-3.5 h-3.5 mr-2" />
-                      复制消息
-                    </ContextMenuItem>
-                    <ContextMenuItem onClick={handlePreview}>
-                      <Expand className="w-3.5 h-3.5 mr-2" />
-                      放大查看
-                    </ContextMenuItem>
-                    <ContextMenuItem onClick={handleExport}>
-                      <Download className="w-3.5 h-3.5 mr-2" />
-                      导出消息
-                    </ContextMenuItem>
-                    <ContextMenuItem variant="destructive" onClick={deleteHandler}>
-                      删除消息
-                    </ContextMenuItem>
-                  </ContextMenuContent>
-                </ContextMenu>
-              </div>
-            )
-          : (
-            /* AI 消息：全宽文章式 */
-              <div className="flex flex-col gap-2">
-                {/* 标题行：avatar + 角色名 + checkbox */}
-                <div className="flex items-center gap-2 mb-1">
-                  {isSelectionMode && (
-                    <Checkbox
-                      checked={isSelected}
-                      onCheckedChange={() => toggleMessageSelection(id)}
-                    />
-                  )}
-                  <Avatar className="w-6 h-6 border shadow-sm">
-                    <AvatarImage src="" />
-                    <AvatarFallback className="bg-secondary text-secondary-foreground">
-                      <Bot className="w-3.5 h-3.5" />
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="text-xs font-medium text-muted-foreground">AI</span>
-                </div>
-
-                {/* 工具调用 */}
-                {toolCallList}
-
-                {/* 正文 */}
-                <ContextMenu>
-                  <ContextMenuTrigger asChild>
-                    <div
-                      className={cn(
-                        'text-sm leading-relaxed transition-all duration-200 cursor-pointer',
-                        isError && 'text-destructive',
-                        isPending && 'opacity-70',
-                      )}
-                      onClick={() => isSelectionMode && toggleMessageSelection(id)}
-                      style={{
-                        ...(isError && !isUser ? { backgroundColor: 'var(--message-error-bg)', padding: '0.5rem', borderRadius: '0.5rem' } : {}),
-                        ...(isPending && !isUser ? { backgroundColor: 'var(--message-thinking-bg)', padding: '0.5rem', borderRadius: '0.5rem' } : {}),
-                      }}
-                    >
-                      {isError && (
-                        <div className="flex items-center gap-2 mb-2 text-destructive font-medium">
-                          <AlertCircle className="w-4 h-4 shrink-0" />
-                          <span>生成出错</span>
-                        </div>
-                      )}
-
-                      {generating && !content
-                        ? (
-                            <GeneratingIndicator
-                              isPending={isPending}
-                              isToolRunning={isToolRunning}
-                              runningTools={runningTools}
-                            />
-                          )
-                        : (
-                            <MessageMarkdown
-                              content={content || (isError ? (message.error ?? '') : '')}
-                              isUser={false}
-                              isStreaming={isStreaming && !!content}
-                            />
-                          )}
-
-                      {isError && message.error && (
-                        <div className="mt-2 text-xs opacity-70 border-t border-destructive/20 pt-2">
-                          {message.error}
-                        </div>
-                      )}
-                    </div>
-                  </ContextMenuTrigger>
-                  <ContextMenuContent>
-                    {!generating && (
-                      <>
-                        <ContextMenuItem onClick={() => content && navigator.clipboard.writeText(content)}>
-                          <Copy className="w-3.5 h-3.5 mr-2" />
-                          复制消息
-                        </ContextMenuItem>
-                        <ContextMenuItem onClick={handlePreview}>
-                          <Expand className="w-3.5 h-3.5 mr-2" />
-                          放大查看
-                        </ContextMenuItem>
-                        <ContextMenuItem onClick={handleExport}>
-                          <Download className="w-3.5 h-3.5 mr-2" />
-                          导出消息
-                        </ContextMenuItem>
-                        <ContextMenuItem variant="destructive" onClick={deleteHandler}>
-                          删除消息
-                        </ContextMenuItem>
-                      </>
-                    )}
-                  </ContextMenuContent>
-                </ContextMenu>
-
-                {!generating && (
-                  <MessageFooter content={content} createdAt={message.createdAt} />
-                )}
-
-                {isStreaming && (
-                  <button
-                    type="button"
-                    onClick={handleCancelGeneration}
-                    className={cn(
-                      'self-start flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium',
-                      'text-muted-foreground border border-border/60 bg-background/80 backdrop-blur-sm',
-                      'hover:text-destructive hover:border-destructive/50 hover:bg-destructive/5',
-                      'transition-all duration-150 shadow-sm cursor-pointer select-none',
-                    )}
-                  >
-                    <OctagonX className="w-3 h-3 shrink-0" />
-                    停止生成
-                  </button>
-                )}
-              </div>
-            )}
-      </div>
-    )
+  const layoutProps = {
+    id,
+    index,
+    message,
+    content,
+    toolCallPairs,
+    isUser,
+    isError,
+    isStreaming,
+    isPending,
+    generating,
+    isToolRunning,
+    runningTools,
+    onDelete: handleDelete,
+    onCancelGeneration,
+    onPreview,
+    onExport,
   }
 
-  // ── Chat 布局（气泡式，默认） ─────────────────────────────────────────────
-  return (
-    <div
-      className={cn(
-        'flex w-full gap-3 px-4 py-3 group transition-all duration-200 rounded-md -mx-2',
-        isUser ? 'flex-row-reverse' : 'flex-row',
-        isSelected && 'bg-primary/10 border-l-4 border-primary shadow-sm',
-        isSelectionMode && 'hover:bg-accent/20',
-      )}
-      data-message-id={id}
-      data-message-index={index}
-      onClick={() => isSelectionMode && toggleMessageSelection(id)}
-    >
-      {/* Avatar */}
-      <div className="flex items-start gap-2">
-        {isSelectionMode && (
-          <Checkbox
-            checked={isSelected}
-            onCheckedChange={() => toggleMessageSelection(id)}
-            className="mt-2"
-          />
-        )}
-        <Avatar className="w-8 h-8 border shrink-0 shadow-sm mt-0.5">
-          {isUser
-            ? (
-                <>
-                  <AvatarImage src="" />
-                  <AvatarFallback className="bg-primary text-primary-foreground">
-                    <User className="w-4 h-4" />
-                  </AvatarFallback>
-                </>
-              )
-            : (
-                <>
-                  <AvatarImage src="" />
-                  <AvatarFallback className="bg-secondary text-secondary-foreground">
-                    <Bot className="w-4 h-4" />
-                  </AvatarFallback>
-                </>
-              )}
-        </Avatar>
-      </div>
+  if (layoutMode === 'article') {
+    return <ArticleLayout {...layoutProps} />
+  }
 
-      {/* 气泡 + 取消按钮 */}
-      <div className={cn('flex flex-col gap-1.5', isUser ? 'items-end' : 'items-start', 'max-w-[85%]')}>
-        {/* 工具调用列表 */}
-        {!isUser && toolCallList}
-
-        {/* 内容气泡 */}
-        <ContextMenu>
-          <ContextMenuTrigger asChild>
-            <div
-              className={cn(
-                'relative min-w-16 max-w-full rounded-2xl px-4 py-3 text-sm transition-all duration-200',
-                isUser
-                  ? 'bg-primary text-primary-foreground rounded-tr-none'
-                  : 'bg-secondary text-secondary-foreground rounded-tl-none border border-border/50',
-                isError && 'border-destructive/50 bg-destructive/10 text-destructive',
-                isPending && 'opacity-80',
-              )}
-              style={{
-                boxShadow: isUser ? 'var(--message-user-shadow)' : 'var(--message-ai-shadow)',
-                ...(isUser ? {} : { borderColor: 'var(--message-ai-border)' }),
-                ...(isError && !isUser ? { backgroundColor: 'var(--message-error-bg)' } : {}),
-                ...(isPending && !isUser ? { backgroundColor: 'var(--message-thinking-bg)' } : {}),
-              }}
-            >
-              {/* 错误标题 */}
-              {isError && (
-                <div className="flex items-center gap-2 mb-2 text-destructive font-medium">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
-                  <span>生成出错</span>
-                </div>
-              )}
-
-              {/* 内容区 */}
-              {generating && !content
-                ? (
-                  /* 无内容时：跳动点 */
-                    <GeneratingIndicator
-                      isPending={isPending}
-                      isToolRunning={isToolRunning}
-                      runningTools={runningTools}
-                    />
-                  )
-                : isUser
-                  ? (
-                    /* 用户消息：纯文本，保留换行 */
-                      <p className="text-sm leading-relaxed whitespace-pre-wrap wrap-break-word">{content}</p>
-                    )
-                  : (
-                    /* AI 消息：Markdown + 光标 */
-                      <MessageMarkdown
-                        content={content || (isError ? (message.error ?? '') : '')}
-                        isUser={false}
-                        isStreaming={isStreaming && !!content}
-                      />
-                    )}
-
-              {/* 错误详情 */}
-              {isError && message.error && (
-                <div className="mt-2 text-xs opacity-70 border-t border-destructive/20 pt-2">
-                  {message.error}
-                </div>
-              )}
-
-              {/* 用户消息底部：仅时间 */}
-              {isUser && (
-                <div className="flex items-center justify-end mt-1.5">
-                  <span className="text-[10px] opacity-40">{formatWithLocalTZ(message.createdAt, 'HH:mm')}</span>
-                </div>
-              )}
-
-              {/* AI 消息底部：时间 + token + 操作（生成完成后才显示） */}
-              {!isUser && !generating && (
-                <MessageFooter content={content} createdAt={message.createdAt} />
-              )}
-            </div>
-          </ContextMenuTrigger>
-
-          <ContextMenuContent>
-            {!generating && (
-              <>
-                <ContextMenuItem
-                  onClick={() => {
-                    if (content)
-                      navigator.clipboard.writeText(content)
-                  }}
-                >
-                  <Copy className="w-3.5 h-3.5 mr-2" />
-                  复制消息
-                </ContextMenuItem>
-                <ContextMenuItem onClick={handlePreview}>
-                  <Expand className="w-3.5 h-3.5 mr-2" />
-                  放大查看
-                </ContextMenuItem>
-                <ContextMenuItem onClick={handleExport}>
-                  <Download className="w-3.5 h-3.5 mr-2" />
-                  导出消息
-                </ContextMenuItem>
-                <ContextMenuItem variant="destructive" onClick={deleteHandler}>
-                  删除消息
-                </ContextMenuItem>
-              </>
-            )}
-          </ContextMenuContent>
-        </ContextMenu>
-
-        {/* 取消生成按钮——气泡下方，流式中显示 */}
-        {isStreaming && (
-          <button
-            type="button"
-            onClick={handleCancelGeneration}
-            className={cn(
-              'flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium',
-              'text-muted-foreground border border-border/60 bg-background/80 backdrop-blur-sm',
-              'hover:text-destructive hover:border-destructive/50 hover:bg-destructive/5',
-              'transition-all duration-150 shadow-sm cursor-pointer select-none',
-            )}
-          >
-            <OctagonX className="w-3 h-3 shrink-0" />
-            停止生成
-          </button>
-        )}
-      </div>
-    </div>
-  )
+  return <ChatLayout {...layoutProps} />
 })

@@ -361,6 +361,32 @@ function RouteComponent() {
             </div>
           </div>
         </div>
+
+        {/* 开源字体致谢 */}
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold">{t('settings.help.fonts.title')}</h2>
+          <p className="text-sm text-muted-foreground">{t('settings.help.fonts.description')}</p>
+
+          <div className="rounded-lg border p-4 space-y-3">
+            <div className="flex items-start justify-between gap-4">
+              <div className="space-y-0.5">
+                <p className="text-sm font-medium">Inter</p>
+                <p className="text-xs text-muted-foreground">{t('settings.help.fonts.interDescription')}</p>
+                <p className="text-xs text-muted-foreground">{t('settings.help.fonts.interAuthor')}</p>
+                <p className="text-xs text-muted-foreground">{t('settings.help.fonts.interLicense')}</p>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="shrink-0"
+                onClick={() => handleOpenLink('https://rsms.me/inter/')}
+              >
+                <ExternalLink size={14} />
+                <span className="ml-1 text-xs">{t('settings.help.fonts.viewSource')}</span>
+              </Button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )

@@ -1,6 +1,23 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* ── Inter Variable Font ─────────────────────────────────────────────────── */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/Inter/Inter-VariableFont_opsz,wght.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: italic;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/Inter/Inter-Italic-VariableFont_opsz,wght.ttf') format('truetype');
+}
+
 @custom-variant dark (&:is(.dark *));
 
 :root {
@@ -151,6 +168,9 @@
   --color-message-success: var(--message-success-bg);
   --color-message-error: var(--message-error-bg);
   --color-message-thinking: var(--message-thinking-bg);
+
+  /* 字体 */
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
 }
 
 @layer base {
@@ -159,7 +179,7 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
   }
 }
 
