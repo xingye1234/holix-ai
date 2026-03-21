@@ -41,7 +41,7 @@ function writeStandardSkill(
 
 describe('getSkillsDir', () => {
   it('returns userDataDir/skills', () => {
-    expect(getSkillsDir('/home/user/.holixai')).toBe('/home/user/.holixai/skills')
+    expect(getSkillsDir('/home/user/.holixai')).toBe(join('/home/user/.holixai', 'skills'))
   })
 })
 

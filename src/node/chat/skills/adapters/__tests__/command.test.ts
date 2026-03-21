@@ -96,12 +96,13 @@ describe('commandToTool - 命令执行', () => {
   })
 
   it('cwd 模板变量正确设置工作目录', async () => {
+    const IS_WINDOWS = process.platform === 'win32'
     const t = commandToTool(
       {
         type: 'command',
         name: 'cwd_cmd',
         description: 'Show cwd',
-        command: 'pwd',
+        command: IS_WINDOWS ? 'cd' : 'pwd',
         cwd: testDir,
       },
       '/other-dir',
@@ -109,7 +110,7 @@ describe('commandToTool - 命令执行', () => {
     )
 
     const result = await t.invoke({})
-    // pwd 应输出 testDir（macOS 下 /tmp 可能解析为 /private/tmp）
+    // pwd/cd 应输出 testDir（macOS 下 /tmp 可能解析为 /private/tmp）
     expect(result).toContain(testDir.replace(/^\/tmp/, ''))
   })
 
@@ -184,15 +185,16 @@ describe('commandToTool - 命令执行', () => {
   })
 
   it('超时时返回超时消息', async () => {
+    const IS_WINDOWS = process.platform === 'win32'
     const t = commandToTool(
       {
         type: 'command',
         name: 'slow_cmd',
         description: 'Slow',
-        command: 'sleep 10',
+        command: IS_WINDOWS ? 'ping 127.0.0.1 -n 100 > nul' : 'sleep 10',
         timeout: 200,
       },
-      testDir,
+      tmpdir(), // 使用系统临时目录，避免进程被杀后 Windows 短暂锁定 testDir
       'my_skill',
     )
 
@@ -225,15 +227,17 @@ describe('scriptToTool - 属性与执行', () => {
   })
 
   it('执行 shell 脚本并返回输出', async () => {
-    const scriptPath = join(testDir, 'hello.sh')
-    writeFileSync(scriptPath, '#!/bin/sh\necho "script-output"', 'utf-8')
+    const IS_WINDOWS = process.platform === 'win32'
+    const scriptPath = IS_WINDOWS ? join(testDir, 'hello.js') : join(testDir, 'hello.sh')
+    const scriptContent = IS_WINDOWS ? 'console.log("script-output")' : '#!/bin/sh\necho "script-output"'
+    writeFileSync(scriptPath, scriptContent, 'utf-8')
 
     const t = scriptToTool(
       {
         type: 'script',
         name: 'run_hello',
         description: 'Run hello script',
-        script: `sh ${scriptPath}`,
+        script: IS_WINDOWS ? `node "${scriptPath}"` : `sh "${scriptPath}"`,
       },
       testDir,
       'my_skill',

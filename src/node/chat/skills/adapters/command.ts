@@ -110,7 +110,7 @@ async function runCommand(
     return err ? `stdout: ${out}\nstderr: ${err}` : out
   }
   catch (error: any) {
-    if (error.killed && error.signal === 'SIGTERM')
+    if (error.killed || error.signal === 'SIGTERM')
       return `Command timed out after ${timeout}ms`
 
     const stderr = error.stderr?.trim() ?? ''

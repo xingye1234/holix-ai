@@ -77,8 +77,10 @@ describe('built-in skills sandbox execution (production loader path)', () => {
   })
 
   it('runs shell tools via src/node/chat sandbox adapter', async () => {
-    await expect(tools.run_shell_command.invoke({ command: 'pwd && echo sandbox-ok', cwd: sandboxDir })).resolves.toMatch(/退出码：0/)
-    await expect(tools.run_shell_command.invoke({ command: 'pwd && echo sandbox-ok', cwd: sandboxDir })).resolves.toMatch(/sandbox-ok/)
+    const IS_WINDOWS = process.platform === 'win32'
+    const echoCmd = IS_WINDOWS ? 'cd && echo sandbox-ok' : 'pwd && echo sandbox-ok'
+    await expect(tools.run_shell_command.invoke({ command: echoCmd, cwd: sandboxDir })).resolves.toMatch(/退出码：0/)
+    await expect(tools.run_shell_command.invoke({ command: echoCmd, cwd: sandboxDir })).resolves.toMatch(/sandbox-ok/)
     await expect(tools.get_environment_info.invoke({})).resolves.toMatch(/Node 版本：/)
   })
 })
