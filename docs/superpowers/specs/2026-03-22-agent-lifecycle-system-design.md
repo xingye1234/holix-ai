@@ -134,9 +134,14 @@ complexity === 'complex' → Worker Thread
 ```
 
 **Worker Pool:**
-- Configurable number of worker threads
-- Simple load balancing (round-robin)
-- 30s timeout per execution
+- **Pool Size**: 2 workers (configurable via environment variable `AGENT_WORKER_COUNT`)
+- **Lifecycle**: Workers spawned on AgentRunner initialization, terminated on app shutdown
+- **Load Balancing**: Round-robin distribution across workers
+- **Message Passing**: Uses `worker.postMessage()` with structured clone of context
+- **Timeout Enforcement**: 30s timer started on message send; on timeout, worker is terminated and recreated
+- **Serialization**: Agent handler functions converted to strings, evaluated in worker context
+
+**Location:** `src/node/agents/executor/`
 
 ### 4. Context Provider
 
@@ -159,6 +164,18 @@ interface AgentContext {
 }
 ```
 
+**Implementation Details:**
+
+- **Database Access**: Reuses existing `db` instance from `src/node/database/index.ts`
+- **Query Optimization**: Messages fetched with `LIMIT` based on `chat.contextSettings.maxMessages`
+- **Large History Handling**: For chats with 500+ messages, fetches first 50 and last 50 (strategic sampling)
+- **Tool Integration**:
+  - `callTool`: Delegates to `src/node/chat/skills/call-skill.ts` (existing skill invocation)
+  - `listTools`: Aggregates from `src/node/chat/skills/index.ts` (skills) and MCP server list
+- **Caching**: Context cached for 30s within same hook execution to avoid redundant DB queries
+
+**Location:** `src/node/agents/context.ts`
+
 ### 5. Built-in Agents
 
 | Agent | Hook | Mode | Complexity | Description |
@@ -168,6 +185,38 @@ interface AgentContext {
 | AgentRecommender | onMessageCompleted | suggest | simple | Analyze user intent, recommend agents |
 | ToolAnalyzer | onToolCompleted | auto | simple | Track tool usage patterns |
 | ErrorHandler | onMessageError | suggest | simple | Analyze errors, provide recovery steps |
+
+#### Implementation Details
+
+**TitleGenerator**
+- **LLM**: Uses chat's configured model (from `chat.provider`, `chat.model`)
+- **Prompt Template**: "Generate a concise title (max 10 words) for this conversation based on recent messages: [last 5 user messages]"
+- **Update Condition**: Every 5 messages OR if current title is "新对话"
+- **Direct DB Update**: Uses `db.update(chats).set({ title })`
+
+**ChatSummarizer**
+- **LLM**: Uses chat's configured model
+- **Threshold**: Triggered when `messages.length >= 20`
+- **Prompt Template**: "Summarize this conversation in 3-5 bullet points covering: main topics, decisions made, action items. Conversation: [full message history]"
+- **Suggestion Format**: Returns `AgentResult` with `suggestion.type = 'summary'`
+
+**AgentRecommender**
+- **LLM**: Uses lightweight model (e.g., gpt-4o-mini or claude-haiku)
+- **Analysis**: Extracts intent from last user message using keyword matching + LLM classification
+- **Categories**: code, writing, analysis, planning, creative, research
+- **Recommendation Logic**: Maps intent to agent ID (e.g., "code" → suggests code-review agent)
+
+**ToolAnalyzer**
+- **No LLM**: Pure logging and pattern detection
+- **Metrics**: Tracks tool call frequency, success rate, average duration per tool
+- **Storage**: Writes to `agent_execution_log` with aggregated stats
+
+**ErrorHandler**
+- **LLM**: Uses lightweight model for error classification
+- **Error Types**: API error, timeout, permission denied, tool failure, unknown
+- **Recovery Suggestions**: Predefined mapping from error type to recovery steps (e.g., timeout → "Check network connection and retry")
+
+**Location:** `src/node/agents/builtin/`
 
 ## Type Definitions
 
@@ -193,10 +242,20 @@ interface AgentHookConfig {
   complexity: AgentComplexity
 }
 
-interface AgentExecutable extends Agent {
+// Note: LifecycleAgent (this system) is separate from the existing Agent type
+// in src/node/agents/types.ts which is for agent configuration CRUD.
+// LifecycleAgent is for executable agents that respond to hooks.
+interface LifecycleAgent {
+  id: string                     // Unique agent ID (e.g., 'builtin:title-generator')
+  name: string                   // Human-readable name
+  description: string            // What this agent does
+  version: string                // Agent version (default: '1.0.0')
   hooks: Record<AgentHook, AgentHookConfig | undefined>
   handler: (context: AgentContext) => Promise<AgentResult>
 }
+
+// Type alias for clarity in this spec
+type AgentExecutable = LifecycleAgent
 ```
 
 ### Execution Results
@@ -257,6 +316,32 @@ Persists user-pending suggestions.
 
 **Indexes:** chatUid, status, expiresAt
 
+### Integration and Migration
+
+**Schema Location:** `src/node/database/schema/agent.ts`
+
+**Export:** Add to `src/node/database/schema/index.ts`:
+```typescript
+export * from './agent'
+```
+
+**Migration:** Create Drizzle migration:
+```bash
+pnpm drizzle-kit generate:sqlite
+```
+
+**Operations Layer:** Create `src/node/database/operations/agent-operations.ts`:
+```typescript
+export class AgentOperations {
+  async logExecution(data: ExecutionLogInsert): Promise<void>
+  async createSuggestion(data: SuggestionInsert): Promise<void>
+  async getSuggestions(chatUid: string): Promise<Suggestion[]>
+  async updateSuggestionStatus(uid: string, status: SuggestionStatus): Promise<void>
+  async cleanupExpiredSuggestions(): Promise<void>
+  async getExecutionStats(agentId: string): Promise<ExecutionStats>
+}
+```
+
 ## Error Handling
 
 ### Retry Strategy
@@ -264,6 +349,7 @@ Persists user-pending suggestions.
 - **Max Retries:** 3
 - **Retry Delay:** 1000ms × (retryCount + 1)
 - **Retryable Errors:** timeout, ECONNREFUSED, ETIMEDOUT, fetch failed
+- **Non-retryable:** Validation errors, permission errors, agent handler errors
 
 ### Error Logging
 
@@ -275,6 +361,29 @@ Optional callback for custom error handling:
 ```typescript
 onError?: (error: Error, agentId: string, retryCount: number) => void
 ```
+
+### Error Recovery Flow
+
+**When an agent fails:**
+1. Error is caught by `AgentExecutorWrapper`
+2. If retryable and retries < max: retry with exponential backoff
+3. If retries exhausted or non-retryable:
+   - Log to `agent_execution_log` with status='error'
+   - Call `onError` callback if provided
+   - Return `AgentResult` with status='error'
+
+**User-facing behavior:**
+- Auto-mode agents: Fail silently, logged only
+- Suggest-mode agents: Failed suggestions are marked as expired, not shown to user
+- Manual trigger: Error returned via tRPC response
+
+**Error Recovery Suggestions (from ErrorHandler agent):**
+| Error Type | Recovery Step |
+|------------|---------------|
+| API timeout | "Check network connection and retry" |
+| Permission denied | "Verify API credentials in settings" |
+| Tool not found | "Tool may have been removed; refresh tool list" |
+| Rate limit | "Wait a few minutes before retrying" |
 
 ## Performance Optimizations
 
@@ -302,40 +411,111 @@ Merges identical hook triggers within 100ms window to avoid redundant execution.
 
 The `SessionOrchestrator` triggers hooks at key points:
 
+**Integration Points:**
+
+| Location in SessionOrchestrator | Hook | Execution Mode | Error Handling |
+|--------------------------------|------|----------------|----------------|
+| `createChat()` after DB insert | onChatCreated | Async (non-blocking) | Log error, don't block chat creation |
+| `handleMessageStreaming()` during stream | onMessageStreaming | Async (fire-and-forget) | Log error, continue streaming |
+| `handleMessageComplete()` after DB update | onMessageCompleted | Async (non-blocking) | Log error, don't block message completion |
+| `handleError()` before returning to user | onMessageError | Async (non-blocking) | Log error, propagate original error |
+| `callTool()` before tool invocation | onToolCalled | Async (non-blocking) | Log error, proceed with tool call |
+| `handleToolResult()` after tool returns | onToolCompleted | Async (non-blocking) | Log error, return tool result |
+| Idle detector (separate timer) | onChatIdle | Async (non-blocking) | Log error |
+
+**Performance Impact:**
+- Hooks execute asynchronously, never blocking chat operations
+- AgentRunner has internal throttling to prevent excessive execution
+- Context queries are cached and optimized with LIMIT
+- Worker thread isolation prevents main process blocking
+
+**Error Handling:**
+- Agent execution failures are logged to `agent_execution_log`
+- Chat flow continues even if all agents fail
+- Users see agent suggestions via separate channel (not in chat stream)
+
+**Idle Detection Implementation:**
 ```typescript
-// Create chat
-await agentRunner.triggerHook('onChatCreated', chat.uid, { chat })
+// Separate timer per chat
+private idleTimers: Map<string, NodeJS.Timeout> = new Map()
 
-// Message completed
-await agentRunner.triggerHook('onMessageCompleted', chatUid, { message })
+scheduleIdleCheck(chatUid: string): void {
+  this.resetIdleCheck(chatUid) // Clear existing timer
+  const timer = setTimeout(async () => {
+    await agentRunner.triggerHook('onChatIdle', chatUid, {})
+    this.idleTimers.delete(chatUid)
+  }, 30000) // 30 seconds
+  this.idleTimers.set(chatUid, timer)
+}
 
-// Message streaming
-await agentRunner.triggerHook('onMessageStreaming', chatUid, { message })
-
-// Message error
-await agentRunner.triggerHook('onMessageError', chatUid, { error })
-
-// Tool called/completed
-await agentRunner.triggerHook('onToolCalled', chatUid, { toolCall })
-await agentRunner.triggerHook('onToolCompleted', chatUid, { result })
-
-// Idle detection (30s after user activity)
-await agentRunner.triggerHook('onChatIdle', chatUid, {})
+// Call on any user activity: message send, tool invoke, etc.
 ```
 
 ## Manual Trigger API
 
 Users can manually trigger hooks via tRPC:
 
+**Location:** `src/node/api/routes/agent-routes.ts`
+
+**Router Definition:**
 ```typescript
-// tRPC route
-agentRouter.triggerHook({
-  chatUid: string,
-  hook: AgentHook
+import { router, publicProcedure } from '../trpc'
+import { z } from 'zod'
+import { agentRunner } from '../../agents/runner'
+
+export const agentRouter = router({
+  /**
+   * Manually trigger an agent hook
+   */
+  triggerHook: publicProcedure
+    .input(z.object({
+      chatUid: z.string().min(1),
+      hook: z.enum([
+        'onChatCreated',
+        'onMessageStreaming',
+        'onMessageCompleted',
+        'onChatIdle',
+        'onMessageError',
+        'onToolCalled',
+        'onToolCompleted'
+      ])
+    }))
+    .mutation(async ({ input }) => {
+      try {
+        const results = await agentRunner.triggerHook(input.hook, input.chatUid)
+        return { success: true, results }
+      } catch (error) {
+        console.error('Manual hook trigger failed:', error)
+        throw new Error('Failed to trigger hook')
+      }
+    }),
+
+  /**
+   * List all registered agents
+   */
+  listAgents: publicProcedure.query(async () => {
+    return agentRunner.listAgents()
+  }),
+
+  /**
+   * Get execution history for a chat
+   */
+  getExecutionHistory: publicProcedure
+    .input(z.object({
+      chatUid: z.string(),
+      limit: z.number().optional().default(50)
+    }))
+    .query(async ({ input }) => {
+      return db.select()
+        .from(agentExecutionLog)
+        .where(eq(agentExecutionLog.chatUid, input.chatUid))
+        .orderBy(desc(agentExecutionLog.createdAt))
+        .limit(input.limit)
+    })
 })
 ```
 
-This enables frontend actions like:
+**This enables frontend actions like:**
 - "Generate title now"
 - "Summarize conversation"
 - "Analyze with agent X"
@@ -372,9 +552,88 @@ Agents can call tools through the context provider, which respects existing tool
 - `worker_threads` - Worker thread execution
 - Existing chat, skills, and MCP systems
 
+## Configuration
+
+Agent system behavior can be configured via environment variables:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `AGENT_WORKER_COUNT` | 2 | Number of worker threads for complex agents |
+| `AGENT_CACHE_TTL` | 60000 | Execution cache TTL in milliseconds |
+| `AGENT_TIMEOUT` | 30000 | Agent execution timeout in milliseconds |
+| `AGENT_MAX_RETRIES` | 3 | Maximum retry attempts for failed agents |
+| `AGENT_THROTTLE_MESSAGE_COMPLETED` | 2000 | Throttle window for onMessageCompleted (ms) |
+| `AGENT_THROTTLE_CHAT_IDLE` | 30000 | Throttle window for onChatIdle (ms) |
+| `AGENT_THROTTLE_MESSAGE_STREAMING` | 500 | Throttle window for onMessageStreaming (ms) |
+
+**Configuration Loading:** In `src/node/agents/config.ts`
+```typescript
+export const agentConfig = {
+  workerCount: parseInt(process.env.AGENT_WORKER_COUNT || '2'),
+  cacheTtl: parseInt(process.env.AGENT_CACHE_TTL || '60000'),
+  timeout: parseInt(process.env.AGENT_TIMEOUT || '30000'),
+  maxRetries: parseInt(process.env.AGENT_MAX_RETRIES || '3'),
+  throttleWindows: {
+    onMessageCompleted: parseInt(process.env.AGENT_THROTTLE_MESSAGE_COMPLETED || '2000'),
+    onChatIdle: parseInt(process.env.AGENT_THROTTLE_CHAT_IDLE || '30000'),
+    onMessageStreaming: parseInt(process.env.AGENT_THROTTLE_MESSAGE_STREAMING || '500'),
+  }
+}
+```
+
 ## Testing Strategy
 
-1. **Unit Tests**: Individual agent handlers
-2. **Integration Tests**: Hook execution and routing
-3. **Performance Tests**: Concurrent agent execution
-4. **Database Tests**: Log and suggestion persistence
+### Unit Tests
+
+**Location:** `src/node/agents/**/__tests__/*.test.ts`
+
+| File | Tests |
+|------|-------|
+| `runner.test.ts` | Agent registration, hook triggering, executor routing |
+| `executor/main.test.ts` | Main process execution, error handling |
+| `builtin/title-generator.test.ts` | Title generation logic, update conditions |
+| `builtin/chat-summarizer.test.ts` | Summary generation, threshold checking |
+| `context.test.ts` | Context provision, database queries |
+| `performance.test.ts` | Cache hit/miss, throttling, batching |
+
+**Scenarios:**
+- Agent registration with multiple hooks
+- Hook execution with multiple agents (parallel)
+- Error retry mechanism
+- Cache invalidation
+- Throttle window enforcement
+
+### Integration Tests
+
+**Location:** `src/node/agents/__tests__/integration.test.ts`
+
+**Scenarios:**
+- Full hook flow: trigger → context fetch → agent execution → result → DB log
+- Worker thread execution (message passing, timeout)
+- Chat system integration: SessionOrchestrator → AgentRunner
+- tRPC manual trigger API
+
+### Performance Tests
+
+**Location:** `src/node/agents/__tests__/performance.test.ts`
+
+**Scenarios:**
+- Concurrent execution of 10+ agents
+- Large chat history (1000+ messages) handling
+- Memory usage over 100 hook triggers
+- Worker pool load balancing
+
+### Database Tests
+
+**Location:** `src/node/database/__tests__/agent-operations.test.ts`
+
+**Scenarios:**
+- Insert and query execution logs
+- Suggestion lifecycle (pending → accepted/dismissed)
+- Index performance with 10k+ log entries
+
+### Coverage Requirements
+
+- Unit tests: 80%+ coverage
+- Integration tests: All critical paths covered
+- Performance: No regressions vs baseline (established in first run)
