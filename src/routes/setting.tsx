@@ -1,6 +1,6 @@
 import { createFileRoute, Link, Outlet, useNavigate } from '@tanstack/react-router'
 import { ArrowLeft } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Item, ItemContent, ItemTitle } from '@/components/ui/item'
 import { Separator } from '@/components/ui/separator'

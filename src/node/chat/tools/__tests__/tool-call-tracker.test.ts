@@ -3,7 +3,7 @@
  */
 
 import type { DraftContent } from '../../../database/schema/chat'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { ToolCallTracker } from '../tool-call-tracker'
 
 describe('toolCallTracker', () => {

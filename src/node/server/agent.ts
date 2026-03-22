@@ -262,8 +262,8 @@ export const agentRouter = router({
         'onChatCreated',
         'onMessageCompleted',
         'onChatIdle',
-        'onMessageError'
-      ])
+        'onMessageError',
+      ]),
     }))
     .mutation(async ({ input }) => {
       const orchestrator = getOrchestrator()
@@ -274,7 +274,8 @@ export const agentRouter = router({
       try {
         const results = await orchestrator.triggerHook(input.hook, input.chatUid)
         return { success: true, results }
-      } catch (error) {
+      }
+      catch (error) {
         console.error('Manual lifecycle hook trigger failed:', error)
         throw new Error('Failed to trigger lifecycle hook')
       }
@@ -298,7 +299,7 @@ export const agentRouter = router({
   getLifecycleExecutionHistory: procedure()
     .input(z.object({
       chatUid: z.string(),
-      limit: z.number().optional().default(50)
+      limit: z.number().optional().default(50),
     }))
     .query(async ({ input }) => {
       return db.select()

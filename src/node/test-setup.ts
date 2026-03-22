@@ -5,8 +5,6 @@
  * Provides common mocks for Electron, logger, database, etc.
  */
 
-import { beforeAll, afterAll, beforeEach } from 'vitest'
-
 // ─── Mock electron（electron-log/renderer 依赖链）────────────────────────────
 vi.mock('electron', () => ({
   app: {

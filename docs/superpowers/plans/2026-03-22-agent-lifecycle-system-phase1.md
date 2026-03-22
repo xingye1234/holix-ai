@@ -111,14 +111,14 @@ export type ExecutionMode = 'auto' | 'suggest' | 'manual'
 export type AgentComplexity = 'simple' | 'complex'
 
 /** Available lifecycle hooks */
-export type AgentHook =
-  | 'onChatCreated'
-  | 'onMessageStreaming'
-  | 'onMessageCompleted'
-  | 'onChatIdle'
-  | 'onMessageError'
-  | 'onToolCalled'
-  | 'onToolCompleted'
+export type AgentHook
+  = | 'onChatCreated'
+    | 'onMessageStreaming'
+    | 'onMessageCompleted'
+    | 'onChatIdle'
+    | 'onMessageError'
+    | 'onToolCalled'
+    | 'onToolCompleted'
 
 /** Configuration for a hook subscription */
 export interface AgentHookConfig {
@@ -153,7 +153,7 @@ export interface AgentContext {
 }
 
 // Re-export commonly used types for convenience
-export type { Message, Chat } from '../../database/schema/chat'
+export type { Chat, Message } from '../../database/schema/chat'
 
 /** Result returned by an agent handler */
 export interface AgentResult {
@@ -241,22 +241,22 @@ git commit -m "feat(lifecycle): add lifecycle agent type definitions"
 
 export const agentConfig = {
   /** Number of worker threads (not used in Phase 1) */
-  workerCount: parseInt(process.env.AGENT_WORKER_COUNT || '2'),
+  workerCount: Number.parseInt(process.env.AGENT_WORKER_COUNT || '2'),
 
   /** Execution cache TTL in milliseconds */
-  cacheTtl: parseInt(process.env.AGENT_CACHE_TTL || '60000'),
+  cacheTtl: Number.parseInt(process.env.AGENT_CACHE_TTL || '60000'),
 
   /** Agent execution timeout in milliseconds */
-  timeout: parseInt(process.env.AGENT_TIMEOUT || '30000'),
+  timeout: Number.parseInt(process.env.AGENT_TIMEOUT || '30000'),
 
   /** Maximum retry attempts for failed agents */
-  maxRetries: parseInt(process.env.AGENT_MAX_RETRIES || '3'),
+  maxRetries: Number.parseInt(process.env.AGENT_MAX_RETRIES || '3'),
 
   /** Throttle windows for hooks (milliseconds) */
   throttleWindows: {
-    onMessageCompleted: parseInt(process.env.AGENT_THROTTLE_MESSAGE_COMPLETED || '2000'),
-    onChatIdle: parseInt(process.env.AGENT_THROTTLE_CHAT_IDLE || '30000'),
-    onMessageStreaming: parseInt(process.env.AGENT_THROTTLE_MESSAGE_STREAMING || '500'),
+    onMessageCompleted: Number.parseInt(process.env.AGENT_THROTTLE_MESSAGE_COMPLETED || '2000'),
+    onChatIdle: Number.parseInt(process.env.AGENT_THROTTLE_CHAT_IDLE || '30000'),
+    onMessageStreaming: Number.parseInt(process.env.AGENT_THROTTLE_MESSAGE_STREAMING || '500'),
   } as Record<string, number>,
 } as const
 ```
@@ -303,7 +303,7 @@ export const agentExecutionLog = sqliteTable(
     createdAt: integer('created_at').notNull(),
     completedAt: integer('completed_at'),
   },
-  (table) => ({
+  table => ({
     chatIdx: index('idx_agent_execution_chat').on(table.chatUid),
     agentIdx: index('idx_agent_execution_agent').on(table.agentId),
     hookIdx: index('idx_agent_execution_hook').on(table.hook),
@@ -331,7 +331,7 @@ export const agentSuggestion = sqliteTable(
     expiresAt: integer('expires_at'),
     createdAt: integer('created_at').notNull().default(sql`(strftime('%s','now') * 1000)`),
   },
-  (table) => ({
+  table => ({
     chatIdx: index('idx_agent_suggestion_chat').on(table.chatUid),
     statusIdx: index('idx_agent_suggestion_status').on(table.status),
     expiresAtIdx: index('idx_agent_suggestion_expires').on(table.expiresAt),
@@ -540,7 +540,8 @@ describe('ContextProvider', () => {
     })
 
     await expect(contextProvider.getContext('non-existent', 'onMessageCompleted'))
-      .rejects.toThrow('Chat not found')
+      .rejects
+      .toThrow('Chat not found')
   })
 })
 ```
@@ -573,7 +574,7 @@ import type { LifecycleAgent, AgentContext, AgentResult } from '../types'
 
 /** Agent executor interface */
 export interface AgentExecutor {
-  execute(agent: LifecycleAgent, context: AgentContext): Promise<AgentResult>
+  execute: (agent: LifecycleAgent, context: AgentContext) => Promise<AgentResult>
 }
 
 /**
@@ -584,7 +585,8 @@ export class MainProcessExecutor implements AgentExecutor {
   async execute(agent: LifecycleAgent, context: AgentContext): Promise<AgentResult> {
     try {
       return await agent.handler(context)
-    } catch (error) {
+    }
+    catch (error) {
       return {
         agentId: agent.id,
         status: 'error',
@@ -614,7 +616,8 @@ git commit -m "feat(lifecycle): add main process executor for simple agents"
 - [ ] **Step 1: Create hooks definition file**
 
 ```typescript
-import { createHooks, type Hookable } from 'hookable'
+import { createHooks } from 'hookable'
+import type { Hookable } from 'hookable'
 import type { AgentHook, AgentContext, AgentResult } from './types'
 
 /**
@@ -751,7 +754,8 @@ export class AgentRunner {
   registerAgent(agent: LifecycleAgent): void {
     // Register agent for each hook it's subscribed to
     for (const [_hookName, config] of Object.entries(agent.hooks)) {
-      if (!config) continue
+      if (!config)
+        continue
 
       const hookName = config.hook as AgentHook
 
@@ -775,7 +779,8 @@ export class AgentRunner {
       const results = await this.hooks.callHookParallel(hook, context)
 
       return results || []
-    } catch (error) {
+    }
+    catch (error) {
       console.error(`[AgentRunner] Hook ${hook} failed:`, error)
       return []
     }
@@ -806,7 +811,8 @@ export class AgentRunner {
       await this.logExecution(agent, context, result, duration)
 
       return result
-    } catch (error) {
+    }
+    catch (error) {
       const duration = Date.now() - startTime
       const errorResult: AgentResult = {
         agentId: agent.id,
@@ -842,7 +848,8 @@ export class AgentRunner {
         createdAt: Date.now(),
         completedAt: Date.now()
       })
-    } catch (error) {
+    }
+    catch (error) {
       console.error('[AgentRunner] Failed to log execution:', error)
     }
   }
@@ -1005,7 +1012,7 @@ describe('TitleGenerator Agent', () => {
   it('should skip if title is not default and message count not at threshold', async () => {
     const mockContext: AgentContext = {
       chatUid: 'test-chat',
-      messages: Array(3).fill({ role: 'user', content: 'test' }),
+      messages: Array.from({ length: 3 }).fill({ role: 'user', content: 'test' }),
       chat: { uid: 'test-chat', title: 'Existing Title' } as any,
       event: { hook: 'onMessageCompleted', data: {} },
       tools: { callTool: vi.fn(), listTools: vi.fn() }
@@ -1082,7 +1089,8 @@ export const titleGeneratorAgent: LifecycleAgent = {
           updatedAt: Date.now()
         })
         .where(eq(chats.uid, context.chatUid))
-    } catch (error) {
+    }
+    catch (error) {
       console.error('[TitleGenerator] Failed to update title:', error)
       return {
         agentId: 'builtin:title-generator',
@@ -1379,7 +1387,8 @@ export const agentRouter = router({
       try {
         const results = await runner.triggerHook(input.hook, input.chatUid)
         return { success: true, results }
-      } catch (error) {
+      }
+      catch (error) {
         console.error('Manual lifecycle hook trigger failed:', error)
         throw new Error('Failed to trigger lifecycle hook')
       }
@@ -1573,7 +1582,6 @@ git commit -m "test(lifecycle): add integration test for full lifecycle flow"
 The Agent Lifecycle System enables built-in agents to execute at key points in chat conversations. It uses a hook-based architecture (via `hookable`) to allow agents to plug into the conversation flow.
 
 ## Architecture
-
 ```
 Chat System → AgentRunner → Hookable Lifecycle → Agents
                      ↓                    ↓

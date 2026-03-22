@@ -111,10 +111,11 @@ The AgentRunner is a singleton that must be initialized during application start
 let _instance: AgentRunner | null = null
 
 export async function initializeAgentRunner(): Promise<AgentRunner> {
-  if (_instance) return _instance
+  if (_instance)
+    return _instance
 
   _instance = new AgentRunner()
-  await _instance.initialize()  // Spawns workers, registers agents
+  await _instance.initialize() // Spawns workers, registers agents
   return _instance
 }
 
@@ -188,11 +189,11 @@ Supplies agents with complete chat context.
 ```typescript
 interface AgentContext {
   chatUid: string
-  messages: Message[]           // Full message history
-  chat: Chat                    // Chat configuration
+  messages: Message[] // Full message history
+  chat: Chat // Chat configuration
   event: {
     hook: AgentHook
-    data: unknown               // Hook-specific data
+    data: unknown // Hook-specific data
   }
   tools: {
     callTool: (name, args) => Promise<unknown>
@@ -267,18 +268,18 @@ interface AgentContext {
 type ExecutionMode = 'auto' | 'suggest' | 'manual'
 type AgentComplexity = 'simple' | 'complex'
 
-type AgentHook =
-  | 'onChatCreated'
-  | 'onMessageStreaming'
-  | 'onMessageCompleted'
-  | 'onChatIdle'
-  | 'onMessageError'
-  | 'onToolCalled'
-  | 'onToolCompleted'
+type AgentHook
+  = | 'onChatCreated'
+    | 'onMessageStreaming'
+    | 'onMessageCompleted'
+    | 'onChatIdle'
+    | 'onMessageError'
+    | 'onToolCalled'
+    | 'onToolCompleted'
 
 interface AgentHookConfig {
   hook: AgentHook
-  priority: number              // Lower = earlier execution
+  priority: number // Lower = earlier execution
   mode: ExecutionMode
   complexity: AgentComplexity
 }
@@ -287,10 +288,10 @@ interface AgentHookConfig {
 // in src/node/agents/types.ts which is for agent configuration CRUD.
 // LifecycleAgent is for executable agents that respond to hooks.
 interface LifecycleAgent {
-  id: string                     // Unique agent ID (e.g., 'builtin:title-generator')
-  name: string                   // Human-readable name
-  description: string            // What this agent does
-  version: string                // Agent version (default: '1.0.0')
+  id: string // Unique agent ID (e.g., 'builtin:title-generator')
+  name: string // Human-readable name
+  description: string // What this agent does
+  version: string // Agent version (default: '1.0.0')
   hooks: Record<AgentHook, AgentHookConfig | undefined>
   handler: (context: AgentContext) => Promise<AgentResult>
 }
@@ -529,7 +530,8 @@ export const agentRouter = router({
       try {
         const results = await agentRunner.triggerHook(input.hook, input.chatUid)
         return { success: true, results }
-      } catch (error) {
+      }
+      catch (error) {
         console.error('Manual lifecycle hook trigger failed:', error)
         throw new Error('Failed to trigger lifecycle hook')
       }
@@ -615,14 +617,14 @@ Agent system behavior can be configured via environment variables:
 **Configuration Loading:** In `src/node/agents/config.ts`
 ```typescript
 export const agentConfig = {
-  workerCount: parseInt(process.env.AGENT_WORKER_COUNT || '2'),
-  cacheTtl: parseInt(process.env.AGENT_CACHE_TTL || '60000'),
-  timeout: parseInt(process.env.AGENT_TIMEOUT || '30000'),
-  maxRetries: parseInt(process.env.AGENT_MAX_RETRIES || '3'),
+  workerCount: Number.parseInt(process.env.AGENT_WORKER_COUNT || '2'),
+  cacheTtl: Number.parseInt(process.env.AGENT_CACHE_TTL || '60000'),
+  timeout: Number.parseInt(process.env.AGENT_TIMEOUT || '30000'),
+  maxRetries: Number.parseInt(process.env.AGENT_MAX_RETRIES || '3'),
   throttleWindows: {
-    onMessageCompleted: parseInt(process.env.AGENT_THROTTLE_MESSAGE_COMPLETED || '2000'),
-    onChatIdle: parseInt(process.env.AGENT_THROTTLE_CHAT_IDLE || '30000'),
-    onMessageStreaming: parseInt(process.env.AGENT_THROTTLE_MESSAGE_STREAMING || '500'),
+    onMessageCompleted: Number.parseInt(process.env.AGENT_THROTTLE_MESSAGE_COMPLETED || '2000'),
+    onChatIdle: Number.parseInt(process.env.AGENT_THROTTLE_CHAT_IDLE || '30000'),
+    onMessageStreaming: Number.parseInt(process.env.AGENT_THROTTLE_MESSAGE_STREAMING || '500'),
   }
 }
 ```
