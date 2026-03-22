@@ -11,7 +11,7 @@ export const agentExecutionLog = sqliteTable(
     chatUid: text('chat_uid').notNull(),
     agentId: text('agent_id').notNull(),
     hook: text('hook').notNull(),
-    status: text('status', { enum: ['success', 'error'] }).notNull(),
+    status: text('status', { enum: ['success', 'error', 'suggest'] }).notNull(),
     resultData: text('result_data', { mode: 'json' }),
     error: text('error'),
     duration: integer('duration'),
