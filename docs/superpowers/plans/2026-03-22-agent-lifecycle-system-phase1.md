@@ -152,6 +152,9 @@ export interface AgentContext {
   }
 }
 
+// Re-export commonly used types for convenience
+export type { Message, Chat } from '../../database/schema/chat'
+
 /** Result returned by an agent handler */
 export interface AgentResult {
   /** Agent ID */
@@ -486,13 +489,31 @@ export const contextProvider = new ContextProvider()
 Run: `pnpm test src/node/agents/__tests__/lifecycle/context.test.ts`
 Expected: Tests may fail due to no test data - we'll address this in next steps
 
-- [ ] **Step 5: Update test to use mock or setup test database**
+- [ ] **Step 5: Update test to handle database properly**
 
-Modify the test to be more realistic or mark as integration test:
+Replace with proper test using mocks (vitest `vi.mock`):
 
 ```typescript
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { ContextProvider } from '../../../lifecycle/context'
+
+// Mock database operations
+vi.mock('../../database', () => ({
+  db: {
+    select: vi.fn(() => ({
+      from: vi.fn(() => ({
+        where: vi.fn(() => ({
+          limit: vi.fn(() => Promise.resolve([{ title: 'Test Chat' }]))
+        })),
+        orderBy: vi.fn(() => ({
+          where: vi.fn(() => ({
+            limit: vi.fn(Promise.resolve([]))
+          }))
+        }))
+      }))
+    }))
+  }
+}))
 
 describe('ContextProvider', () => {
   it('should be instantiable', () => {
@@ -500,9 +521,26 @@ describe('ContextProvider', () => {
     expect(contextProvider).toBeDefined()
   })
 
-  // Integration tests require database - marked for Phase 2
-  it.skip('should fetch chat context from database', async () => {
-    // TODO: Add test database setup
+  it('should have getContext method', () => {
+    const contextProvider = new ContextProvider()
+    expect(typeof contextProvider.getContext).toBe('function')
+  })
+
+  it('should throw error for non-existent chat', async () => {
+    const contextProvider = new ContextProvider()
+
+    // Mock empty result for non-existent chat
+    const { db } = await import('../../database')
+    vi.mocked(db.select).mockReturnValueOnce({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          limit: vi.fn().mockResolvedValue([])
+        })
+      }) as any
+    })
+
+    await expect(contextProvider.getContext('non-existent', 'onMessageCompleted'))
+      .rejects.toThrow('Chat not found')
   })
 })
 ```
@@ -831,11 +869,18 @@ vi.mock('../../../lifecycle/context', () => ({
   }
 }))
 
-// Mock database
+// Mock database operations
 vi.mock('../../database', () => ({
   db: {
-    insert: vi.fn().mockResolvedValue(undefined)
+    insert: vi.fn(() => ({
+      values: vi.fn(() => Promise.resolve())
+    }))
   }
+}))
+
+// Mock drizzle-orm eq function
+vi.mock('drizzle-orm', () => ({
+  eq: vi.fn((field: any, value: any) => ({ field, value }))
 }))
 
 describe('AgentRunner', () => {
@@ -1201,44 +1246,40 @@ export * from './types'
 export * from './config'
 ```
 
-- [ ] **Step 2: Initialize AgentRunner in main agents index**
+- [ ] **Step 2: Modify existing Agents.init() to initialize lifecycle system**
 
-Add to `src/node/agents/index.ts` (at the end, after the existing Agents class):
+In `src/node/agents/index.ts`, modify the existing `init()` method to also initialize the lifecycle agent system.
+
+**First**, add the import at the top of the file:
+```typescript
+import { initializeAgentRunner } from './lifecycle'
+```
+
+**Then**, modify the existing `init()` method (around line 21-35) by adding one line:
 
 ```typescript
-// Import at top of file
-import { initializeAgentRunner } from './lifecycle'
+async init(): Promise<void> {
+  if (this.isInitialized)
+    return
 
-// Initialize lifecycle agents when agents are initialized
-export class Agents {
-  // ... existing code ...
+  try {
+    // Load custom agents from filesystem
+    await this.loadCustomAgents()
 
-  /**
-   * Initialize agents system
-   */
-  async init(): Promise<void> {
-    if (this.isInitialized)
-      return
+    // Initialize lifecycle agent system (ADD THIS LINE)
+    await initializeAgentRunner()
 
-    try {
-      // Load custom agents from filesystem
-      await this.loadCustomAgents()
-
-      // Initialize lifecycle agent system
-      await initializeAgentRunner()
-
-      this.isInitialized = true
-      logger.info('[Agents] Agent system initialized')
-    }
-    catch (error) {
-      logger.error('[Agents] Failed to initialize:', error)
-      throw error
-    }
+    this.isInitialized = true
+    logger.info('[Agents] Agent system initialized')
   }
-
-  // ... rest of existing code ...
+  catch (error) {
+    logger.error('[Agents] Failed to initialize:', error)
+    throw error
+  }
 }
 ```
+
+**Verification:** The existing `init()` method already exists, so you only need to add the `await initializeAgentRunner()` line after `await this.loadCustomAgents()`.
 
 - [ ] **Step 3: Add test for initialization**
 
@@ -1407,6 +1448,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { initializeAgentRunner } from '../../../lifecycle'
 import { db } from '../../../../database'
 import { chats, messages } from '../../../../database/schema/chat'
+import { agentExecutionLog } from '../../../../database/schema/lifecycle-agent'
 import { eq } from 'drizzle-orm'
 import { randomUUID } from 'node:crypto'
 
@@ -1479,9 +1521,7 @@ describe('Agent Lifecycle Integration', () => {
   })
 
   it('should log execution to database', async () => {
-    const { getLifecycleExecutionHistory } = await import('../../../../server/agent')
-
-    // Get execution history
+    // Get execution history directly from database
     const history = await db.select()
       .from(agentExecutionLog)
       .where(eq(agentExecutionLog.chatUid, testChatUid))
@@ -1643,13 +1683,23 @@ Start the app and check DevTools:
 await trpc.agent.listLifecycleAgents.query()
 ```
 
-- [ ] **Step 3: Manual integration test**
+- [ ] **Step 3: Manual integration test with specific verification**
 
-1. Start the app
+1. Start the app: `pnpm dev`
 2. Create a new chat
-3. Send a message
-4. Verify title is updated (check sidebar and database)
-5. Check execution logs via tRPC
+3. Send a message: "What is TypeScript?"
+4. Wait 2 seconds for hook to trigger
+5. Verify title update in sidebar (should show "What is Type..." or similar)
+6. Verify in database:
+   - Open DevTools Console
+   - Run: `await trpc.agent.getLifecycleExecutionHistory.query({ chatUid: '<current-chat-uid>', limit: 10 })`
+   - Verify: Returns array with at least 1 entry, agentId='builtin:title-generator', status='success'
+7. Trigger manual hook:
+   - Run: `await trpc.agent.triggerLifecycleHook.mutate({ chatUid: '<current-chat-uid>', hook: 'onMessageCompleted' })`
+   - Verify: Returns `{ success: true, results: [...] }`
+8. Check database directly:
+   - Title should be updated from "新对话" to a truncated version of first message
+   - `agent_execution_log` table should have new entries
 
 - [ ] **Step 4: Final commit**
 
