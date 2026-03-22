@@ -1,10 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { AgentOrchestrator } from '../orchestrator'
 import { titleGeneratorAgent } from '../builtin/title-generator'
-import type { AgentContext } from '../types'
 
 // Mock database
-vi.mock('../../database/connect', () => ({
+vi.mock('../../../database/connect', () => ({
   db: {
     insert: vi.fn(() => ({
       values: vi.fn(() => Promise.resolve()),
