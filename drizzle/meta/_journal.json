@@ -5,43 +5,8 @@
     {
       "idx": 0,
       "version": "6",
-      "when": 1773028036824,
-      "tag": "0000_opposite_secret_warriors",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "6",
-      "when": 1773047153277,
-      "tag": "0001_odd_lila_cheney",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1773105563571,
-      "tag": "0002_tool_calls_on_message",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "6",
-      "when": 1773739128152,
-      "tag": "0003_dizzy_lord_tyger",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1773804899723,
-      "tag": "0004_chat_context_settings",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1742438400000,
-      "tag": "0005_agent_metadata",
+      "when": 1774155490570,
+      "tag": "0000_misty_tony_stark",
       "breakpoints": true
     }
   ]

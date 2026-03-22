@@ -1,13 +1,12 @@
 import { desc, eq } from 'drizzle-orm'
-import { getDb } from './connect'
 import { agentMetadata } from './schema/agent'
 import type { AgentMetadata } from './schema/agent'
+import { db } from './connect'
 
 /**
  * Get metadata for a specific agent
  */
 export async function getAgentMetadata(name: string): Promise<AgentMetadata | undefined> {
-  const db = getDb()
   const result = await db.select().from(agentMetadata).where(eq(agentMetadata.name, name)).limit(1)
   return result[0]
 }
@@ -20,8 +19,6 @@ export async function getOrCreateAgentMetadata(name: string): Promise<AgentMetad
   if (existing) {
     return existing
   }
-
-  const db = getDb()
   const result = await db.insert(agentMetadata).values({
     name,
     favorite: false,
@@ -43,8 +40,6 @@ export async function updateAgentMetadata(
     lastUsedAt: number
   }>,
 ): Promise<AgentMetadata> {
-  const db = getDb()
-
   // Check if exists, if not create
   const existing = await getAgentMetadata(name)
   if (!existing) {
@@ -94,7 +89,6 @@ export async function incrementAgentUse(name: string): Promise<void> {
  * Get all favorite agents
  */
 export async function getFavoriteAgents(): Promise<AgentMetadata[]> {
-  const db = getDb()
   return await db.select().from(agentMetadata).where(eq(agentMetadata.favorite, true))
 }
 
@@ -102,7 +96,6 @@ export async function getFavoriteAgents(): Promise<AgentMetadata[]> {
  * Get agents sorted by usage
  */
 export async function getAgentsByUsage(limit = 10): Promise<AgentMetadata[]> {
-  const db = getDb()
   return await db.select().from(agentMetadata).orderBy(desc(agentMetadata.useCount)).limit(limit)
 }
 
@@ -110,6 +103,5 @@ export async function getAgentsByUsage(limit = 10): Promise<AgentMetadata[]> {
  * Delete agent metadata
  */
 export async function deleteAgentMetadata(name: string): Promise<void> {
-  const db = getDb()
   await db.delete(agentMetadata).where(eq(agentMetadata.name, name))
 }

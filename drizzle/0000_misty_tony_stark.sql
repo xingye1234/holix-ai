@@ -1,3 +1,17 @@
+CREATE TABLE `agent_metadata` (
+	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`name` text NOT NULL,
+	`favorite` integer DEFAULT false NOT NULL,
+	`use_count` integer DEFAULT 0 NOT NULL,
+	`last_used_at` integer,
+	`created_at` integer NOT NULL,
+	`updated_at` integer NOT NULL
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `agent_metadata_name_unique` ON `agent_metadata` (`name`);--> statement-breakpoint
+CREATE INDEX `idx_agent_metadata_name` ON `agent_metadata` (`name`);--> statement-breakpoint
+CREATE INDEX `idx_agent_metadata_favorite` ON `agent_metadata` (`favorite`);--> statement-breakpoint
+CREATE INDEX `idx_agent_metadata_last_used` ON `agent_metadata` (`last_used_at`);--> statement-breakpoint
 CREATE TABLE `chat` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`uid` text NOT NULL,
@@ -14,7 +28,8 @@ CREATE TABLE `chat` (
 	`last_seq` integer DEFAULT 0 NOT NULL,
 	`pending_messages` text,
 	`prompts` text DEFAULT '[]' NOT NULL,
-	`workspace` text
+	`workspace` text,
+	`context_settings` text DEFAULT '{"maxMessages":10,"timeWindowHours":24}' NOT NULL
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `chat_uid_unique` ON `chat` (`uid`);--> statement-breakpoint
@@ -29,7 +44,9 @@ CREATE TABLE `message` (
 	`kind` text NOT NULL,
 	`content` text,
 	`draft_content` text,
+	`tool_calls` text,
 	`status` text DEFAULT 'done' NOT NULL,
+	`tool_status` text,
 	`model` text,
 	`searchable` integer DEFAULT true NOT NULL,
 	`search_index_version` integer,
@@ -48,6 +65,19 @@ CREATE UNIQUE INDEX `message_uid_unique` ON `message` (`uid`);--> statement-brea
 CREATE INDEX `idx_messages_chat` ON `message` (`chat_uid`);--> statement-breakpoint
 CREATE INDEX `idx_messages_chat_seq` ON `message` (`chat_uid`,`seq`);--> statement-breakpoint
 CREATE INDEX `idx_messages_time` ON `message` (`created_at`);--> statement-breakpoint
+CREATE TABLE `skill_invocation_log` (
+	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`skill_name` text NOT NULL,
+	`tool_name` text NOT NULL,
+	`args` text,
+	`result` text,
+	`rejected` integer DEFAULT false NOT NULL,
+	`error` text,
+	`created_at` integer DEFAULT (strftime('%s','now') * 1000) NOT NULL
+);
+--> statement-breakpoint
+CREATE INDEX `idx_skill_invocation_skill_tool` ON `skill_invocation_log` (`skill_name`,`tool_name`);--> statement-breakpoint
+CREATE INDEX `idx_skill_invocation_created` ON `skill_invocation_log` (`created_at`);--> statement-breakpoint
 CREATE TABLE `ky` (
 	`key` text PRIMARY KEY NOT NULL,
 	`value` text

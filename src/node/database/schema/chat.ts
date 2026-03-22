@@ -156,10 +156,10 @@ export const chats = sqliteTable(
 
     /** 聊天上下文策略 */
     contextSettings: t
-      .text('context_settings')
+      .text('context_settings', { mode: 'json' })
       .$type<ChatContextSettings>()
       .notNull()
-      .default(sql`${JSON.stringify(DEFAULT_CHAT_CONTEXT_SETTINGS)}`),
+      .default(DEFAULT_CHAT_CONTEXT_SETTINGS),
   },
   table => ({
     chatUidIdx: index('idx_chat_uid').on(table.uid),
