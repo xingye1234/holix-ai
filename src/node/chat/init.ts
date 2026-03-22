@@ -52,7 +52,7 @@ export function initChat() {
 
     // 应用 Agent 配置
     let systemMessages = chat.prompts || []
-    let workspace = updatedChat?.workspace || []
+    const workspace = updatedChat?.workspace || []
 
     if (agentName) {
       const agent = agents.get(agentName)
@@ -109,7 +109,7 @@ export function initChat() {
       userMessageContent: content,
       contextMessages,
       systemMessages,
-      workspace: updatedChat?.workspace || [],
+      workspace,
     })
 
     logger.info(
