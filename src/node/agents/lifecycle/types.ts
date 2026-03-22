@@ -5,11 +5,11 @@
  */
 
 /** Lifecycle hook names */
-export type AgentHook =
-  | 'onChatCreated'
-  | 'onMessageCompleted'
-  | 'onChatIdle'
-  | 'onMessageError'
+export type AgentHook
+  = | 'onChatCreated'
+    | 'onMessageCompleted'
+    | 'onChatIdle'
+    | 'onMessageError'
 
 /** Execution mode */
 export type ExecutionMode = 'auto' | 'manual'
@@ -17,8 +17,14 @@ export type ExecutionMode = 'auto' | 'manual'
 /** Agent execution result */
 export interface AgentResult {
   agentId: string
-  status: 'success' | 'error'
+  status: 'success' | 'error' | 'suggest'
   data?: unknown
+  /** Suggestion for the caller to act on (if status='suggest') */
+  suggestion?: {
+    type: 'title' | 'summary' | 'tool' | 'agent' | 'action'
+    content: string
+    metadata?: Record<string, unknown>
+  }
   error?: string
   duration?: number
 }

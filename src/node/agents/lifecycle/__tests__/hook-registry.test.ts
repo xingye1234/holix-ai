@@ -14,7 +14,7 @@ describe('HookRegistry', () => {
       agentId: 'agent1',
       hook: 'onMessageCompleted',
       priority: 10,
-      mode: 'auto'
+      mode: 'auto',
     })
 
     const subscriptions = registry.getSubscriptions('onMessageCompleted')
@@ -27,14 +27,14 @@ describe('HookRegistry', () => {
       agentId: 'agent1',
       hook: 'onMessageCompleted',
       priority: 20,
-      mode: 'auto'
+      mode: 'auto',
     })
 
     registry.subscribe({
       agentId: 'agent2',
       hook: 'onMessageCompleted',
       priority: 10,
-      mode: 'auto'
+      mode: 'auto',
     })
 
     const subscriptions = registry.getSubscriptions('onMessageCompleted')
@@ -52,14 +52,14 @@ describe('HookRegistry', () => {
       agentId: 'agent1',
       hook: 'onMessageCompleted',
       priority: 10,
-      mode: 'auto'
+      mode: 'auto',
     })
 
     registry.subscribe({
       agentId: 'agent1',
       hook: 'onChatCreated',
       priority: 10,
-      mode: 'auto'
+      mode: 'auto',
     })
 
     const subscriptions = registry.getByAgentId('agent1')
@@ -71,14 +71,14 @@ describe('HookRegistry', () => {
       agentId: 'agent1',
       hook: 'onMessageCompleted',
       priority: 10,
-      mode: 'auto'
+      mode: 'auto',
     })
 
     registry.subscribe({
       agentId: 'agent2',
       hook: 'onChatCreated',
       priority: 10,
-      mode: 'auto'
+      mode: 'auto',
     })
 
     const hooks = registry.getHooks()

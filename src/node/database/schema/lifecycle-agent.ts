@@ -17,11 +17,11 @@ export const agentExecutionLog = sqliteTable(
     duration: integer('duration'),
     createdAt: integer('created_at').notNull(),
   },
-  (table) => ({
+  table => ({
     chatIdx: index('idx_agent_execution_chat').on(table.chatUid),
     agentIdx: index('idx_agent_execution_agent').on(table.agentId),
     createdAtIdx: index('idx_agent_execution_created').on(table.createdAt),
-  })
+  }),
 )
 
 export type AgentExecutionLog = typeof agentExecutionLog.$inferSelect

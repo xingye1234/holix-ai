@@ -4,7 +4,7 @@
 
 // Core components
 export { HookRegistry } from './hook-registry'
-export { AgentOrchestrator, initializeOrchestrator, getOrchestrator } from './orchestrator'
+export { AgentOrchestrator, getOrchestrator, initializeOrchestrator } from './orchestrator'
 export { MainProcessExecutor } from './executor/main'
 export { contextProvider } from './context'
 

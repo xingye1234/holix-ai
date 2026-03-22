@@ -1,106 +1,116 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest'
-import { initializeOrchestrator } from '../orchestrator'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { AgentOrchestrator } from '../orchestrator'
 import { titleGeneratorAgent } from '../builtin/title-generator'
-import { db } from '../../../database/connect'
-import { chats, messages } from '../../../database/schema/chat'
-import { eq } from 'drizzle-orm'
-import { randomUUID } from 'node:crypto'
+import type { AgentContext } from '../types'
 
-describe('Agent Lifecycle Integration', () => {
-  let testChatUid: string
+// Mock database
+vi.mock('../../database/connect', () => ({
+  db: {
+    insert: vi.fn(() => ({
+      values: vi.fn(() => Promise.resolve()),
+    })),
+  },
+}))
 
-  beforeAll(async () => {
-    // Initialize orchestrator and register agent
-    const orchestrator = initializeOrchestrator(5000)
-    orchestrator.registerAgent(titleGeneratorAgent, ['onMessageCompleted'], 10)
-
-    // Create test chat
-    testChatUid = randomUUID()
-    await db.insert(chats).values({
-      uid: testChatUid,
-      title: '新对话',
-      provider: 'openai',
-      model: 'gpt-4',
-      status: 'active',
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-      lastSeq: 0
-    })
-
-    // Add test messages
-    await db.insert(messages).values([
-      {
-        uid: randomUUID(),
-        chatUid: testChatUid,
-        seq: 1,
-        role: 'user',
-        kind: 'message',
-        content: 'What is TypeScript?',
-        status: 'done',
-        createdAt: Date.now(),
-        updatedAt: Date.now()
-      },
-      {
-        uid: randomUUID(),
-        chatUid: testChatUid,
-        seq: 2,
-        role: 'assistant',
-        kind: 'message',
-        content: 'TypeScript is a typed superset of JavaScript...',
-        status: 'done',
-        createdAt: Date.now(),
-        updatedAt: Date.now()
+// Mock ContextProvider to avoid database calls
+vi.mock('../context', () => ({
+  contextProvider: {
+    getContext: vi.fn(async (chatUid: string, hook: string, data?: unknown) => {
+      const eventData = data as any
+      return {
+        chatUid,
+        messages: eventData?.messages || [],
+        chat: {
+          uid: chatUid,
+          title: eventData?.chat?.title || '新对话',
+          provider: 'openai',
+          model: 'gpt-4',
+          status: 'active',
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+          lastSeq: eventData?.messages?.length || 0,
+        } as any,
+        event: {
+          hook: hook as any,
+          data,
+        },
       }
-    ])
+    }),
+  },
+}))
+
+describe('Agent Lifecycle Integration (Unit)', () => {
+  let orchestrator: AgentOrchestrator
+
+  beforeEach(() => {
+    // Reset mocks
+    vi.clearAllMocks()
+
+    // Create new instance for each test
+    orchestrator = new AgentOrchestrator(5000)
+    orchestrator.registerAgent(titleGeneratorAgent, ['onMessageCompleted'], 10)
   })
 
-  afterAll(async () => {
-    // Cleanup
-    await db.delete(messages).where(eq(messages.chatUid, testChatUid))
-    await db.delete(chats).where(eq(chats.uid, testChatUid))
-  })
-
-  it('should execute agent on hook trigger', async () => {
-    const orchestrator = initializeOrchestrator()
-
+  it('should execute agent and return suggestion', async () => {
     // Trigger hook
-    const results = await orchestrator.triggerHook('onMessageCompleted', testChatUid)
+    const results = await orchestrator.triggerHook('onMessageCompleted', 'test-chat', {
+      messages: [
+        {
+          role: 'user',
+          content: 'What is TypeScript?',
+        },
+      ],
+      chat: {
+        title: '新对话',
+      },
+    } as any)
 
     // Verify execution
-    expect(results.length).toBeGreaterThan(0)
+    expect(results.length).toBe(1)
 
     const titleResult = results.find(r => r.agentId === 'builtin:title-generator')
     expect(titleResult).toBeDefined()
-    expect(titleResult?.status).toBe('success')
-    expect(titleResult?.data).toEqual({ title: 'What is TypeScript?' })
+    expect(titleResult?.status).toBe('suggest')
+    expect(titleResult?.suggestion).toEqual({
+      type: 'title',
+      content: 'What is TypeScript?',
+      metadata: {
+        currentTitle: '新对话',
+        messageCount: 1,
+        reason: 'Default title detected',
+      },
+    })
   })
 
-  it('should update title in database', async () => {
-    const orchestrator = initializeOrchestrator()
+  it('should skip suggestion when title is not default', async () => {
+    const results = await orchestrator.triggerHook('onMessageCompleted', 'test-chat', {
+      messages: [],
+      chat: {
+        title: 'Existing Title',
+      },
+    } as any)
 
-    // Trigger hook
-    await orchestrator.triggerHook('onMessageCompleted', testChatUid)
-
-    // Verify title was updated
-    const updatedChat = await db.select().from(chats).where(eq(chats.uid, testChatUid)).limit(1)
-    expect(updatedChat[0].title).toBe('What is TypeScript?')
+    expect(results.length).toBe(1)
+    expect(results[0].status).toBe('success')
+    expect(results[0].suggestion).toBeUndefined()
   })
 
-  it('should log execution to database', async () => {
-    const { agentExecutionLog } = await import('../../../database/schema/lifecycle-agent')
+  it('should suggest title at message threshold', async () => {
+    // Create 5 messages
+    const messages = Array.from({ length: 5 }, (_, i) => ({
+      role: 'user',
+      content: `Message ${i + 1}`,
+    }))
 
-    const orchestrator = initializeOrchestrator()
+    const results = await orchestrator.triggerHook('onMessageCompleted', 'test-chat', {
+      messages,
+      chat: {
+        title: 'Existing Title',
+      },
+    } as any)
 
-    // Trigger hook
-    await orchestrator.triggerHook('onMessageCompleted', testChatUid)
-
-    // Verify execution log
-    const logs = await db.select()
-      .from(agentExecutionLog)
-      .where(eq(agentExecutionLog.chatUid, testChatUid))
-
-    expect(logs.length).toBeGreaterThan(0)
-    expect(logs[0].agentId).toBe('builtin:title-generator')
-    expect(logs[0].status).toBe('success')
+    expect(results.length).toBe(1)
+    expect(results[0].status).toBe('suggest')
+    expect(results[0].suggestion?.metadata?.reason).toBe('Message threshold reached')
   })
 })

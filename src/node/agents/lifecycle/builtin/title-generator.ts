@@ -3,73 +3,67 @@ import type { LifecycleAgent, AgentContext } from '../types'
 /**
  * TitleGenerator Agent
  *
- * Automatically generates or updates chat titles based on conversation content.
+ * Analyzes conversation and suggests chat titles.
+ *
+ * IMPORTANT: This agent does NOT update the database.
+ * It returns suggestions that the caller (ChatSession) can choose to apply.
  *
  * Trigger: onMessageCompleted
  * Logic:
- * - Generate title if current title is "新对话"
- * - Update title every 5 messages
+ * - Suggest title if current title is "新对话"
+ * - Suggest title every 5 messages
  */
 export const titleGeneratorAgent: LifecycleAgent = {
   id: 'builtin:title-generator',
   name: 'Title Generator',
-  description: 'Automatically generates or updates chat titles based on conversation content',
+  description: 'Analyzes conversation and suggests chat titles',
   version: '1.0.0',
 
   handler: async (context: AgentContext) => {
     const { messages, chat } = context
 
-    // Check if we should update title
+    // Check if we should suggest a title
     const shouldUpdate = shouldUpdateTitle(messages, chat)
 
     if (!shouldUpdate) {
       return {
         agentId: 'builtin:title-generator',
-        status: 'success'
-      }
-    }
-
-    // Generate title (simplified - Phase 1 uses basic logic)
-    const newTitle = generateBasicTitle(messages)
-
-    // Update database
-    try {
-      const { db } = await import('../../database/connect')
-      const { chats } = await import('../../database/schema/chat')
-      const { eq } = await import('drizzle-orm')
-
-      await db.update(chats)
-        .set({
-          title: newTitle,
-          updatedAt: Date.now()
-        })
-        .where(eq(chats.uid, context.chatUid))
-
-      return {
-        agentId: 'builtin:title-generator',
         status: 'success',
-        data: { title: newTitle }
-      }
-    } catch (error) {
-      return {
-        agentId: 'builtin:title-generator',
-        status: 'error',
-        error: error instanceof Error ? error.message : String(error)
       }
     }
-  }
+
+    // Generate title suggestion (simplified - Phase 1 uses basic logic)
+    const suggestedTitle = generateBasicTitle(messages)
+
+    // Return suggestion (caller decides whether to apply)
+    return {
+      agentId: 'builtin:title-generator',
+      status: 'suggest',
+      suggestion: {
+        type: 'title',
+        content: suggestedTitle,
+        metadata: {
+          currentTitle: chat.title,
+          messageCount: messages.length,
+          reason: chat.title === '新对话'
+            ? 'Default title detected'
+            : 'Message threshold reached',
+        },
+      },
+    }
+  },
 }
 
 /**
- * Check if title should be updated
+ * Check if title should be suggested
  */
 function shouldUpdateTitle(messages: any[], chat: any): boolean {
-  // Update if title is default
+  // Suggest if title is default
   if (chat.title === '新对话') {
     return true
   }
 
-  // Update every 5 messages
+  // Suggest every 5 messages
   if (messages.length > 0 && messages.length % 5 === 0) {
     return true
   }

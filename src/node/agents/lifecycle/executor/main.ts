@@ -30,22 +30,23 @@ export class MainProcessExecutor {
       const result = await this.executeWithAbort(
         agent,
         context,
-        effectiveSignal
+        effectiveSignal,
       )
 
       clearTimeout(timeoutId)
 
       return {
         ...result,
-        duration: Date.now() - startTime
+        duration: Date.now() - startTime,
       }
-    } catch (error) {
+    }
+    catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
         return {
           agentId: agent.id,
           status: 'error',
           error: 'Execution timeout',
-          duration: Date.now() - startTime
+          duration: Date.now() - startTime,
         }
       }
 
@@ -53,7 +54,7 @@ export class MainProcessExecutor {
         agentId: agent.id,
         status: 'error',
         error: error instanceof Error ? error.message : String(error),
-        duration: Date.now() - startTime
+        duration: Date.now() - startTime,
       }
     }
   }
@@ -64,7 +65,7 @@ export class MainProcessExecutor {
   private async executeWithAbort(
     agent: LifecycleAgent,
     context: AgentContext,
-    signal: AbortSignal
+    signal: AbortSignal,
   ): Promise<AgentResult> {
     return new Promise((resolve, reject) => {
       const abortHandler = () => {

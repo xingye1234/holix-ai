@@ -13,7 +13,7 @@ export class ContextProvider {
   async getContext(
     chatUid: string,
     hook: AgentHook,
-    eventData?: unknown
+    eventData?: unknown,
   ): Promise<AgentContext> {
     // Fetch chat and messages in parallel
     const [chatResult, messagesResult] = await Promise.all([
@@ -22,7 +22,7 @@ export class ContextProvider {
         .from(messages)
         .where(eq(messages.chatUid, chatUid))
         .orderBy(desc(messages.seq))
-        .limit(10) // Use chat.contextSettings.maxMessages in full implementation
+        .limit(10), // Use chat.contextSettings.maxMessages in full implementation
     ])
 
     if (!chatResult[0]) {
@@ -35,8 +35,8 @@ export class ContextProvider {
       chat: chatResult[0],
       event: {
         hook,
-        data: eventData
-      }
+        data: eventData,
+      },
     }
   }
 }

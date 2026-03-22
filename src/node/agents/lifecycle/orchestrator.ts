@@ -3,7 +3,7 @@ import { MainProcessExecutor } from './executor/main'
 import { contextProvider } from './context'
 import { db } from '../../database/connect'
 import { agentExecutionLog } from '../../database/schema/lifecycle-agent'
-import type { AgentHook, LifecycleAgent, AgentResult, ExecutionRequest } from './types'
+import type { AgentHook, LifecycleAgent, AgentResult } from './types'
 
 /**
  * Agent Orchestrator
@@ -34,7 +34,7 @@ export class AgentOrchestrator {
   registerAgent(
     agent: LifecycleAgent,
     hooks: AgentHook[],
-    priority: number = 10
+    priority: number = 10,
   ): void {
     // Store agent
     this.agents.set(agent.id, agent)
@@ -45,7 +45,7 @@ export class AgentOrchestrator {
         agentId: agent.id,
         hook,
         priority,
-        mode: 'auto'
+        mode: 'auto',
       })
     }
   }
@@ -56,7 +56,7 @@ export class AgentOrchestrator {
   async triggerHook(
     hook: AgentHook,
     chatUid: string,
-    data?: unknown
+    data?: unknown,
   ): Promise<AgentResult[]> {
     // Get subscriptions
     const subscriptions = this.registry.getSubscriptions(hook)
@@ -74,7 +74,7 @@ export class AgentOrchestrator {
         return {
           agentId: subscription.agentId,
           status: 'error' as const,
-          error: 'Agent not found'
+          error: 'Agent not found',
         }
       }
 
@@ -82,19 +82,20 @@ export class AgentOrchestrator {
         const result = await this.executor.execute({
           agent,
           context,
-          timeout: this.defaultTimeout
+          timeout: this.defaultTimeout,
         })
 
         // Log execution
         await this.logExecution(agent, context, result)
 
         return result
-      } catch (error) {
+      }
+      catch (error) {
         // Error isolation - one agent failure doesn't affect others
         const errorResult: AgentResult = {
           agentId: agent.id,
           status: 'error',
-          error: error instanceof Error ? error.message : String(error)
+          error: error instanceof Error ? error.message : String(error),
         }
 
         await this.logExecution(agent, context, errorResult)
@@ -122,7 +123,7 @@ export class AgentOrchestrator {
   private async logExecution(
     agent: LifecycleAgent,
     context: any,
-    result: AgentResult
+    result: AgentResult,
   ): Promise<void> {
     try {
       await db.insert(agentExecutionLog).values({
@@ -134,9 +135,10 @@ export class AgentOrchestrator {
         resultData: result.data,
         error: result.error,
         duration: result.duration,
-        createdAt: Date.now()
+        createdAt: Date.now(),
       })
-    } catch (error) {
+    }
+    catch (error) {
       console.error('[Orchestrator] Failed to log execution:', error)
     }
   }
