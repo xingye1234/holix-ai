@@ -8,6 +8,10 @@ import {
   toggleAgentFavorite,
 } from '../database/agent-metadata'
 import { procedure, router } from './trpc'
+import { getOrchestrator } from '../agents/lifecycle'
+import { agentExecutionLog } from '../database/schema/lifecycle-agent'
+import { eq, desc } from 'drizzle-orm'
+import { db } from '../database/connect'
 
 /**
  * Zod schemas for validation
@@ -246,5 +250,61 @@ export const agentRouter = router({
     .mutation(async ({ input }) => {
       await incrementAgentUse(input.name)
       return { success: true }
+    }),
+
+  /**
+   * Manually trigger a lifecycle agent hook
+   */
+  triggerLifecycleHook: procedure()
+    .input(z.object({
+      chatUid: z.string().min(1),
+      hook: z.enum([
+        'onChatCreated',
+        'onMessageCompleted',
+        'onChatIdle',
+        'onMessageError'
+      ])
+    }))
+    .mutation(async ({ input }) => {
+      const orchestrator = getOrchestrator()
+      if (!orchestrator) {
+        throw new Error('Agent lifecycle system not initialized')
+      }
+
+      try {
+        const results = await orchestrator.triggerHook(input.hook, input.chatUid)
+        return { success: true, results }
+      } catch (error) {
+        console.error('Manual lifecycle hook trigger failed:', error)
+        throw new Error('Failed to trigger lifecycle hook')
+      }
+    }),
+
+  /**
+   * List all registered lifecycle agents
+   */
+  listLifecycleAgents: procedure()
+    .query(async () => {
+      const orchestrator = getOrchestrator()
+      if (!orchestrator) {
+        return []
+      }
+      return orchestrator.getRegisteredAgents()
+    }),
+
+  /**
+   * Get lifecycle execution history for a chat
+   */
+  getLifecycleExecutionHistory: procedure()
+    .input(z.object({
+      chatUid: z.string(),
+      limit: z.number().optional().default(50)
+    }))
+    .query(async ({ input }) => {
+      return db.select()
+        .from(agentExecutionLog)
+        .where(eq(agentExecutionLog.chatUid, input.chatUid))
+        .orderBy(desc(agentExecutionLog.createdAt))
+        .limit(input.limit)
     }),
 })
