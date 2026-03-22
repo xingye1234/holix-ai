@@ -2,7 +2,9 @@
 
 > **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build core agent lifecycle system with a custom orchestrator (not hookable), manual trigger support, and one working agent.
+**Goal:** ~~Build core agent lifecycle system with a custom orchestrator (not hookable), manual trigger support, and one working agent.~~ ✅ COMPLETE
+
+**Status:** Phase 1 implementation complete. All core components implemented with suggestion-based agent pattern.
 
 **Architecture:**
 - **AgentOrchestrator**: Custom task orchestrator with queue management, timeout control, error isolation
@@ -653,13 +655,51 @@ git commit -m "feat(lifecycle): add AgentOrchestrator with parallel execution an
 
 ---
 
-## Next Steps (6-10)
+## Phase 1 Completion Summary
 
-Continue with:
-- Task 6: Create ContextProvider
-- Task 7: Create TitleGenerator agent
-- Task 8: Create builtin agents registry
-- Task 9: Add tRPC manual trigger API
-- Task 10: Integration testing
+### Completed Components
 
-Ready to continue?
+**Core System:**
+- ✅ `types.ts` - Type definitions with suggestion-based AgentResult
+- ✅ `hook-registry.ts` - Hook → agent subscription management (priority-sorted)
+- ✅ `executor/main.ts` - Main process executor with timeout and abort support
+- ✅ `orchestrator.ts` - Custom orchestrator with parallel execution and error isolation
+- ✅ `context.ts` - Context provider for fetching chat data
+
+**Built-in Agents:**
+- ✅ `builtin/title-generator.ts` - Suggests chat titles based on conversation
+- ✅ `builtin/index.ts` - Registry of built-in agents
+
+**Database:**
+- ✅ `schema/lifecycle-agent.ts` - Agent execution log table
+- ✅ Migration generated and applied
+
+**API:**
+- ✅ `server/agent.ts` - tRPC endpoints for manual trigger, list agents, get history
+
+**Tests:**
+- ✅ `__tests__/hook-registry.test.ts` - 5/5 passing
+- ✅ `__tests__/title-generator.test.ts` - 3/3 passing
+- ✅ `__tests__/integration.test.ts` - 3/3 passing
+- **Total: 11/11 tests passing**
+
+### Key Design Decision
+
+**Suggestion Pattern:** Agents return `status: 'suggest'` with a `suggestion` object instead of directly modifying business data. The caller (ChatSession) decides whether to apply suggestions. This ensures:
+- Agents focus on analysis, not mutation
+- Business logic remains in the application layer
+- Easy to audit and control agent behavior
+- Agents only log their own execution to database
+
+### Next Phase: ChatSession Integration
+
+To complete the lifecycle system, integrate with ChatSession to:
+1. Trigger hooks at appropriate lifecycle points
+2. Process agent suggestions and apply them to database
+3. Handle suggestion conflicts and priorities
+
+Integration points:
+- `onChatCreated`: Call `orchestrator.triggerHook('onChatCreated', chatUid)`
+- `onMessageCompleted`: Call `orchestrator.triggerHook('onMessageCompleted', chatUid)`
+- Apply title suggestions when received
+- Future: Apply summary, tool, agent suggestions
