@@ -426,7 +426,7 @@ describe('ContextProvider', () => {
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `pnpm test src/node/agents/__tests__/lifecycle/context.test.ts`
-Expected: FAIL with "ContextProvider not defined"
+Expected: FAIL with "Cannot find module '../../../lifecycle/context'" or similar import error
 
 - [ ] **Step 3: Implement ContextProvider**
 
@@ -447,7 +447,7 @@ export class ContextProvider {
   ): Promise<AgentContext> {
     // Fetch chat and messages in parallel
     const [chatResult, messagesResult] = await Promise.all([
-      db.select().from(chats).where(eq(chats.uid, chatUid).limit(1)),
+      db.select().from(chats).where(eq(chats.uid, chatUid)).limit(1),
       db.select()
         .from(messages)
         .where(eq(messages.chatUid, chatUid))
@@ -484,10 +484,10 @@ export class ContextProvider {
 export const contextProvider = new ContextProvider()
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [ ] **Step 4: Run test to verify it compiles**
 
 Run: `pnpm test src/node/agents/__tests__/lifecycle/context.test.ts`
-Expected: Tests may fail due to no test data - we'll address this in next steps
+Expected: Tests compile but may fail at runtime due to mocked dependencies not matching actual implementation. This is expected - we'll fix mocking in Step 5.
 
 - [ ] **Step 5: Update test to handle database properly**
 
@@ -969,7 +969,7 @@ git commit -m "feat(lifecycle): add AgentRunner core with hook registration and 
 
 **Files:**
 - Create: `src/node/agents/lifecycle/builtin/title-generator.ts`
-- Create: `src/node/agents/__tests__/lifecycle/builtin/title-generator.test.ts'
+- Create: `src/node/agents/__tests__/lifecycle/builtin/title-generator.test.ts`
 
 - [ ] **Step 1: Write failing test for TitleGenerator**
 
@@ -1255,7 +1255,7 @@ In `src/node/agents/index.ts`, modify the existing `init()` method to also initi
 import { initializeAgentRunner } from './lifecycle'
 ```
 
-**Then**, modify the existing `init()` method (around line 21-35) by adding one line:
+**Then**, modify the existing `init()` method by adding one line after `await this.loadCustomAgents()`:
 
 ```typescript
 async init(): Promise<void> {
@@ -1279,7 +1279,7 @@ async init(): Promise<void> {
 }
 ```
 
-**Verification:** The existing `init()` method already exists, so you only need to add the `await initializeAgentRunner()` line after `await this.loadCustomAgents()`.
+**Note:** Find the existing `init()` method (it starts with `async init(): Promise<void>`) and add `await initializeAgentRunner()` after `await this.loadCustomAgents()`.
 
 - [ ] **Step 3: Add test for initialization**
 
@@ -1537,7 +1537,15 @@ describe('Agent Lifecycle Integration', () => {
 - [ ] **Step 2: Run integration test**
 
 Run: `pnpm test src/node/agents/__tests__/lifecycle/integration.test.ts`
-Expected: PASS (may require database setup)
+
+**Prerequisites:**
+- Database migrations must be applied (run `pnpm drizzle-kit push` or equivalent)
+- Test database access configured in environment
+
+Expected: PASS. If fails, check:
+- Database is accessible
+- `agent_execution_log` table exists (migration applied)
+- `chats` and `messages` tables exist
 
 - [ ] **Step 3: Commit**
 
@@ -1690,14 +1698,17 @@ await trpc.agent.listLifecycleAgents.query()
 3. Send a message: "What is TypeScript?"
 4. Wait 2 seconds for hook to trigger
 5. Verify title update in sidebar (should show "What is Type..." or similar)
-6. Verify in database:
+6. Get current chat UID from URL or DevTools:
+   - Option A: Copy from browser URL (e.g., `/chat/xxx-xxx-xxx`)
+   - Option B: Run in DevTools: `window.location.pathname.split('/').pop()`
+7. Verify in database:
    - Open DevTools Console
-   - Run: `await trpc.agent.getLifecycleExecutionHistory.query({ chatUid: '<current-chat-uid>', limit: 10 })`
+   - Run: `await trpc.agent.getLifecycleExecutionHistory.query({ chatUid: '<paste-chat-uid>', limit: 10 })`
    - Verify: Returns array with at least 1 entry, agentId='builtin:title-generator', status='success'
-7. Trigger manual hook:
-   - Run: `await trpc.agent.triggerLifecycleHook.mutate({ chatUid: '<current-chat-uid>', hook: 'onMessageCompleted' })`
+8. Trigger manual hook:
+   - Run: `await trpc.agent.triggerLifecycleHook.mutate({ chatUid: '<paste-chat-uid>', hook: 'onMessageCompleted' })`
    - Verify: Returns `{ success: true, results: [...] }`
-8. Check database directly:
+9. Check database directly:
    - Title should be updated from "新对话" to a truncated version of first message
    - `agent_execution_log` table should have new entries
 
