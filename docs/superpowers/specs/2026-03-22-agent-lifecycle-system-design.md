@@ -99,6 +99,43 @@ The central orchestrator for agent execution.
 - `registerAgent(agent: AgentExecutable): void` - Register an agent
 - `triggerHook(hook: AgentHook, chatUid: string, data?: unknown): Promise<AgentResult[]>` - Trigger a hook
 - `listAgents(): AgentExecutable[]` - List all registered agents
+- `initialize(): Promise<void>` - Initialize worker pool and register built-in agents
+
+**Initialization and Registration:**
+
+The AgentRunner is a singleton that must be initialized during application startup:
+
+```typescript
+// src/node/agents/runner.ts
+
+let _instance: AgentRunner | null = null
+
+export async function initializeAgentRunner(): Promise<AgentRunner> {
+  if (_instance) return _instance
+
+  _instance = new AgentRunner()
+  await _instance.initialize()  // Spawns workers, registers agents
+  return _instance
+}
+
+export const agentRunner = await initializeAgentRunner()
+```
+
+**Startup Sequence:**
+1. During app initialization (`src/main/index.ts` or similar entry point), call `initializeAgentRunner()`
+2. `AgentRunner.initialize()` spawns worker threads based on `AGENT_WORKER_COUNT`
+3. Built-in agents are registered by calling `registerBuiltinAgents()`
+4. AgentRunner is ready to receive hook triggers
+
+**Agent Registration:**
+- Built-in agents registered during `initialize()` phase
+- Each agent's `AgentHookConfig` specifies which hooks it responds to
+- Agents are stored in a Map for O(1) lookup during hook execution
+
+**Integration with Existing Agents Class:**
+- The existing `Agents` class at `src/node/agents/index.ts` handles CRUD for agent configuration
+- The new `AgentRunner` is a separate concern for lifecycle agent execution
+- They coexist without conflict: one manages config, one manages execution
 
 ### 2. Hookable Lifecycle
 
@@ -170,8 +207,8 @@ interface AgentContext {
 - **Query Optimization**: Messages fetched with `LIMIT` based on `chat.contextSettings.maxMessages`
 - **Large History Handling**: For chats with 500+ messages, fetches first 50 and last 50 (strategic sampling)
 - **Tool Integration**:
-  - `callTool`: Delegates to `src/node/chat/skills/call-skill.ts` (existing skill invocation)
-  - `listTools`: Aggregates from `src/node/chat/skills/index.ts` (skills) and MCP server list
+  - `callTool`: Uses LangChain tool invocation via the chat session's tool registry. Delegates to existing tool calling mechanism that wraps skills with `wrapWithSkillInvocationLog()` (from `src/node/chat/tools/skill-invocation.ts`)
+  - `listTools`: Aggregates from the session's available tools (includes skills from `src/node/chat/tools/skills.ts` and MCP tools)
 - **Caching**: Context cached for 30s within same hook execution to avoid redundant DB queries
 
 **Location:** `src/node/agents/context.ts`
@@ -204,7 +241,11 @@ interface AgentContext {
 - **LLM**: Uses lightweight model (e.g., gpt-4o-mini or claude-haiku)
 - **Analysis**: Extracts intent from last user message using keyword matching + LLM classification
 - **Categories**: code, writing, analysis, planning, creative, research
-- **Recommendation Logic**: Maps intent to agent ID (e.g., "code" → suggests code-review agent)
+- **Recommendation Logic**: Maps intent to existing agent by reading from the `Agents` class
+  - Reads available agents via `agents.list()`
+  - Matches intent category to agent `category` field (e.g., "code" → agents with `category: 'coding'`)
+  - Returns agent with highest `useCount` in that category (from agent metadata)
+  - Returns suggestion with `type: 'agent'` and agent metadata
 
 **ToolAnalyzer**
 - **No LLM**: Pure logging and pattern detection
@@ -453,21 +494,25 @@ scheduleIdleCheck(chatUid: string): void {
 
 ## Manual Trigger API
 
-Users can manually trigger hooks via tRPC:
+Users can manually trigger hooks via tRPC.
 
-**Location:** `src/node/api/routes/agent-routes.ts`
+**Integration:** Extend the existing `agentRouter` at `src/node/server/agent.ts` with lifecycle agent procedures.
 
-**Router Definition:**
+**Add to existing agentRouter:**
 ```typescript
-import { router, publicProcedure } from '../trpc'
-import { z } from 'zod'
-import { agentRunner } from '../../agents/runner'
+import { agentRunner } from '../agents/runner'
+import { db } from '../database'
+import { agentExecutionLog } from '../database/schema/agent'
+import { eq, desc } from 'drizzle-orm'
 
+// Add these procedures to the existing agentRouter export
 export const agentRouter = router({
+  // ... existing procedures (list, get, create, update, delete, etc.)
+
   /**
-   * Manually trigger an agent hook
+   * Manually trigger a lifecycle agent hook
    */
-  triggerHook: publicProcedure
+  triggerLifecycleHook: procedure()
     .input(z.object({
       chatUid: z.string().min(1),
       hook: z.enum([
@@ -485,22 +530,23 @@ export const agentRouter = router({
         const results = await agentRunner.triggerHook(input.hook, input.chatUid)
         return { success: true, results }
       } catch (error) {
-        console.error('Manual hook trigger failed:', error)
-        throw new Error('Failed to trigger hook')
+        console.error('Manual lifecycle hook trigger failed:', error)
+        throw new Error('Failed to trigger lifecycle hook')
       }
     }),
 
   /**
-   * List all registered agents
+   * List all registered lifecycle agents
    */
-  listAgents: publicProcedure.query(async () => {
-    return agentRunner.listAgents()
-  }),
+  listLifecycleAgents: procedure()
+    .query(async () => {
+      return agentRunner.listAgents()
+    }),
 
   /**
    * Get execution history for a chat
    */
-  getExecutionHistory: publicProcedure
+  getLifecycleExecutionHistory: procedure()
     .input(z.object({
       chatUid: z.string(),
       limit: z.number().optional().default(50)
@@ -511,7 +557,7 @@ export const agentRouter = router({
         .where(eq(agentExecutionLog.chatUid, input.chatUid))
         .orderBy(desc(agentExecutionLog.createdAt))
         .limit(input.limit)
-    })
+    }),
 })
 ```
 
