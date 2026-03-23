@@ -1,7 +1,7 @@
 {
   "name": "holix-ai",
   "type": "module",
-  "version": "0.0.2",
+  "version": "0.1.0",
   "packageManager": "pnpm@10.19.0",
   "description": "Holix AI - An AI-powered chat application",
   "author": "",
