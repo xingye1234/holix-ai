@@ -18,6 +18,12 @@ import { getChatSkillSettings, setChatSkillSettings } from '../database/chat-ski
 import { update } from '../platform/update'
 import { procedure, router } from './trpc'
 
+const contextSettingsSchema = z.object({
+  maxMessages: z.number().int().min(1).max(200),
+  timeWindowHours: z.number().int().min(1).max(24 * 30).nullable(),
+  autoScrollToBottomOnSend: z.boolean().default(true),
+})
+
 // 定义聊天相关的 procedures
 export const chatRouter = router({
   // 创建会话
@@ -78,10 +84,7 @@ export const chatRouter = router({
         pinned: z.boolean().optional(),
         archived: z.boolean().optional(),
         expiresAt: z.number().nullable().optional(),
-        contextSettings: z.object({
-          maxMessages: z.number().int().min(1).max(200),
-          timeWindowHours: z.number().int().min(1).max(24 * 30).nullable(),
-        }).optional(),
+        contextSettings: contextSettingsSchema.optional(),
       }),
     )
     .mutation(async ({ input }) => {
@@ -137,10 +140,7 @@ export const chatRouter = router({
     .input(
       z.object({
         chatUid: z.string(),
-        contextSettings: z.object({
-          maxMessages: z.number().int().min(1).max(200),
-          timeWindowHours: z.number().int().min(1).max(24 * 30).nullable(),
-        }),
+        contextSettings: contextSettingsSchema,
       }),
     )
     .mutation(async ({ input }) => {

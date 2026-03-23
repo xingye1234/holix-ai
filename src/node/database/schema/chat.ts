@@ -90,11 +90,14 @@ export interface ChatContextSettings {
   maxMessages: number
   /** 参与上下文的时间窗口（小时），null 表示不限时间 */
   timeWindowHours: number | null
+  /** 发送新消息后是否自动滚动到底部 */
+  autoScrollToBottomOnSend: boolean
 }
 
 export const DEFAULT_CHAT_CONTEXT_SETTINGS: ChatContextSettings = {
   maxMessages: 10,
   timeWindowHours: 24,
+  autoScrollToBottomOnSend: true,
 }
 
 export const chats = sqliteTable(

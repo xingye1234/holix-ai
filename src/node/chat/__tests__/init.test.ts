@@ -76,6 +76,7 @@ vi.mock('../../database/schema/chat', () => ({
   DEFAULT_CHAT_CONTEXT_SETTINGS: {
     maxMessages: 10,
     timeWindowHours: null,
+    autoScrollToBottomOnSend: true,
   },
 }))
 
@@ -109,6 +110,7 @@ describe('initChat', () => {
       contextSettings: {
         maxMessages: 10,
         timeWindowHours: null,
+        autoScrollToBottomOnSend: true,
       },
       workspace: [],
     })

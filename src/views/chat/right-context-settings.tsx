@@ -24,6 +24,7 @@ function normalizeSettings(settings?: ChatContextSettings | null): ChatContextSe
   return {
     maxMessages: settings?.maxMessages ?? DEFAULT_CHAT_CONTEXT_SETTINGS.maxMessages,
     timeWindowHours: settings?.timeWindowHours ?? DEFAULT_CHAT_CONTEXT_SETTINGS.timeWindowHours,
+    autoScrollToBottomOnSend: settings?.autoScrollToBottomOnSend ?? DEFAULT_CHAT_CONTEXT_SETTINGS.autoScrollToBottomOnSend,
   }
 }
 
@@ -32,6 +33,9 @@ export default function RightContextSettings() {
   const [maxMessages, setMaxMessages] = useState(String(DEFAULT_CHAT_CONTEXT_SETTINGS.maxMessages))
   const [timeWindow, setTimeWindow] = useState(
     DEFAULT_CHAT_CONTEXT_SETTINGS.timeWindowHours ? String(DEFAULT_CHAT_CONTEXT_SETTINGS.timeWindowHours) : 'none',
+  )
+  const [autoScrollToBottomOnSend, setAutoScrollToBottomOnSend] = useState(
+    DEFAULT_CHAT_CONTEXT_SETTINGS.autoScrollToBottomOnSend,
   )
   const [isSaving, setIsSaving] = useState(false)
   const [allSkills, setAllSkills] = useState<Array<{ name: string, description: string }>>([])
@@ -62,6 +66,7 @@ export default function RightContextSettings() {
   useEffect(() => {
     setMaxMessages(String(initialSettings.maxMessages))
     setTimeWindow(initialSettings.timeWindowHours ? String(initialSettings.timeWindowHours) : 'none')
+    setAutoScrollToBottomOnSend(initialSettings.autoScrollToBottomOnSend)
   }, [initialSettings])
 
   const handleSave = async () => {
@@ -78,6 +83,7 @@ export default function RightContextSettings() {
     const settings: ChatContextSettings = {
       maxMessages: parsedMaxMessages,
       timeWindowHours: timeWindow === 'none' ? null : Number(timeWindow),
+      autoScrollToBottomOnSend,
     }
 
     try {
@@ -171,6 +177,20 @@ export default function RightContextSettings() {
             </SelectContent>
           </Select>
           <p className="text-xs text-muted-foreground">仅纳入时间窗口内的消息；可设置为不限时间。</p>
+        </div>
+
+        <div className="flex items-start justify-between gap-3 rounded-md border p-3">
+          <div className="space-y-1">
+            <Label htmlFor="auto-scroll-to-bottom">发送后自动滚动到底部</Label>
+            <p className="text-xs text-muted-foreground">
+              发送新消息后，聊天列表会自动滚动到最底部，便于继续查看最新回复。
+            </p>
+          </div>
+          <Switch
+            id="auto-scroll-to-bottom"
+            checked={autoScrollToBottomOnSend}
+            onCheckedChange={setAutoScrollToBottomOnSend}
+          />
         </div>
 
         <Button className="w-full" onClick={handleSave} disabled={isSaving}>

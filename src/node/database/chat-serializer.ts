@@ -21,12 +21,17 @@ export type RawChat = Omit<Chat, 'prompts' | 'workspace' | 'pendingMessages' | '
  * 将数据库中的 JSON 字符串字段转换为对象
  */
 export function deserializeChat(raw: RawChat): Chat {
+  const contextSettings = deserializeJsonField(raw.contextSettings, DEFAULT_CHAT_CONTEXT_SETTINGS) as Partial<ChatContextSettings>
+
   return {
     ...raw,
     prompts: deserializeJsonField(raw.prompts, []) as string[],
     workspace: deserializeJsonField(raw.workspace, null) as Workspace[] | null,
     pendingMessages: deserializeJsonField(raw.pendingMessages, null) as PendingMessage[] | null,
-    contextSettings: deserializeJsonField(raw.contextSettings, DEFAULT_CHAT_CONTEXT_SETTINGS) as ChatContextSettings,
+    contextSettings: {
+      ...DEFAULT_CHAT_CONTEXT_SETTINGS,
+      ...contextSettings,
+    },
   }
 }
 

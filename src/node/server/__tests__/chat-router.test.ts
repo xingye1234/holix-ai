@@ -21,6 +21,7 @@ vi.mock('../../database/chat-operations', () => ({
   getAllChats: vi.fn(),
   getChatByUid: vi.fn(),
   updateChat: vi.fn(),
+  updateChatContextSettings: vi.fn(),
   updateChatModel: vi.fn(),
   deleteChat: vi.fn(),
   updateChatPrompts: vi.fn(),
@@ -55,6 +56,7 @@ function makeChat(overrides = {}) {
     contextSettings: {
       maxMessages: 10,
       timeWindowHours: 24,
+      autoScrollToBottomOnSend: true,
     },
     ...overrides,
   }
@@ -205,6 +207,36 @@ describe('chatRouter', () => {
       })
 
       expect(chatOps.updateChatPrompts).toHaveBeenCalledWith('chat-uid-001', ['You are helpful.'])
+      expect(update).toHaveBeenCalledWith('chat.updated', chat)
+      expect(result).toEqual(chat)
+    })
+  })
+
+  describe('updateContextSettings', () => {
+    it('updates context settings including auto scroll flag and sends IPC update', async () => {
+      const chat = makeChat({
+        contextSettings: {
+          maxMessages: 20,
+          timeWindowHours: null,
+          autoScrollToBottomOnSend: false,
+        },
+      })
+      vi.mocked(chatOps.updateChatContextSettings).mockResolvedValue(chat as any)
+
+      const result = await caller.updateContextSettings({
+        chatUid: 'chat-uid-001',
+        contextSettings: {
+          maxMessages: 20,
+          timeWindowHours: null,
+          autoScrollToBottomOnSend: false,
+        },
+      })
+
+      expect(chatOps.updateChatContextSettings).toHaveBeenCalledWith('chat-uid-001', {
+        maxMessages: 20,
+        timeWindowHours: null,
+        autoScrollToBottomOnSend: false,
+      })
       expect(update).toHaveBeenCalledWith('chat.updated', chat)
       expect(result).toEqual(chat)
     })

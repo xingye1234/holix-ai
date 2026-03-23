@@ -6,7 +6,9 @@ import { VirtualMessageList } from '@/components/virtual-list'
 import { useChatContext } from '@/context/chat'
 import { useChatVirtualList } from '@/hooks/chat-virtual-list'
 import { useMessageJump } from '@/hooks/use-message-jump'
+import useUpdate from '@/hooks/update'
 import { MessageItem } from './message-item'
+import { shouldAutoScrollToBottomOnUserMessage } from './content.utils'
 
 // ─── item 渲染函数 ─────────────────────────────────────────────────────────────
 // 保持引用稳定，避免 VirtualMessageList 整体重渲染
@@ -69,6 +71,17 @@ export const MainContent = memo(() => {
       scrollToBottomRef.current = null
     }
   }, [listRef, scrollToBottomRef])
+
+  useUpdate('message.created', (payload) => {
+    const autoScrollToBottomOnSend = chat?.contextSettings?.autoScrollToBottomOnSend ?? true
+    if (!shouldAutoScrollToBottomOnUserMessage(chat?.uid, autoScrollToBottomOnSend, payload)) {
+      return
+    }
+
+    requestAnimationFrame(() => {
+      listRef.current?.scrollToBottom('smooth')
+    })
+  })
 
   // 桥接底部状态变更：同时更新 hook 内部 ref 和 context 状态
   const handleAtBottomStateChange = useCallback(
