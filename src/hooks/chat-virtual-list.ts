@@ -27,6 +27,7 @@ import { useChatMessages, useInitialMessageLoad, useLoadMoreMessages } from '@/h
 import useUpdate from '@/hooks/update'
 import logger from '@/lib/logger'
 import { useMessageStore } from '@/store/message'
+import type { MessageCreatedEnvelope, MessageStreamingEnvelope, MessageUpdatedEnvelope } from '@/types/updates/message'
 
 export interface ChatVirtualListState {
   /** 消息 ID 列表 */
@@ -148,6 +149,12 @@ export function useChatVirtualList(): ChatVirtualListState {
     return 'smooth'
   }, [])
 
+  const scheduleScrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
+    requestAnimationFrame(() => {
+      listRef.current?.scrollToBottom(behavior)
+    })
+  }, [])
+
   // ── streaming 自动滚动（多消息优化）───────────────────────────────────────────
 
   /**
@@ -158,16 +165,19 @@ export function useChatVirtualList(): ChatVirtualListState {
    * 注意：不在这里直接调用 scrollToBottom，而是通过 followOutputBehavior
    * 让虚拟列表自己处理滚动，避免双重滚动导致抖动
    */
-  const handleStreamingUpdate = useCallback((payload: { chatUid: string, message?: Message }) => {
+  const handleStreamingUpdate = useCallback((payload: MessageCreatedEnvelope['payload'] | MessageStreamingEnvelope['payload'] | MessageUpdatedEnvelope['payload']) => {
     if (!chat)
-      return
-    if (payload.message && payload.message.role === 'user')
       return
     if (payload.chatUid !== chat.uid)
       return
 
-    const messageId = payload.message?.uid
+    const messageId = 'messageUid' in payload ? payload.messageUid : payload.message?.uid
     if (!messageId)
+      return
+
+    const message = useMessageStore.getState().messages[messageId]
+    const messageRole = 'message' in payload ? payload.message?.role : message?.role
+    if (messageRole === 'user')
       return
 
     // 更新流式消息跟踪
@@ -185,10 +195,17 @@ export function useChatVirtualList(): ChatVirtualListState {
       streamingMessagesRef.current.delete(messageId)
       updateStreamingCount()
       logger.debug(`ChatVirtualList: Message ${messageId} finished streaming (count: ${streamingMessagesRef.current.size})`)
+
+      if (isAtBottomRef.current) {
+        const behavior = followOutputBehavior(true)
+        if (behavior) {
+          scheduleScrollToBottom(behavior)
+        }
+      }
     }
 
     // 滚动由 followOutputBehavior + 虚拟列表自动处理，不需要手动调用
-  }, [chat, isStreamingMessage, updateStreamingCount])
+  }, [chat, followOutputBehavior, isStreamingMessage, scheduleScrollToBottom, updateStreamingCount])
 
   useUpdate('message.streaming', handleStreamingUpdate)
   useUpdate('message.created', handleStreamingUpdate)
