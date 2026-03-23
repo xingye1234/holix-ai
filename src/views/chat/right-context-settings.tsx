@@ -44,21 +44,37 @@ export default function RightContextSettings() {
   const [chatEnabledSkills, setChatEnabledSkills] = useState<string[]>([])
 
   useEffect(() => {
-    if (!chat?.uid)
+    if (!chat?.uid) {
+      setAllSkills([])
+      setGlobalDisabledSkills([])
+      setChatDisabledSkills([])
+      setChatEnabledSkills([])
       return
+    }
+
+    let cancelled = false
 
     Promise.all([
       trpcClient.skill.list(),
       getConfig(),
       trpcClient.chat.getSkillSettings({ chatUid: chat.uid }),
     ]).then(([skills, config, chatSettings]) => {
+      if (cancelled) {
+        return
+      }
       setAllSkills(skills.map(skill => ({ name: skill.name, description: skill.description })))
       setGlobalDisabledSkills(config.disabledSkills ?? [])
       setChatDisabledSkills(chatSettings.disabledSkills ?? [])
       setChatEnabledSkills(chatSettings.enabledSkills ?? [])
     }).catch(() => {
-      toast.error('加载技能设置失败')
+      if (!cancelled) {
+        toast.error('加载技能设置失败')
+      }
     })
+
+    return () => {
+      cancelled = true
+    }
   }, [chat?.uid])
 
   const initialSettings = useMemo(() => normalizeSettings(chat?.contextSettings), [chat?.contextSettings])

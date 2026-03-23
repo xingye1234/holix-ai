@@ -1,7 +1,7 @@
 import type { AIProvider } from '@/types/provider'
 import { useCallback, useEffect, useState } from 'react'
 import { getDefaultProvider, getProviders } from '@/lib/provider'
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from './ui/select'
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 export interface ProviderModelSelectorProps {
   initialProvider?: string
@@ -25,17 +25,23 @@ export default function ProviderModelSelector({
   const [selectedModel, setSelectedModel] = useState<string>('')
   const [loading, setLoading] = useState(true)
 
-  // 初始化加载供应商和默认值
   useEffect(() => {
+    let cancelled = false
+
+    setSelectedProvider(propInitialProvider ?? '')
+    setSelectedModel(propInitialModel ?? '')
+
     const init = async () => {
       try {
         const [providerList, defaultProviderName] = await Promise.all([getProviders(), getDefaultProvider()])
 
-        // 只显示已启用的供应商
+        if (cancelled) {
+          return
+        }
+
         const enabledProviders = providerList.filter(p => p.enabled)
         setProviders(enabledProviders)
 
-        // 确定初始供应商：优先使用传入的 initialProvider，其次使用默认配置
         let targetProvider: AIProvider | undefined
         if (propInitialProvider) {
           targetProvider = enabledProviders.find(p => p.name === propInitialProvider)
@@ -47,7 +53,6 @@ export default function ProviderModelSelector({
         if (targetProvider) {
           setSelectedProvider(targetProvider.name)
 
-          // 确定初始模型：优先使用传入的 initialModel，其次使用第一个可用模型
           const availableModels = targetProvider.models || []
           let targetModel = ''
           if (propInitialModel && availableModels.includes(propInitialModel)) {
@@ -59,7 +64,6 @@ export default function ProviderModelSelector({
 
           if (targetModel) {
             setSelectedModel(targetModel)
-            // 如果设置了 triggerOnInitialize，在初始化时触发回调
             if (triggerOnInitialize) {
               onProviderChange?.(targetProvider.name)
               onModelChange?.(targetModel)
@@ -68,14 +72,22 @@ export default function ProviderModelSelector({
         }
       }
       catch (error) {
-        console.error('Failed to load providers:', error)
+        if (!cancelled) {
+          console.error('Failed to load providers:', error)
+        }
       }
       finally {
-        setLoading(false)
+        if (!cancelled) {
+          setLoading(false)
+        }
       }
     }
 
     init()
+
+    return () => {
+      cancelled = true
+    }
   }, [propInitialProvider, propInitialModel, triggerOnInitialize, onModelChange, onProviderChange])
 
   const handleProviderChange = useCallback(
@@ -83,7 +95,6 @@ export default function ProviderModelSelector({
       setSelectedProvider(providerName)
       onProviderChange?.(providerName)
 
-      // 切换供应商时，自动选择第一个模型
       const provider = providers.find(p => p.name === providerName)
       if (provider?.models && provider.models.length > 0) {
         const firstModel = provider.models[0]
@@ -120,7 +131,6 @@ export default function ProviderModelSelector({
 
   return (
     <div className={`flex items-center gap-2 ${className || ''}`}>
-      {/* 供应商选择器 */}
       <Select value={selectedProvider} onValueChange={handleProviderChange}>
         <SelectTrigger className="w-40">
           <SelectValue placeholder="选择供应商" />
@@ -139,7 +149,6 @@ export default function ProviderModelSelector({
         </SelectContent>
       </Select>
 
-      {/* 模型选择器 */}
       <Select value={selectedModel} onValueChange={handleModelChange} disabled={availableModels.length === 0}>
         <SelectTrigger className="w-56">
           <SelectValue placeholder="选择模型" />

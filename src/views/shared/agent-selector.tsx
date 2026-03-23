@@ -1,7 +1,5 @@
 import { Bot, Sparkles } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { useI18n } from '@/i18n/provider'
-import { trpcClient } from '@/lib/trpc-client'
 import { Button } from '@/components/ui/button'
 import {
   Command,
@@ -16,6 +14,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
+import { useI18n } from '@/i18n/provider'
+import { trpcClient } from '@/lib/trpc-client'
 
 interface Agent {
   id: string
@@ -41,28 +41,25 @@ export function AgentSelector({
   const [agents, setAgents] = useState<Agent[]>([])
   const [loading, setLoading] = useState(false)
 
-  // Load agents
   useEffect(() => {
     setLoading(true)
     trpcClient.agent.list()
       .then(setAgents)
       .catch(() => {
-        // Ignore errors
+        // Ignore errors.
       })
       .finally(() => {
         setLoading(false)
       })
   }, [])
 
-  // Handle selection
   const handleSelect = (agentName: string | undefined) => {
     onChange?.(agentName)
     setOpen(false)
 
-    // Track usage if an agent was selected
     if (agentName) {
       trpcClient.agent.trackUsage({ name: agentName }).catch(() => {
-        // Ignore tracking errors
+        // Ignore tracking errors.
       })
     }
   }

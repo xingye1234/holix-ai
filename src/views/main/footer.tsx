@@ -8,28 +8,26 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { Editor } from '@/components/editor/editor'
 import { SelectionToggle } from '@/components/message-selection'
-import ProviderModelSelector from '@/components/provider-model-selector'
 import { Button } from '@/components/ui/button'
 import { useChatContext } from '@/context/chat'
 import { useSettingsPanel } from '@/context/settings-panel'
 import { useI18n } from '@/i18n/provider'
 import { command } from '@/lib/command'
 import { trpcClient } from '@/lib/trpc-client'
+import useChat from '@/store/chat'
+import { AgentSelector } from '@/views/shared/agent-selector'
+import ProviderModelSelector from '@/views/shared/provider-model-selector'
 import { estimateTokens, formatTokenCount } from '../../share/token'
 import DraftsView from './drafts'
-import { AgentSelector } from '@/components/agent-selector'
 
 export default function MainFooter() {
   const { t } = useI18n()
   const editorRef = useRef<EditorHandle>(null)
   const [value, setValue] = useState('')
   const { chat, pendingMessages, isAtBottom, scrollToBottomRef } = useChatContext()
+  const updateChat = useChat(state => state.updateChat)
   const { toggle: toggleSettingsPanel } = useSettingsPanel()
   const saveDraftInProgress = useRef(false)
-  const [_, setProvider] = useState<string | undefined>(
-    chat?.provider ?? undefined,
-  )
-  const [__, setModel] = useState<string | undefined>(chat?.model ?? undefined)
   const [selectedAgent, setSelectedAgent] = useState<string | undefined>(
     undefined,
   )
@@ -94,11 +92,13 @@ export default function MainFooter() {
 
   const handleProviderChange = useCallback(
     async (newProvider: string) => {
-      setProvider(newProvider)
       if (chat) {
         try {
           await trpcClient.chat.update({
             uid: chat.uid,
+            provider: newProvider,
+          })
+          updateChat(chat.uid, {
             provider: newProvider,
           })
         }
@@ -107,16 +107,18 @@ export default function MainFooter() {
         }
       }
     },
-    [chat],
+    [chat, updateChat],
   )
 
   const handleModelChange = useCallback(
     async (newModel: string) => {
-      setModel(newModel)
       if (chat) {
         try {
           await trpcClient.chat.update({
             uid: chat.uid,
+            model: newModel,
+          })
+          updateChat(chat.uid, {
             model: newModel,
           })
         }
@@ -125,7 +127,7 @@ export default function MainFooter() {
         }
       }
     },
-    [chat],
+    [chat, updateChat],
   )
 
   const onSend = useCallback(() => {

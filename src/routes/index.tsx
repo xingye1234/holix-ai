@@ -4,7 +4,6 @@ import { Coins } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { Editor } from '@/components/editor/editor'
-import ProviderModelSelector from '@/components/provider-model-selector'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useI18n } from '@/i18n/provider'
@@ -12,6 +11,7 @@ import { command } from '@/lib/command'
 import { getProvider } from '@/lib/provider'
 import { estimateTokens, formatTokenCount } from '@/share/token'
 import useChat from '@/store/chat'
+import ProviderModelSelector from '@/views/shared/provider-model-selector'
 
 // 从 value 中提取标题：取前面部分内容
 function generateTitle(text: string) {

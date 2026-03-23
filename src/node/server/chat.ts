@@ -90,6 +90,10 @@ export const chatRouter = router({
     .mutation(async ({ input }) => {
       const { uid, ...updates } = input
       const chat = await updateChat(uid, updates)
+      update('chat.updated', {
+        chatUid: chat.uid,
+        updates,
+      })
       return chat
     }),
 

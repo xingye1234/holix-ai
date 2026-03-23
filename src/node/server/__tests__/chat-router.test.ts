@@ -178,6 +178,12 @@ describe('chatRouter', () => {
         'chat-uid-001',
         expect.objectContaining({ title: 'New Title' }),
       )
+      expect(update).toHaveBeenCalledWith('chat.updated', {
+        chatUid: 'chat-uid-001',
+        updates: {
+          title: 'New Title',
+        },
+      })
       expect(result.title).toBe('New Title')
     })
 
@@ -191,6 +197,23 @@ describe('chatRouter', () => {
         'chat-uid-001',
         expect.objectContaining({ archived: true }),
       )
+    })
+
+    it('更新 provider 时只广播本次改动字段，避免覆盖并发 model 更新', async () => {
+      const updated = makeChat({ provider: 'anthropic' })
+      vi.mocked(chatOps.updateChat).mockResolvedValue(updated)
+
+      await caller.update({
+        uid: 'chat-uid-001',
+        provider: 'anthropic',
+      })
+
+      expect(update).toHaveBeenCalledWith('chat.updated', {
+        chatUid: 'chat-uid-001',
+        updates: {
+          provider: 'anthropic',
+        },
+      })
     })
   })
 

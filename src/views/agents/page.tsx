@@ -17,9 +17,6 @@ import {
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { useI18n } from '@/i18n/provider'
-import { trpcClient } from '@/lib/trpc-client'
-import ProviderModelSelector from '@/components/provider-model-selector'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -43,6 +40,9 @@ import { MultiSelect } from '@/components/ui/multi-select'
 import { Separator } from '@/components/ui/separator'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import { useI18n } from '@/i18n/provider'
+import { trpcClient } from '@/lib/trpc-client'
+import ProviderModelSelector from '@/views/shared/provider-model-selector'
 
 interface Skill {
   name: string

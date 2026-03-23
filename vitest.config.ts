@@ -38,6 +38,7 @@ export default defineConfig({
           environment: 'happy-dom',
           include: [
             'src/components/**/__tests__/**/*.test.{ts,tsx}',
+            'src/views/**/__tests__/**/*.test.{ts,tsx}',
             'src/hooks/**/__tests__/**/*.test.{ts,tsx}',
             'src/store/**/__tests__/**/*.test.{ts,tsx}',
           ],
