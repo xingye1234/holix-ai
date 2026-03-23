@@ -8,7 +8,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { Editor } from '@/components/editor/editor'
 import { SelectionToggle } from '@/components/message-selection'
-import AgentSelector from '@/components/agent-selector'
 import ProviderModelSelector from '@/components/provider-model-selector'
 import { Button } from '@/components/ui/button'
 import { useChatContext } from '@/context/chat'
@@ -18,6 +17,7 @@ import { command } from '@/lib/command'
 import { trpcClient } from '@/lib/trpc-client'
 import { estimateTokens, formatTokenCount } from '../../share/token'
 import DraftsView from './drafts'
+import { AgentSelector } from '@/components/agent-selector'
 
 export default function MainFooter() {
   const { t } = useI18n()
