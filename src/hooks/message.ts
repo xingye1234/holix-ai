@@ -13,6 +13,7 @@ export function useMessageUpdates() {
   const appendMessage = useMessageStore(s => s.appendMessage)
   const updateMessage = useMessageStore(s => s.updateMessage)
   const deleteMessagesByChatUid = useMessageStore(s => s.deleteMessagesByChatUid)
+  const removeMessageLocal = useMessageStore(s => s.removeMessageLocal)
 
   /**
    * streaming 合帧缓冲
@@ -80,6 +81,10 @@ export function useMessageUpdates() {
       updateMessage(payload.messageUid, payload.updates)
     })
 
+    const unsubscribeDeleted = onUpdate('message.deleted', (payload) => {
+      removeMessageLocal(payload.chatUid, payload.messageUid)
+    })
+
     const unsubscribeChatDelete = onUpdate('chat.deleted', (payload) => {
       logger.info(`Chat ${payload.uid} deleted, removing its messages from store`)
       deleteMessagesByChatUid(payload.uid)
@@ -89,13 +94,14 @@ export function useMessageUpdates() {
       unsubscribeCreated?.()
       unsubscribeStreaming?.()
       unsubscribeUpdated?.()
+      unsubscribeDeleted?.()
       unsubscribeChatDelete?.()
 
       if (rafId.current != null) {
         cancelAnimationFrame(rafId.current)
       }
     }
-  }, [appendMessage, updateMessage, deleteMessagesByChatUid])
+  }, [appendMessage, updateMessage, deleteMessagesByChatUid, removeMessageLocal])
 }
 
 export function useChatMessages(chatUid: string) {

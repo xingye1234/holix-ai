@@ -5,7 +5,7 @@
 
 import type { Chat, ChatInsert, PendingMessage } from './schema/chat'
 
-import { and, eq, inArray, isNotNull, lte, sql } from 'drizzle-orm'
+import { and, desc, eq, inArray, isNotNull, lte, sql } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import { deserializeChat, serializeChat } from './chat-serializer'
 import { getDatabase, sqlite } from './connect'
@@ -234,6 +234,37 @@ export async function updateChatLastSeq(
       updatedAt: Date.now(),
     })
     .where(eq(chats.uid, chatUid))
+}
+
+/**
+ * 在消息被删除或重写后，重新同步会话的 lastSeq 和预览文案。
+ */
+export async function syncChatAfterMessageMutation(
+  chatUid: string,
+): Promise<Chat | null> {
+  const db = await getDatabase()
+
+  const [latestMessage] = await db
+    .select({
+      seq: message.seq,
+      content: message.content,
+    })
+    .from(message)
+    .where(eq(message.chatUid, chatUid))
+    .orderBy(desc(message.seq))
+    .limit(1)
+
+  await db
+    .update(chats)
+    .set({
+      lastSeq: latestMessage?.seq ?? 0,
+      lastMessagePreview: latestMessage?.content ?? null,
+      updatedAt: Date.now(),
+    })
+    .where(eq(chats.uid, chatUid))
+
+  const [rawChat] = await db.select().from(chats).where(eq(chats.uid, chatUid))
+  return rawChat ? deserializeChat(rawChat) : null
 }
 
 /**

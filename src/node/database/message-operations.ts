@@ -1,8 +1,8 @@
 import type { DraftContent, Message, MessageInsert, ToolCallTrace } from './schema/chat'
-import { and, desc, eq, sql } from 'drizzle-orm'
+import { and, desc, eq, inArray, sql } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import { logger } from '../platform/logger'
-import { updateChatLastSeq } from './chat-operations'
+import { syncChatAfterMessageMutation, updateChatLastSeq } from './chat-operations'
 import { getDatabase, sqlite } from './connect'
 import {
   message,
@@ -353,10 +353,55 @@ export async function setMessageError(
  * 删除消息
  * @param messageUid - 消息 UID
  */
-export async function deleteMessage(messageUid: string): Promise<void> {
+export async function deleteMessage(messageUid: string): Promise<Message | null> {
+  const existing = await getMessageByUid(messageUid)
+  if (!existing) {
+    return null
+  }
+
   const db = await getDatabase()
   await db.delete(message).where(eq(message.uid, messageUid))
   ftsSyncDelete(messageUid)
+  await syncChatAfterMessageMutation(existing.chatUid)
+  return existing
+}
+
+/**
+ * 批量删除消息。
+ */
+export async function deleteMessages(
+  messageUids: string[],
+): Promise<Message[]> {
+  const uniqueMessageUids = [...new Set(messageUids.filter(Boolean))]
+  if (uniqueMessageUids.length === 0) {
+    return []
+  }
+
+  const db = await getDatabase()
+  const rows = await db
+    .select()
+    .from(message)
+    .where(inArray(message.uid, uniqueMessageUids))
+
+  if (rows.length === 0) {
+    return []
+  }
+
+  const deletedMessages = rows.map(deserializeMessage)
+
+  await db
+    .delete(message)
+    .where(inArray(message.uid, deletedMessages.map(msg => msg.uid)))
+
+  for (const deletedMessage of deletedMessages) {
+    ftsSyncDelete(deletedMessage.uid)
+  }
+
+  for (const chatUid of new Set(deletedMessages.map(msg => msg.chatUid))) {
+    await syncChatAfterMessageMutation(chatUid)
+  }
+
+  return deletedMessages
 }
 
 /**

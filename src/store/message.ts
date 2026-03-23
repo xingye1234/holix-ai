@@ -29,7 +29,10 @@ interface MessageStore {
   appendMessage: (chatUid: string, message: Message) => void
   prependMessages: (chatUid: string, messages: Message[]) => void
   updateMessage: (messageUid: string, patch: Partial<Message>) => void
+  removeMessageLocal: (chatUid: string, messageUid: string) => void
+  removeMessagesLocal: (chatUid: string, messageUids: string[]) => void
   deleteMessage: (messageUid: string) => Promise<void>
+  deleteMessages: (chatUid: string, messageUids: string[]) => Promise<number>
   deleteMessagesByChatUid: (chatUid: string) => void
 
   /** ---------------- loaders ---------------- */
@@ -99,6 +102,33 @@ export const useMessageStore = create<MessageStore>()(
         if (!msg)
           return
         Object.assign(msg, patch)
+      })
+    },
+
+    removeMessageLocal(chatUid, messageUid) {
+      set((state) => {
+        if (state.chatMessages[chatUid]) {
+          state.chatMessages[chatUid] = state.chatMessages[chatUid].filter(id => id !== messageUid)
+        }
+
+        if (state.messages[messageUid]) {
+          delete state.messages[messageUid]
+        }
+      })
+    },
+
+    removeMessagesLocal(chatUid, messageUids) {
+      const idsToRemove = new Set(messageUids)
+      set((state) => {
+        if (state.chatMessages[chatUid]) {
+          state.chatMessages[chatUid] = state.chatMessages[chatUid].filter(id => !idsToRemove.has(id))
+        }
+
+        for (const messageUid of idsToRemove) {
+          if (state.messages[messageUid]) {
+            delete state.messages[messageUid]
+          }
+        }
       })
     },
 
@@ -202,20 +232,31 @@ export const useMessageStore = create<MessageStore>()(
         await trpcClient.message.delete({ messageUid })
 
         // 从 store 中移除
-        set((state) => {
-          const local = state.messages[messageUid]
-          const chatUid = local ? local.chatUid : msg.chatUid
-
-          if (chatUid && state.chatMessages[chatUid]) {
-            state.chatMessages[chatUid] = state.chatMessages[chatUid].filter(id => id !== messageUid)
-          }
-
-          if (state.messages[messageUid])
-            delete state.messages[messageUid]
-        })
+        get().removeMessageLocal(msg.chatUid, messageUid)
       }
       catch (err) {
         logger.error('MessageStore: deleteMessage failed', err)
+      }
+    },
+
+    async deleteMessages(chatUid, messageUids) {
+      const uniqueMessageUids = [...new Set(messageUids.filter(Boolean))]
+      if (uniqueMessageUids.length === 0) {
+        return 0
+      }
+
+      try {
+        const result = await trpcClient.message.deleteMany({
+          chatUid,
+          messageUids: uniqueMessageUids,
+        })
+
+        get().removeMessagesLocal(chatUid, uniqueMessageUids)
+        return result.deletedCount ?? uniqueMessageUids.length
+      }
+      catch (err) {
+        logger.error('MessageStore: deleteMessages failed', err)
+        return 0
       }
     },
   })),

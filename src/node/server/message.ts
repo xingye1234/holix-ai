@@ -3,6 +3,7 @@ import {
   commitDraftContent,
   createMessage,
   deleteMessage,
+  deleteMessages,
   getLatestMessages,
   getMessageByUid,
   getMessagesByChatUid,
@@ -13,7 +14,9 @@ import {
   updateMessageDraftContent,
   updateMessageStatus,
 } from '../database/message-operations'
+import { getChatByUid } from '../database/chat-operations'
 import { searchMessagesBM25 } from '../database/message-search'
+import { update } from '../platform/update'
 import { procedure, router } from './trpc'
 
 // 草稿片段 Schema
@@ -205,8 +208,61 @@ export const messageRouter = router({
       }),
     )
     .mutation(async ({ input }) => {
-      await deleteMessage(input.messageUid)
-      return { success: true }
+      const deleted = await deleteMessage(input.messageUid)
+      if (!deleted) {
+        return { success: true, deletedCount: 0 }
+      }
+
+      update('message.deleted', {
+        chatUid: deleted.chatUid,
+        messageUid: deleted.uid,
+      })
+
+      const chat = await getChatByUid(deleted.chatUid)
+      if (chat) {
+        update('chat.updated', {
+          chatUid: chat.uid,
+          updates: {
+            lastMessagePreview: chat.lastMessagePreview,
+            lastSeq: chat.lastSeq,
+            updatedAt: chat.updatedAt,
+          },
+        })
+      }
+
+      return { success: true, deletedCount: 1 }
+    }),
+
+  deleteMany: procedure()
+    .input(
+      z.object({
+        chatUid: z.string(),
+        messageUids: z.array(z.string()).min(1),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const deleted = await deleteMessages(input.messageUids)
+
+      for (const message of deleted) {
+        update('message.deleted', {
+          chatUid: message.chatUid,
+          messageUid: message.uid,
+        })
+      }
+
+      const chat = await getChatByUid(input.chatUid)
+      if (chat) {
+        update('chat.updated', {
+          chatUid: chat.uid,
+          updates: {
+            lastMessagePreview: chat.lastMessagePreview,
+            lastSeq: chat.lastSeq,
+            updatedAt: chat.updatedAt,
+          },
+        })
+      }
+
+      return { success: true, deletedCount: deleted.length }
     }),
 
   // 搜索消息

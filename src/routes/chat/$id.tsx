@@ -9,6 +9,7 @@ import { SettingsPanelProvider } from '@/context/settings-panel'
 import { useMessageShortcuts } from '@/hooks/use-message-shortcuts'
 import { updateConfig } from '@/lib/config'
 import useChat from '@/store/chat'
+import { useMessageStore } from '@/store/message'
 import ChatPanel from '@/views/chat/right-panel'
 import { MainContent } from '@/views/main/content'
 import MainFooter from '@/views/main/footer'
@@ -22,6 +23,7 @@ function Component() {
   const [isSettingsPanelOpen, setIsSettingsPanelOpen] = useState(false)
   // ✅ 配合 immer 优化，chat 对象引用只在真正变化时才更新
   const chat = useChat(state => state.chats.find(chat => chat.uid === id))
+  const deleteMessages = useMessageStore(state => state.deleteMessages)
 
   // 消息列表底部滚动状态，供 content 更新、footer 读取
   const [isAtBottom, setIsAtBottom] = useState(true)
@@ -61,27 +63,24 @@ function Component() {
 
   // 处理批量删除选中的消息
   const handleDeleteSelected = useCallback(
-    async (_messageIds: string[]) => {
+    async (messageIds: string[]) => {
       if (!chat)
-        return
+        return 0
 
       try {
-        // 这里需要调用删除消息的 API
-        // 由于当前的 API 设计，我们需要逐个删除消息或创建一个批量删除的 API
-        toast.info('批量删除功能开发中...')
-
-        // TODO: 实现批量删除逻辑
-        // const removeChat = useChat.getState().removeChat
-        // messageIds.forEach(id => {
-        //   // 调用删除消息的 API
-        // })
+        const deletedCount = await deleteMessages(chat.uid, messageIds)
+        if (deletedCount === 0) {
+          toast.error('删除消息失败')
+        }
+        return deletedCount
       }
       catch (error) {
         console.error('Failed to delete messages:', error)
         toast.error('删除消息失败')
+        return 0
       }
     },
-    [chat],
+    [chat, deleteMessages],
   )
 
   // 获取当前聊天的所有消息ID

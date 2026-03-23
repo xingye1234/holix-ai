@@ -28,7 +28,11 @@ export function useChatUpdates() {
   useEffect(() => {
     // 注册 chat 更新事件监听
     const unsubscribeUpdate = onUpdate('chat.updated', (payload) => {
-      updateChat(payload.uid, payload)
+      const chatUid = (payload as any).chatUid ?? (payload as any).uid
+      const updates = (payload as any).updates ?? payload
+      if (chatUid) {
+        updateChat(chatUid, updates)
+      }
     })
 
     // 注册 chat 删除事件监听

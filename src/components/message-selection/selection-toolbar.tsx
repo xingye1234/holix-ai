@@ -19,7 +19,7 @@ import useMessageSelection from '@/store/message-selection'
 
 interface SelectionToolbarProps {
   /** 批量删除处理函数 */
-  onDeleteSelected?: (messageIds: string[]) => void
+  onDeleteSelected?: (messageIds: string[]) => void | Promise<number | void>
   /** 保留兼容：旧版导出回调 */
   onExportSelected?: (messageIds: string[]) => void
 }
@@ -43,14 +43,19 @@ export function SelectionToolbar({
     disableSelectionMode()
   }
 
-  const handleDelete = useCallback(() => {
+  const handleDelete = useCallback(async () => {
     if (selectedCount === 0)
       return
 
     const ids = Array.from(selectedMessageIds)
-    onDeleteSelected?.(ids)
+    const deletedCount = await onDeleteSelected?.(ids)
 
-    toast.success(`已删除 ${selectedCount} 条消息`)
+    if (deletedCount === 0) {
+      toast.error('未删除任何消息')
+      return
+    }
+
+    toast.success(`已删除 ${deletedCount ?? selectedCount} 条消息`)
     disableSelectionMode()
   }, [selectedCount, selectedMessageIds, onDeleteSelected, disableSelectionMode])
 
