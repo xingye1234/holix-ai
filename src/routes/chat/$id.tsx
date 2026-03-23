@@ -10,6 +10,7 @@ import { useMessageShortcuts } from '@/hooks/use-message-shortcuts'
 import { updateConfig } from '@/lib/config'
 import useChat from '@/store/chat'
 import { useMessageStore } from '@/store/message'
+import { ChatTitleBar } from '@/views/chat/title-bar'
 import ChatPanel from '@/views/chat/right-panel'
 import { MainContent } from '@/views/main/content'
 import MainFooter from '@/views/main/footer'
@@ -92,9 +93,10 @@ function Component() {
   return (
     <ChatContext.Provider value={contextValue}>
       <SettingsPanelProvider value={settingsPanelValue}>
-        <div className="w-full h-[calc(100vh - var(--app-header-height))] flex">
+        <div className="flex h-full w-full">
           {/* Main Chat Area */}
           <div className="flex-1 flex flex-col relative">
+            <ChatTitleBar />
             {/* Selection Toolbar */}
             <SelectionToolbar
               onDeleteSelected={handleDeleteSelected}

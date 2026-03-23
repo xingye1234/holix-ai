@@ -6,63 +6,48 @@ import useUI from '@/store/ui'
 
 export function AsideChatHeader() {
   const { t } = useI18n()
-  const toggleSidebar = useUI(state => state.toggleSidebar)
 
   return (
-    <header className="px-3 py-3 bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 sticky top-0 z-10 border-b">
-      {/* 标题栏：标题 + 收起按钮 */}
-      <div className="flex items-center justify-between mb-3">
-        <h1 className="text-sm font-semibold text-foreground">{t('chat.sidebar.title')}</h1>
-        <Button
-          variant="ghost"
-          size="icon"
-          title={t('chat.sidebar.collapse')}
-          className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground"
-          onClick={toggleSidebar}
-        >
-          <PanelLeftClose className="h-4 w-4" />
-        </Button>
-      </div>
-
-      {/* 新建会话按钮 */}
-      <Link
-        to="/"
-        className="w-full mb-4 block"
-        activeProps={{
-          className: 'pointer-events-none',
-        }}
-      >
-        <Button
-          variant="default"
-          className="w-full justify-start gap-2 h-10 shadow-sm hover:shadow transition-all"
-        >
-          <Plus className="h-4 w-4" />
-          <span>{t('chat.sidebar.newChat')}</span>
-        </Button>
-      </Link>
-
-      {/* 功能链接 */}
-      <div className="space-y-2">
+    <header className="sticky top-0 z-10 px-2 pt-5 pb-3">
+      <div className="space-y-2.5">
         <Link
-          to="/skills"
-          className="h-9 w-full flex items-center justify-start gap-2 rounded-md px-2 text-sm font-normal text-foreground/90 hover:bg-muted hover:text-foreground transition-colors"
+          to="/"
+          className="block w-full"
           activeProps={{
-            className: 'bg-accent text-accent-foreground',
+            className: 'pointer-events-none',
           }}
         >
-          <Wrench className="h-4 w-4 text-muted-foreground" />
-          <span>{t('chat.sidebar.skills')}</span>
+          <Button
+            variant="default"
+            className="h-11 w-full justify-start gap-2 rounded-xl bg-foreground text-background shadow-none hover:bg-foreground/92"
+          >
+            <Plus className="h-4 w-4" />
+            <span>{t('chat.sidebar.newChat')}</span>
+          </Button>
         </Link>
-        <Link
-          to="/agents"
-          className="h-9 w-full flex items-center justify-start gap-2 rounded-md px-2 text-sm font-normal text-foreground/90 hover:bg-muted hover:text-foreground transition-colors"
-          activeProps={{
-            className: 'bg-accent text-accent-foreground',
-          }}
-        >
-          <Bot className="h-4 w-4 text-muted-foreground" />
-          <span>{t('chat.sidebar.agents')}</span>
-        </Link>
+
+        <div className="space-y-1">
+          <Link
+            to="/skills"
+            className="flex h-10 w-full items-center justify-start gap-2 rounded-xl px-3 text-sm font-medium text-foreground/90 transition-colors hover:bg-background/70 hover:text-foreground"
+            activeProps={{
+              className: 'bg-background text-foreground shadow-xs',
+            }}
+          >
+            <Wrench className="h-4 w-4 text-muted-foreground" />
+            <span>{t('chat.sidebar.skills')}</span>
+          </Link>
+          <Link
+            to="/agents"
+            className="flex h-10 w-full items-center justify-start gap-2 rounded-xl px-3 text-sm font-medium text-foreground/90 transition-colors hover:bg-background/70 hover:text-foreground"
+            activeProps={{
+              className: 'bg-background text-foreground shadow-xs',
+            }}
+          >
+            <Bot className="h-4 w-4 text-muted-foreground" />
+            <span>{t('chat.sidebar.agents')}</span>
+          </Link>
+        </div>
       </div>
     </header>
   )

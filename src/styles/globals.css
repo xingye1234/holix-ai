@@ -56,9 +56,9 @@
   --sidebar-ring: oklch(0.708 0 0);
 
   /* 区域背景 - 亮色主题 */
-  --region-sidebar: oklch(0.99 0 0);
-  --region-chat: oklch(1 0 0);
-  --region-input: oklch(0.98 0 0);
+  --region-sidebar: oklch(0.955 0.006 255);
+  --region-chat: oklch(0.992 0.002 255);
+  --region-input: oklch(0.97 0.003 255);
 
   /* 消息气泡增强 */
   --message-user-shadow: 0 1px 2px oklch(0 0 0 / 0.1);
@@ -106,9 +106,9 @@
   --sidebar-ring: oklch(0.439 0 0);
 
   /* 区域背景 - 暗色主题 */
-  --region-sidebar: oklch(0.15 0 0);
-  --region-chat: oklch(0.12 0 0);
-  --region-input: oklch(0.10 0 0);
+  --region-sidebar: oklch(0.19 0.008 255);
+  --region-chat: oklch(0.115 0.004 255);
+  --region-input: oklch(0.135 0.006 255);
 
   /* 消息气泡增强 */
   --message-user-shadow: 0 1px 2px oklch(0 0 0 / 0.3);
@@ -201,6 +201,11 @@ html {
   -webkit-app-region: drag;
   /* 防止选中文字触发拖拽时的异常选择行为 */
   user-select: none;
+}
+
+.app-no-drag {
+  -webkit-app-region: no-drag;
+  user-select: text;
 }
 
 /* 下面这些后代元素仍然应当可交互，禁用拖拽以允许点击/聚焦 */

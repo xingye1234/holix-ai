@@ -10,12 +10,15 @@ export default function AppSideBar(props: AppSideBarProps) {
 
   return (
     <motion.aside
-      animate={{ width: sidebarCollapsed ? 0 : 260 }}
+      animate={{ width: sidebarCollapsed ? 0 : 320 }}
       transition={{ duration: 0.25, ease: 'easeInOut' }}
-      className="border-r flex flex-col overflow-hidden shrink-0 transition-all duration-300"
-      style={{ minWidth: 0, backgroundColor: 'var(--region-sidebar)', borderColor: 'var(--border)' }}
+      className="flex flex-col overflow-hidden shrink-0 transition-all duration-300"
+      style={{ minWidth: 0, backgroundColor: 'var(--region-sidebar)' }}
     >
-      <div className="w-[260px] h-[calc(100vh-var(--app-header-height)-10px)] flex flex-col">
+      <div
+        className="flex h-full w-(--app-sidebar-width) flex-col px-3 pb-3"
+        style={{ paddingTop: 'calc(var(--app-header-height) + 8px)' }}
+      >
         {props.children}
       </div>
     </motion.aside>

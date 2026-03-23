@@ -4,7 +4,10 @@ export default function AppMain({
   children?: React.ReactNode
 }) {
   return (
-    <main className="flex flex-1 h-[calc(100vh-var(--app-header-height)-1px)] min-w-0 overflow-hidden">
+    <main
+      className="flex flex-1 h-full min-w-0 overflow-hidden"
+      style={{ backgroundColor: 'var(--region-chat)' }}
+    >
       {children}
     </main>
   )

@@ -111,11 +111,11 @@ export function ChatPanel(props: Chat) {
       to="/chat/$id"
       params={{ id: props.uid }}
       className={cn(
-        'flex items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition-all select-none cursor-pointer no-drag',
-        'hover:bg-accent/50',
+        'flex items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm transition-all select-none cursor-pointer no-drag',
+        'hover:bg-background/72 hover:text-foreground',
       )}
       activeProps={{
-        className: 'bg-accent text-accent-foreground',
+        className: 'bg-background text-foreground shadow-xs',
       }}
       aria-label={`Open chat: ${props.title}`}
     >

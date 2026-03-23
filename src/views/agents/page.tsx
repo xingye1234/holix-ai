@@ -508,7 +508,7 @@ export function AgentsPage({
   const customAgents = filteredAgents.filter(a => !a.isBuiltin)
 
   return (
-    <div className="w-full h-[calc(100vh-var(--app-header-height))] overflow-auto">
+    <div className="h-full w-full overflow-auto">
       <div className="w-full max-w-5xl mx-auto p-6 space-y-6">
         {/* Header */}
         <div className="rounded-xl border bg-card p-5 space-y-4">

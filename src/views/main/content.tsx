@@ -93,7 +93,7 @@ export const MainContent = memo(() => {
   )
 
   return (
-    <main className="h-(--app-chat-content-height)">
+    <main className="min-h-0 flex-1">
       <AnimatePresence mode="wait" initial={false}>
         <motion.div
           key={chat?.uid ?? '__empty'}
@@ -128,7 +128,7 @@ export const MainContent = memo(() => {
             initialIndex={messageIds.length > 0 ? messageIds.length - 1 : 0}
             initialAlignment="end"
 
-            style={{ height: 'var(--app-chat-content-height)' }}
+            style={{ height: '100%' }}
           />
         </motion.div>
       </AnimatePresence>

@@ -18,7 +18,15 @@ import {
   CommandShortcut,
 } from '../ui/command'
 
-export default function AppSearch() {
+export default function AppSearch({
+  className,
+  label = 'Search...',
+  showShortcut = true,
+}: {
+  className?: string
+  label?: string
+  showShortcut?: boolean
+}) {
   const [open, setOpen] = useState(false)
   const { isMacOS } = usePlatform()
   const { setTheme } = useTheme()
@@ -132,14 +140,16 @@ export default function AppSearch() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="app-no-drag group flex items-center gap-2 rounded-md border border-input bg-background/50 px-3 py-1.5 text-sm text-muted-foreground shadow-xs transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring w-64 max-w-full"
+        className={`app-no-drag group flex items-center gap-2 rounded-xl border border-input/60 bg-background/55 px-3 py-2 text-sm text-muted-foreground shadow-xs transition-colors hover:bg-accent/70 hover:text-accent-foreground focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring ${className ?? 'w-64 max-w-full'}`}
       >
         <SearchIcon className="size-4" />
-        <span className="flex-1 text-left">Search...</span>
-        <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
-          <span className="text-xs">{isMacOS ? '⌘' : 'Ctrl'}</span>
-          K
-        </kbd>
+        <span className="flex-1 text-left">{label}</span>
+        {showShortcut && (
+          <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
+            <span className="text-xs">{isMacOS ? '⌘' : 'Ctrl'}</span>
+            K
+          </kbd>
+        )}
       </button>
 
       <CommandDialog open={open} onOpenChange={setOpen} commandProps={{ shouldFilter: false }}>

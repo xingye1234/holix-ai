@@ -5,11 +5,9 @@
 
 :root {
 	--app-header-height: 46px;
-	--app-sidebar-width: 260px;
+	--app-sidebar-width: 320px;
 	--app-sidebar-collapsed-width: 0px;
 
-	--app-chat-width: calc(100vw - var(--app-sidebar-width));
-	--app-chat-content-height: calc(100vh - var(--app-header-height) - var(--app-chat-footer-height) - 20px);
 	--app-chat-footer-height: 200px;
 
 	/* footer 输入区域的尺寸 */
