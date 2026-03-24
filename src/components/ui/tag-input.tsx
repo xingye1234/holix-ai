@@ -88,6 +88,13 @@ export function TagInput({
     inputRef.current?.focus()
   }, [value, onChange])
 
+  // ─── 清除所有标签 ───────────────────────────────────────────────────────────────
+
+  const clearAllTag = React.useCallback(() => {
+    onChange([])
+    inputRef.current?.focus()
+  }, [value, onChange])
+
   // ─── 键盘处理 ───────────────────────────────────────────────────────────────
 
   const handleKeyDown = React.useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -158,6 +165,7 @@ export function TagInput({
           'border-input bg-transparent shadow-xs transition-[color,box-shadow]',
           'flex min-h-9 w-full flex-wrap gap-1.5 rounded-md border px-2.5 py-1.5',
           'focus-within:border-ring focus-within:ring-ring/50 focus-within:ring-[3px]',
+          'relative',
           disabled && 'pointer-events-none cursor-not-allowed opacity-50',
         )}
         onClick={() => inputRef.current?.focus()}
@@ -182,6 +190,23 @@ export function TagInput({
             </button>
           </span>
         ))}
+
+        {value.length > 0 && (
+          <div className="absolute right-2 h-full">
+            <button
+              type="button"
+              className="rounded-full hover:text-destructive transition-colors"
+              onClick={(e) => {
+                e.stopPropagation()
+                clearAllTag()
+              }}
+              tabIndex={-1}
+              title="Clear All"
+            >
+              <X className="size-4" />
+            </button>
+          </div>
+        )}
 
         {/* 文本输入 */}
         <input
