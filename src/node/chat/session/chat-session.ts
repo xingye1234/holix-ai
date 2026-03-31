@@ -3,9 +3,8 @@
  * 封装会话的完整生命周期
  */
 
-import type { BaseChatModel } from '@langchain/core/language_models/chat_models'
 import type { Message, Workspace } from '../../database/schema/chat'
-import type { SessionConfig, SessionStatus } from './session-state'
+import type { SessionConfig, SessionModelConfig, SessionStatus } from './session-state'
 import { AsyncBatcher } from '@tanstack/pacer'
 import { nanoid } from 'nanoid'
 import { configStore } from '../../platform/config'
@@ -21,7 +20,7 @@ import { SessionBuilder } from './session-builder'
  */
 export interface SessionStartParams {
   chatUid: string
-  llm: BaseChatModel
+  modelConfig: SessionModelConfig
   userMessageContent: string
   contextMessages?: Message[]
   systemMessages?: string[]
@@ -71,7 +70,7 @@ export class ChatSession {
       requestId,
       streamId,
       assistantMessageUid: assistantMessage.uid,
-      llm: params.llm,
+      modelConfig: params.modelConfig,
       systemMessages: params.systemMessages?.map(msg => ({ content: msg } as any)),
       workspace: params.workspace,
     }
@@ -88,7 +87,7 @@ export class ChatSession {
    * 运行会话
    */
   async run(userMessageContent: string, contextMessages: Message[] = []): Promise<void> {
-    const { chatUid, requestId, assistantMessageUid, llm } = this.config
+    const { chatUid, requestId, assistantMessageUid, modelConfig } = this.config
 
     // 创建节流的数据库更新器
     const throttledDbUpdate = this.createThrottledDbUpdater()
@@ -104,14 +103,14 @@ export class ChatSession {
 
       // 构建会话
       const builder = new SessionBuilder({
-        llm,
+        modelConfig,
         systemMessages: this.config.systemMessages?.map(m => m.content as string),
         workspace: this.config.workspace,
         toolLoadingStrategy: configStore.get('skillsContextStrategy'),
       })
 
       // 构建 Agent 和消息
-      const agent = await builder.buildAgent(chatUid, this.abortController.signal)
+      const agent = await builder.buildAgent(chatUid)
       const messages = builder.buildMessages(contextMessages, userMessageContent)
       const context = builder.buildContext(chatUid)
 

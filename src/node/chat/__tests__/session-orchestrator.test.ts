@@ -65,18 +65,20 @@ vi.mock('../../../platform/logger', () => ({
 // Import after mocks
 // ============================================
 
-import type { BaseChatModel } from '@langchain/core/language_models/chat_models'
 import type { Message } from '../../database/schema/chat'
 import { SessionOrchestrator } from '../session-orchestrator'
 
 describe('sessionOrchestrator', () => {
   let orchestrator: SessionOrchestrator
-  let mockLlm: BaseChatModel
+  const modelConfig = {
+    provider: 'openai',
+    model: 'gpt-4.1',
+    apiKey: 'sk-test',
+    baseURL: 'https://api.openai.com/v1',
+  }
 
   beforeEach(() => {
     vi.clearAllMocks()
-
-    mockLlm = {} as BaseChatModel
 
     // Reset skill manager mocks
     mockSkillManager.initialize.mockReset()
@@ -120,7 +122,7 @@ describe('sessionOrchestrator', () => {
 
       const requestId = await orchestrator.startSession({
         chatUid: 'chat-123',
-        llm: mockLlm,
+        modelConfig,
         userMessageContent: 'Hello',
         contextMessages: [],
         systemMessages: ['Be helpful'],
@@ -138,7 +140,7 @@ describe('sessionOrchestrator', () => {
 
       await orchestrator.startSession({
         chatUid: 'chat-456',
-        llm: mockLlm,
+        modelConfig,
         userMessageContent: 'New message',
         contextMessages,
         systemMessages: ['System prompt'],
@@ -147,7 +149,7 @@ describe('sessionOrchestrator', () => {
 
       expect(mockChatSessionCreate).toHaveBeenCalledWith({
         chatUid: 'chat-456',
-        llm: mockLlm,
+        modelConfig,
         userMessageContent: 'New message',
         contextMessages,
         systemMessages: ['System prompt'],
@@ -170,7 +172,7 @@ describe('sessionOrchestrator', () => {
       const startTime = Date.now()
       await orchestrator.startSession({
         chatUid: 'chat-789',
-        llm: mockLlm,
+        modelConfig,
         userMessageContent: 'Test',
       })
 
@@ -194,7 +196,7 @@ describe('sessionOrchestrator', () => {
       // Should not throw
       await expect(orchestrator.startSession({
         chatUid: 'chat-error',
-        llm: mockLlm,
+        modelConfig,
         userMessageContent: 'Error test',
       })).resolves.toBeDefined()
 
@@ -219,7 +221,7 @@ describe('sessionOrchestrator', () => {
       const activeCountBefore = orchestrator.getActiveSessionCount()
       await orchestrator.startSession({
         chatUid: 'chat-cleanup',
-        llm: mockLlm,
+        modelConfig,
         userMessageContent: 'Cleanup test',
       })
 
@@ -254,7 +256,7 @@ describe('sessionOrchestrator', () => {
 
       const requestId = await orchestrator.startSession({
         chatUid: 'chat-abort',
-        llm: mockLlm,
+        modelConfig,
         userMessageContent: 'Abort test',
       })
 
@@ -298,19 +300,19 @@ describe('sessionOrchestrator', () => {
       // Start multiple sessions for same chat
       await orchestrator.startSession({
         chatUid: 'chat-multi-1',
-        llm: mockLlm,
+        modelConfig,
         userMessageContent: 'Session 1',
       })
 
       await orchestrator.startSession({
         chatUid: 'chat-multi-1',
-        llm: mockLlm,
+        modelConfig,
         userMessageContent: 'Session 2',
       })
 
       await orchestrator.startSession({
         chatUid: 'chat-multi-2',
-        llm: mockLlm,
+        modelConfig,
         userMessageContent: 'Session 3',
       })
 
@@ -345,7 +347,7 @@ describe('sessionOrchestrator', () => {
 
       await orchestrator.startSession({
         chatUid: 'chat-count',
-        llm: mockLlm,
+        modelConfig,
         userMessageContent: 'Count test',
       })
 
@@ -377,13 +379,13 @@ describe('sessionOrchestrator', () => {
 
       await orchestrator.startSession({
         chatUid: 'chat-specific',
-        llm: mockLlm,
+        modelConfig,
         userMessageContent: 'Test',
       })
 
       await orchestrator.startSession({
         chatUid: 'chat-other',
-        llm: mockLlm,
+        modelConfig,
         userMessageContent: 'Test',
       })
 

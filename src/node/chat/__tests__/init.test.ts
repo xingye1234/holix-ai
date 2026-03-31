@@ -48,7 +48,6 @@ const mockUpdate = vi.hoisted(() => vi.fn())
 const mockProviderStore = vi.hoisted(() => ({
   get: vi.fn(() => ({ providers: [] as Array<{ name: string, apiType: string, apiKey: string, baseUrl: string }> })),
 }))
-const mockCreateLlm = vi.hoisted(() => vi.fn())
 
 // ============================================
 // Module Mocks
@@ -86,10 +85,6 @@ vi.mock('../platform/update', () => ({
 
 vi.mock('../platform/provider', () => ({
   providerStore: mockProviderStore,
-}))
-
-vi.mock('../llm', () => ({
-  createLlm: mockCreateLlm,
 }))
 
 // ============================================
@@ -138,9 +133,6 @@ describe('initChat', () => {
         },
       ],
     })
-
-    mockCreateLlm.mockReturnValue({})
-
     // Initialize chat once
     initChat()
   })
@@ -178,8 +170,17 @@ describe('initChat', () => {
       expect(mockCreateUserMessage).toHaveBeenCalledWith('chat-123', 'Hello AI')
       expect(mockUpdateLastMessagePreview).toHaveBeenCalledWith('chat-123', 'Hello AI')
       expect(mockProviderStore.get).toHaveBeenCalledWith('providers')
-      expect(mockCreateLlm).toHaveBeenCalled()
-      expect(mockSessionOrchestrator.startSession).toHaveBeenCalled()
+      expect(mockSessionOrchestrator.startSession).toHaveBeenCalledWith(
+        expect.objectContaining({
+          chatUid: 'chat-123',
+          modelConfig: {
+            provider: 'openai',
+            model: 'gpt-4',
+            apiKey: 'sk-test',
+            baseURL: 'https://api.openai.com/v1',
+          },
+        }),
+      )
     })
 
     it('should emit message.created event', async () => {

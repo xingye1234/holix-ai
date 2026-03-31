@@ -65,24 +65,28 @@ vi.mock('../tools/tool-call-tracker', () => ({
   toolCallTracker: mockToolCallTracker,
 }))
 
-// Mock SessionBuilder to avoid complex Agent creation
-const mockSessionBuilder = vi.hoisted(() => vi.fn().mockImplementation(() => ({
-  buildAgent: vi.fn(async () => ({
-    stream: vi.fn(async function* () {
-      yield ['messages', {
-        getType: () => 'ai',
-        content: 'Hello',
-        tool_call_chunks: null,
-      }]
-      yield ['updates', { agent: { messages: [] } }]
-    }),
-  })),
-  buildMessages: vi.fn(() => []),
-  buildContext: vi.fn(() => ({})),
-})))
+const mockSessionBuilderConstructor = vi.hoisted(() => vi.fn())
 
 vi.mock('../session-builder', () => ({
-  SessionBuilder: mockSessionBuilder,
+  SessionBuilder: class SessionBuilder {
+    constructor() {
+      mockSessionBuilderConstructor()
+    }
+
+    buildAgent = vi.fn(async () => ({
+      stream: async function* () {
+        yield ['messages', {
+          getType: () => 'ai',
+          content: 'Hello',
+          tool_call_chunks: null,
+        }]
+        yield ['updates', { agent: { messages: [] } }]
+      },
+    }))
+
+    buildMessages = vi.fn(() => [])
+    buildContext = vi.fn(() => ({}))
+  },
 }))
 
 // ============================================
@@ -90,16 +94,18 @@ vi.mock('../session-builder', () => ({
 // ============================================
 
 import { ChatSession } from '../chat-session'
-import type { BaseChatModel } from '@langchain/core/language_models/chat_models'
 
 describe('ChatSession', () => {
-  let mockLlm: BaseChatModel
   let sessionConfig: any
+  const modelConfig = {
+    provider: 'openai',
+    model: 'gpt-4.1',
+    apiKey: 'sk-test',
+    baseURL: 'https://api.openai.com/v1',
+  }
 
   beforeEach(() => {
     vi.clearAllMocks()
-
-    mockLlm = {} as BaseChatModel
 
     // Reset default mock implementations
     mockMessagePersister.getNextSeq.mockResolvedValue(1)
@@ -121,7 +127,7 @@ describe('ChatSession', () => {
       requestId: 'req-123',
       streamId: 'stream-123',
       assistantMessageUid: 'msg-assistant-123',
-      llm: mockLlm,
+      modelConfig,
       systemMessages: [{ content: 'System prompt' }],
       workspace: [],
     }
@@ -147,7 +153,7 @@ describe('ChatSession', () => {
     it('should create new session with message', async () => {
       const session = await ChatSession.create({
         chatUid: 'chat-456',
-        llm: mockLlm,
+        modelConfig,
         userMessageContent: 'Hello',
         contextMessages: [],
         systemMessages: ['Be helpful'],
@@ -161,13 +167,13 @@ describe('ChatSession', () => {
     it('should generate unique IDs for session', async () => {
       const session1 = await ChatSession.create({
         chatUid: 'chat-789',
-        llm: mockLlm,
+        modelConfig,
         userMessageContent: 'Test 1',
       })
 
       const session2 = await ChatSession.create({
         chatUid: 'chat-789',
-        llm: mockLlm,
+        modelConfig,
         userMessageContent: 'Test 2',
       })
 
@@ -183,7 +189,7 @@ describe('ChatSession', () => {
 
       await ChatSession.create({
         chatUid: 'chat-999',
-        llm: mockLlm,
+        modelConfig,
         userMessageContent: 'Test',
       })
 

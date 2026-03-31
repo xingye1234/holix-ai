@@ -9,7 +9,6 @@ import { onCommand } from '../platform/commands'
 import { logger } from '../platform/logger'
 import { providerStore } from '../platform/provider'
 import { update } from '../platform/update'
-import { createLlm } from './llm'
 import { sessionOrchestrator } from './session-orchestrator'
 
 export function initChat() {
@@ -87,14 +86,6 @@ export function initChat() {
       `[Chat] Using provider ${provider.name} (${model}) for chat ${chatId}`,
     )
 
-    // 创建 LLM 实例
-    const llm = createLlm(model, {
-      provider: provider.apiType,
-      apiKey: provider.apiKey,
-      baseURL: provider.baseUrl,
-      streaming: true,
-    })
-
     const contextSettings = chat.contextSettings || DEFAULT_CHAT_CONTEXT_SETTINGS
     const contextMessagesRaw = await getLatestMessages(chatId, contextSettings.maxMessages)
     const contextMessages = contextSettings.timeWindowHours != null
@@ -104,7 +95,12 @@ export function initChat() {
     // 使用 SessionOrchestrator 启动会话（异步处理，不阻塞）
     const requestId = await sessionOrchestrator.startSession({
       chatUid: chatId,
-      llm,
+      modelConfig: {
+        provider: provider.apiType,
+        model,
+        apiKey: provider.apiKey,
+        baseURL: provider.baseUrl,
+      },
       userMessageContent: content,
       contextMessages,
       systemMessages,

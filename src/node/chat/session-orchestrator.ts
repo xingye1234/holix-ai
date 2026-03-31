@@ -9,10 +9,10 @@
  * - 跟踪活跃会话状态
  */
 
-import type { BaseChatModel } from '@langchain/core/language_models/chat_models'
 import type { Message, Workspace } from '../database/schema/chat'
 import { logger } from '../platform/logger'
 import { ChatSession } from './session/chat-session'
+import type { SessionModelConfig } from './session/session-state'
 import { skillManager } from './skills'
 
 /**
@@ -20,7 +20,7 @@ import { skillManager } from './skills'
  */
 export interface StartSessionParams {
   chatUid: string
-  llm: BaseChatModel
+  modelConfig: SessionModelConfig
   userMessageContent: string
   contextMessages?: Message[]
   systemMessages?: string[]
@@ -45,12 +45,12 @@ export class SessionOrchestrator {
    * 启动一个新的聊天会话
    */
   async startSession(params: StartSessionParams): Promise<string> {
-    const { chatUid, llm, userMessageContent, contextMessages = [], systemMessages = [], workspace = [] } = params
+    const { chatUid, modelConfig, userMessageContent, contextMessages = [], systemMessages = [], workspace = [] } = params
 
     // 创建会话
     const session = await ChatSession.create({
       chatUid,
-      llm,
+      modelConfig,
       userMessageContent,
       contextMessages,
       systemMessages,

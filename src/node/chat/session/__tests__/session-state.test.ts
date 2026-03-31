@@ -18,7 +18,12 @@ describe('SessionState Types', () => {
 
   describe('SessionConfig', () => {
     it('should accept valid session config', () => {
-      const mockLlm = {} as any
+      const modelConfig = {
+        provider: 'openai',
+        model: 'gpt-4.1',
+        apiKey: 'sk-test',
+        baseURL: 'https://api.openai.com/v1',
+      }
       const mockSystemMessage = { content: 'System prompt' } as any
       const mockWorkspace = [{ type: 'directory', value: '/path' }]
 
@@ -27,7 +32,7 @@ describe('SessionState Types', () => {
         requestId: 'req-456',
         streamId: 'stream-789',
         assistantMessageUid: 'msg-abc',
-        llm: mockLlm,
+        modelConfig,
         systemMessages: [mockSystemMessage],
         workspace: mockWorkspace as any,
       }
@@ -36,20 +41,23 @@ describe('SessionState Types', () => {
       expect(config.requestId).toBe('req-456')
       expect(config.streamId).toBe('stream-789')
       expect(config.assistantMessageUid).toBe('msg-abc')
-      expect(config.llm).toBe(mockLlm)
+      expect(config.modelConfig).toBe(modelConfig)
       expect(config.systemMessages).toEqual([mockSystemMessage])
       expect(config.workspace).toEqual(mockWorkspace)
     })
 
     it('should accept session config without optional fields', () => {
-      const mockLlm = {} as any
+      const modelConfig = {
+        provider: 'anthropic',
+        model: 'claude-sonnet-4-5',
+      }
 
       const config: SessionConfig = {
         chatUid: 'chat-123',
         requestId: 'req-456',
         streamId: 'stream-789',
         assistantMessageUid: 'msg-abc',
-        llm: mockLlm,
+        modelConfig,
       }
 
       expect(config.systemMessages).toBeUndefined()
@@ -59,7 +67,10 @@ describe('SessionState Types', () => {
 
   describe('SessionState', () => {
     it('should accept valid session state', () => {
-      const mockLlm = {} as any
+      const modelConfig = {
+        provider: 'openai',
+        model: 'gpt-4.1',
+      }
       const mockAbortController = new AbortController()
 
       const config: SessionConfig = {
@@ -67,7 +78,7 @@ describe('SessionState Types', () => {
         requestId: 'req-456',
         streamId: 'stream-789',
         assistantMessageUid: 'msg-abc',
-        llm: mockLlm,
+        modelConfig,
       }
 
       const state: SessionState = {
@@ -86,7 +97,10 @@ describe('SessionState Types', () => {
     })
 
     it('should accept session state with endTime', () => {
-      const mockLlm = {} as any
+      const modelConfig = {
+        provider: 'openai',
+        model: 'gpt-4.1',
+      }
       const mockAbortController = new AbortController()
       const startTime = Date.now() - 1000
       const endTime = Date.now()
@@ -96,7 +110,7 @@ describe('SessionState Types', () => {
         requestId: 'req-456',
         streamId: 'stream-789',
         assistantMessageUid: 'msg-abc',
-        llm: mockLlm,
+        modelConfig,
       }
 
       const state: SessionState = {
@@ -112,7 +126,10 @@ describe('SessionState Types', () => {
     })
 
     it('should accept session state with error', () => {
-      const mockLlm = {} as any
+      const modelConfig = {
+        provider: 'openai',
+        model: 'gpt-4.1',
+      }
       const mockAbortController = new AbortController()
 
       const config: SessionConfig = {
@@ -120,7 +137,7 @@ describe('SessionState Types', () => {
         requestId: 'req-456',
         streamId: 'stream-789',
         assistantMessageUid: 'msg-abc',
-        llm: mockLlm,
+        modelConfig,
       }
 
       const state: SessionState = {
@@ -136,7 +153,10 @@ describe('SessionState Types', () => {
     })
 
     it('should accept all possible status values', () => {
-      const mockLlm = {} as any
+      const modelConfig = {
+        provider: 'openai',
+        model: 'gpt-4.1',
+      }
       const mockAbortController = new AbortController()
 
       const config: SessionConfig = {
@@ -144,7 +164,7 @@ describe('SessionState Types', () => {
         requestId: 'req-456',
         streamId: 'stream-789',
         assistantMessageUid: 'msg-abc',
-        llm: mockLlm,
+        modelConfig,
       }
 
       const statuses: SessionStatus[] = ['running', 'completed', 'aborted', 'error']
