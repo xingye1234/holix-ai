@@ -1,8 +1,37 @@
 import { render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ChatContext } from '@/context/chat'
-import useUI from '@/store/ui'
+import { SettingsPanelProvider } from '@/context/settings-panel'
+import useChat from '@/store/chat'
 import { ChatTitleBar } from '../title-bar'
+
+const mocks = vi.hoisted(() => ({
+  pathname: '/chat/chat-1',
+}))
+
+vi.mock('@tanstack/react-router', () => ({
+  useRouterState: ({ select }: { select: (state: { location: { pathname: string } }) => unknown }) =>
+    select({ location: { pathname: mocks.pathname } }),
+}))
+
+vi.mock('@/lib/logger', () => ({
+  default: {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  },
+}))
+
+vi.mock('@/lib/trpc-client', () => ({
+  trpcClient: {
+    chat: {
+      list: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+    },
+  },
+}))
 
 vi.mock('@/i18n/provider', () => ({
   useI18n: () => ({
@@ -37,56 +66,62 @@ function makeChat(overrides = {}) {
   }
 }
 
-function renderTitleBar(chat = makeChat()) {
+function renderTitleBar() {
   return render(
-    <ChatContext.Provider
+    <SettingsPanelProvider
       value={{
-        chat,
-        chatId: chat.uid,
-        pendingMessages: [],
-        isAtBottom: true,
-        setIsAtBottom: () => {},
-        scrollToBottomRef: { current: null },
+        isOpen: false,
+        toggle: vi.fn(),
+        open: vi.fn(),
+        close: vi.fn(),
       }}
     >
       <ChatTitleBar />
-    </ChatContext.Provider>,
+    </SettingsPanelProvider>,
   )
 }
 
 describe('chatTitleBar', () => {
   beforeEach(() => {
-    useUI.setState({
-      layoutMode: 'chat',
-      sidebarCollapsed: false,
+    mocks.pathname = '/chat/chat-1'
+    useChat.setState({
+      chats: [makeChat()],
+      isLoading: false,
+      initialized: true,
+      searchQuery: '',
     })
   })
 
-  it('renders the current chat title inside a drag region', () => {
+  it('renders the current chat title for the active route', () => {
     renderTitleBar()
 
     const titleBar = screen.getByTestId('chat-title-bar')
 
-    expect(titleBar).toHaveClass('app-drag-region')
+    expect(titleBar).toHaveClass('flex')
     expect(screen.getByText('优化 holix ai')).toBeInTheDocument()
+    expect(screen.getByTestId('chat-title-bar-controls')).toBeInTheDocument()
+    expect(screen.getByTestId('chat-title-bar-settings')).toBeInTheDocument()
   })
 
   it('falls back to a default title when the chat title is empty', () => {
-    renderTitleBar(makeChat({ title: '   ' }))
+    useChat.setState({
+      chats: [makeChat({ title: '   ' })],
+      isLoading: false,
+      initialized: true,
+      searchQuery: '',
+    })
+    renderTitleBar()
 
     expect(screen.getByText('新对话')).toBeInTheDocument()
   })
 
-  it('shows fallback controls in the title bar when the sidebar is collapsed', () => {
-    useUI.setState({
-      layoutMode: 'chat',
-      sidebarCollapsed: true,
-    })
+  it('falls back to the app title and hides chat controls outside chat routes', () => {
+    mocks.pathname = '/skills'
 
     renderTitleBar()
 
+    expect(screen.getByText('Holix AI')).toBeInTheDocument()
     expect(screen.getByTestId('chat-title-bar-controls')).toBeInTheDocument()
-    expect(screen.getByTitle('chat.sidebar.expand')).toBeInTheDocument()
-    expect(screen.getByTitle('chat.sidebar.switchToArticle')).toBeInTheDocument()
+    expect(screen.queryByTestId('chat-title-bar-settings')).not.toBeInTheDocument()
   })
 })

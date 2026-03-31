@@ -8,7 +8,7 @@ export function AsideChatHeader() {
   const { t } = useI18n()
 
   return (
-    <header className="sticky top-0 z-10 px-2 pt-5 pb-3">
+    <header className="px-2 pt-3 pb-3">
       <div className="space-y-2.5">
         <Link
           to="/"
@@ -63,7 +63,7 @@ export function ChatLayoutToggle() {
       variant="ghost"
       size="icon"
       title={layoutMode === 'chat' ? t('chat.sidebar.switchToArticle') : t('chat.sidebar.switchToChat')}
-      className="h-8 w-8 text-muted-foreground hover:text-foreground"
+      className="h-8 w-8 rounded-lg text-muted-foreground/80 hover:bg-background/80 hover:text-foreground"
       onClick={toggleLayoutMode}
     >
       {layoutMode === 'chat'
@@ -83,7 +83,7 @@ export function SidebarToggleButton() {
       variant="ghost"
       size="icon"
       title={sidebarCollapsed ? t('chat.sidebar.expand') : t('chat.sidebar.collapse')}
-      className="h-8 w-8 text-muted-foreground hover:text-foreground"
+      className="h-8 w-8 rounded-lg text-muted-foreground/80 hover:bg-background/80 hover:text-foreground"
       onClick={toggleSidebar}
     >
       {sidebarCollapsed

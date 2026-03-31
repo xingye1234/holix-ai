@@ -15,10 +15,7 @@ export default function AppSideBar(props: AppSideBarProps) {
       className="flex flex-col overflow-hidden shrink-0 transition-all duration-300"
       style={{ minWidth: 0, backgroundColor: 'var(--region-sidebar)' }}
     >
-      <div
-        className="flex h-full w-(--app-sidebar-width) flex-col px-3 pb-3"
-        style={{ paddingTop: 'calc(var(--app-header-height) + 8px)' }}
-      >
+      <div className="flex h-full w-(--app-sidebar-width) flex-col px-3 pb-3">
         {props.children}
       </div>
     </motion.aside>
