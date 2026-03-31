@@ -26,9 +26,12 @@ const mockLoadMcpTools = vi.hoisted(() => vi.fn(async () => []))
 const mockInitChatModel = vi.hoisted(() => vi.fn(async () => ({ kind: 'mock-model' })))
 const mockCreateDeepAgent = vi.hoisted(() => vi.fn((params: any) => ({ params, stream: vi.fn() })))
 const mockFilesystemBackend = vi.hoisted(() => vi.fn())
+const mockCompositeBackend = vi.hoisted(() => vi.fn())
+const mockStoreBackend = vi.hoisted(() => vi.fn())
 const mockListSkills = vi.hoisted(() => vi.fn(() => []))
 
 const tempRoot = vi.hoisted(() => '/tmp/holix-ai-session-builder-tests')
+const mockLongTermMemoryStore = vi.hoisted(() => ({ kind: 'sqlite-deepagents-store' }))
 
 vi.mock('../../../platform/config', () => ({
   configStore: mockConfigStore,
@@ -52,6 +55,11 @@ vi.mock('../../../constant', () => ({
   APP_DATA_PATH: tempRoot,
 }))
 
+vi.mock('../../../database/deepagents-store', () => ({
+  deepAgentLongTermMemoryStore: mockLongTermMemoryStore,
+  DEEP_AGENT_LONG_TERM_MEMORY_NAMESPACE: ['holix-ai', 'long-term-memory'],
+}))
+
 vi.mock('../../../platform/logger', () => ({
   logger: {
     info: vi.fn(),
@@ -73,6 +81,26 @@ vi.mock('deepagents', () => ({
       return {
         kind: 'filesystem-backend',
         config,
+      }
+    }
+  },
+  CompositeBackend: class CompositeBackend {
+    constructor(defaultBackend: any, routes: Record<string, unknown>) {
+      mockCompositeBackend(defaultBackend, routes)
+      return {
+        kind: 'composite-backend',
+        defaultBackend,
+        routes,
+      }
+    }
+  },
+  StoreBackend: class StoreBackend {
+    constructor(config: any, options: any) {
+      mockStoreBackend(config, options)
+      return {
+        kind: 'store-backend',
+        config,
+        options,
       }
     }
   },
@@ -166,6 +194,8 @@ describe('SessionBuilder', () => {
     mockInitChatModel.mockResolvedValue({ kind: 'mock-model' })
     mockCreateDeepAgent.mockImplementation((params: any) => ({ params, stream: vi.fn() }))
     mockFilesystemBackend.mockImplementation(() => {})
+    mockCompositeBackend.mockImplementation(() => {})
+    mockStoreBackend.mockImplementation(() => {})
   })
 
   describe('constructor', () => {
@@ -273,9 +303,24 @@ describe('SessionBuilder', () => {
 
       await builder.buildAgent('chat-backend-root')
 
+      const backendFactory = mockCreateDeepAgent.mock.calls[0][0].backend
+      expect(mockCreateDeepAgent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          store: mockLongTermMemoryStore,
+          backend: expect.any(Function),
+        }),
+      )
+
+      const runtimeConfig = { store: mockLongTermMemoryStore }
+      backendFactory(runtimeConfig)
+
       expect(mockFilesystemBackend).toHaveBeenCalledWith({
         rootDir: '/repo',
       })
+      expect(mockStoreBackend).toHaveBeenCalledWith(runtimeConfig, {
+        namespace: ['holix-ai', 'long-term-memory'],
+      })
+      expect(mockCompositeBackend).toHaveBeenCalled()
     })
 
     it('should merge global and chat-specific disabled skills while keeping chat-enabled skills active', async () => {
@@ -504,6 +549,8 @@ describe('SessionBuilder', () => {
       const createAgentParams = mockCreateDeepAgent.mock.calls[0][0]
       expect(createAgentParams.systemPrompt).toContain('Custom system prompt')
       expect(createAgentParams.systemPrompt).toContain('## Workspace')
+      expect(createAgentParams.systemPrompt).toContain('## Long-Term Memory')
+      expect(createAgentParams.systemPrompt).toContain('/memories/')
       expect(createAgentParams.systemPrompt).toContain('/project')
       expect(createAgentParams.systemPrompt).toContain('/project/README.md')
     })
