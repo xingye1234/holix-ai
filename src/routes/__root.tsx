@@ -46,7 +46,6 @@ function RootLayout() {
           <WindowChrome />
           <section
             className="flex h-full overflow-hidden"
-            style={{ paddingTop: 'var(--app-header-height)' }}
           >
             <AppSideBar>
               <AsideChatHeader />

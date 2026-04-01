@@ -12,7 +12,7 @@ export default function AppSideBar(props: AppSideBarProps) {
     <motion.aside
       animate={{ width: sidebarCollapsed ? 0 : 320 }}
       transition={{ duration: 0.25, ease: 'easeInOut' }}
-      className="flex flex-col overflow-hidden shrink-0 transition-all duration-300"
+      className="flex flex-col pt-(--app-header-height) overflow-hidden shrink-0 transition-all duration-300"
       style={{ minWidth: 0 }}
     >
       <div className="flex h-full w-(--app-sidebar-width) flex-col px-3 pb-3">

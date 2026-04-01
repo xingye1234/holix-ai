@@ -1,15 +1,10 @@
-import { useRouterState } from '@tanstack/react-router'
-import AppSearch from '@/components/app/app-search'
 import WindowControls from '@/components/window-controls'
 import { usePlatform } from '@/hooks/platform'
-import useUI from '@/store/ui'
 import { ChatLayoutToggle, SidebarToggleButton } from '@/views/chat/header'
 import { ChatTitleBar } from '@/views/chat/title-bar'
 
 export default function WindowChrome() {
   const { isMacOS, isWindows } = usePlatform()
-  const pathname = useRouterState({ select: s => s.location.pathname })
-  const isChatRoute = pathname.startsWith('/chat/')
 
   return (
     <>
@@ -44,11 +39,11 @@ export default function WindowChrome() {
         </div>
       )}
 
-      {!isChatRoute && (
-        <div className="hidden">
+      {/* {!isChatRoute && (
+        <div className="hidden a">
           <AppSearch className="hidden" showShortcut={false} />
         </div>
-      )}
+      )} */}
     </>
   )
 }
