@@ -5,7 +5,7 @@ export default function AppMain({
 }) {
   return (
     <main
-      className="flex flex-1 h-full min-w-0 overflow-hidden pt-(--app-header-height)"
+      className="flex w-[calc(100vw-var(--sidebar-width))] h-full min-w-0 overflow-hidden pt-[var(--header-height)]"
       style={{ backgroundColor: 'var(--region-chat)' }}
     >
       {children}

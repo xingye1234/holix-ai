@@ -22,8 +22,8 @@ export function AsideChatSidebar() {
   }, [chats, searchQuery])
 
   return (
-    <SidebarContent className="flex min-h-0 w-full flex-1 flex-col">
-      <SidebarGroup>
+    <SidebarContent className="flex min-h-0 w-full">
+      <SidebarGroup className="group-data-[collapsible=icon]:hidden">
         <SidebarGroupLabel>Chats</SidebarGroupLabel>
         <SidebarMenu>
           {filteredChats.sort((a, b) => b.updatedAt - a.updatedAt).map((chat) => {

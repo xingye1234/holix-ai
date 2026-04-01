@@ -9,7 +9,7 @@ export function AsideChatHeader() {
   const { t } = useI18n()
 
   return (
-    <SidebarHeader className="px-2 pt-3 pb-3 pt-(--app-header-height)">
+    <SidebarHeader className="pb-3 pt-(--app-header-height)">
       <SidebarMenu>
         <SidebarMenuItem>
           <SidebarMenuButton

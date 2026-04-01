@@ -9,6 +9,7 @@ import { SettingsPanelProvider } from '@/context/settings-panel'
 import { AsideChatSidebar } from '@/views/chat/chat'
 import { AsideChatHeader } from '@/views/chat/header'
 import WindowChrome from '@/views/shared/window-chrome'
+import { SidebarProvider } from '@/components/ui/sidebar'
 
 function RootLayout() {
   const [splashDone, setSplashDone] = useState(false)
@@ -47,16 +48,24 @@ function RootLayout() {
           <section
             className="flex h-full overflow-hidden"
           >
-            <AppSideBar>
-              <AsideChatHeader />
-              <AsideChatSidebar />
-              <div className="mt-auto px-2 pt-2">
-                <AppSetting variant="sidebar" />
-              </div>
-            </AppSideBar>
-            <AppMain>
-              <Outlet />
-            </AppMain>
+            <SidebarProvider style={
+              {
+                '--sidebar-width': 'calc(var(--spacing) * 72)',
+                '--header-height': 'calc(var(--spacing) * 12)',
+              } as React.CSSProperties
+            }
+            >
+              <AppSideBar>
+                <AsideChatHeader />
+                <AsideChatSidebar />
+                <div className="mt-auto px-2 pt-2">
+                  <AppSetting variant="sidebar" />
+                </div>
+              </AppSideBar>
+              <AppMain>
+                <Outlet />
+              </AppMain>
+            </SidebarProvider>
           </section>
         </div>
       </SettingsPanelProvider>
