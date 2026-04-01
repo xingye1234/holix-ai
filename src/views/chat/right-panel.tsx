@@ -15,7 +15,7 @@ export default function ChatPanel() {
       animate={{ width: 420 }}
       exit={{ width: 0 }}
       transition={{ duration: 0.2 }}
-      className={cn('h-full w-[420px] border-l bg-background flex flex-col overflow-hidden')}
+      className={cn('h-full w-105 border-l flex flex-col overflow-hidden')}
     >
       <div className="h-full flex flex-col">
         <div className="h-(--app-header-height) border-b px-4 flex items-center justify-between shrink-0">
