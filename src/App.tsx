@@ -37,7 +37,9 @@ export default function App() {
     })
   }, [])
 
-  logger.info('App initialized and hooks set up.')
+  useEffect(() => {
+    logger.info('App initialized and hooks set up.')
+  }, [])
 
   return (
     <I18nProvider>

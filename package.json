@@ -83,6 +83,7 @@
     "deepagents": "^1.8.7",
     "dotenv": "^17.2.3",
     "drizzle-orm": "^0.45.1",
+    "effect": "^3.21.0",
     "electron-log": "^5.4.3",
     "electron-updater": "^6.7.3",
     "framer-motion": "^12.26.2",

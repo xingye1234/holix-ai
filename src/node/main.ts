@@ -4,6 +4,7 @@ import process from 'node:process'
 import 'source-map-support/register'
 import { createRouter } from '@holix/router'
 import { createStaticMiddleware } from '@holix/static'
+import { Effect } from 'effect'
 import { app, protocol, shell } from 'electron'
 import { agents } from './agents'
 import { initChat } from './chat/init'
@@ -13,7 +14,8 @@ import { initAutoUpdater } from './platform/auto-update'
 import { onChannelRouter } from './platform/channel'
 import { onCommandForClient } from './platform/commands'
 import { configStore } from './platform/config'
-import { AppLifecycle, LifecyclePhase } from './platform/lifecycle'
+import type { LifecycleTask } from './platform/lifecycle-effect'
+import { LifecyclePhase, LifecycleTag, LifecycleLayer } from './platform/lifecycle-effect'
 import { logger } from './platform/logger'
 import { markMainLogRendererReady } from './platform/main-log-forwarder'
 import { mcpStore } from './platform/mcp'
@@ -54,39 +56,116 @@ if (import.meta.env.PROD) {
 }
 
 // ============================================
-// 生命周期管理器
+// 状态管理
 // ============================================
-const lifecycle = new AppLifecycle()
 let window: AppWindow | null = null
 let protocolRegistered = false
 let creatingWindow = false
+
 // ============================================
-// 生命周期钩子
+// 生命周期钩子（在 Layer 外注册）
 // ============================================
-lifecycle.onPhase(LifecyclePhase.RUNNING, () => {
-  logger.info('[Lifecycle Hook] Application is now running')
-})
 
-lifecycle.onPhase(LifecyclePhase.STOPPING, () => {
-  logger.info('[Lifecycle Hook] Application is stopping')
-})
+function registerLifecycleHooks(lifecycle: typeof LifecycleTag.Service) {
+  Effect.runPromise(
+    Effect.gen(function* () {
+      yield* lifecycle.onPhase(LifecyclePhase.RUNNING, () => {
+        logger.info('[Lifecycle Hook] Application is now running')
+      })
+      yield* lifecycle.onPhase(LifecyclePhase.STOPPING, () => {
+        logger.info('[Lifecycle Hook] Application is stopping')
+      })
+      yield* lifecycle.onPhase(LifecyclePhase.ERROR, () => {
+        logger.error('[Lifecycle Hook] Application entered error state')
+      })
+    }),
+  )
+}
 
-lifecycle.onPhase(LifecyclePhase.ERROR, () => {
-  logger.error('[Lifecycle Hook] Application entered error state')
-})
+// ============================================
+// 应用启动任务定义
+// ============================================
 
-async function starting() {
-  if (creatingWindow)
-    return
-  creatingWindow = true
-  // ============================================
-  // 阶段 2: 启动应用
-  // ============================================
-  await lifecycle.setPhase(LifecyclePhase.STARTING)
-  await lifecycle.executeTasks([
+function createInitTasks(): LifecycleTask[] {
+  return [
+    {
+      name: 'Register custom protocol',
+      execute: () => Effect.gen(function* () {
+        protocol.registerSchemesAsPrivileged([
+          {
+            scheme: SCHEME,
+            privileges: {
+              standard: true,
+              secure: true,
+              supportFetchAPI: true,
+              corsEnabled: true,
+              allowServiceWorkers: true,
+            },
+          },
+        ])
+        logger.info('[Main] Custom protocol registered successfully.')
+      }),
+    },
+    {
+      name: 'Wait for Electron ready',
+      execute: () => Effect.gen(function* () {
+        yield* Effect.promise(() => app.whenReady())
+        setupAppMenu()
+      }),
+      timeout: '10 seconds',
+    },
+    {
+      name: 'Migrate database',
+      execute: () => Effect.tryPromise({
+        try: () => migrateDb(),
+        catch: e => e,
+      }),
+      timeout: '5 seconds',
+    },
+    {
+      name: 'Initialize chat module',
+      execute: () => Effect.sync(() => initChat()),
+    },
+    {
+      name: 'Initialize config store',
+      execute: () => Effect.gen(function* () {
+        yield* Effect.promise(() => configStore.init())
+        app.setLoginItemSettings({ openAtLogin: configStore.get('autoStart') })
+      }),
+      timeout: '3 seconds',
+    },
+    {
+      name: 'Initialize provider store',
+      execute: () => Effect.tryPromise({
+        try: () => providerStore.init(),
+        catch: e => e,
+      }),
+      timeout: '3 seconds',
+    },
+    {
+      name: 'Initialize MCP store',
+      execute: () => Effect.tryPromise({
+        try: () => mcpStore.init(),
+        catch: e => e,
+      }),
+      timeout: '3 seconds',
+    },
+    {
+      name: 'Initialize agents',
+      execute: () => Effect.tryPromise({
+        try: () => agents.init(),
+        catch: e => e,
+      }),
+      timeout: '3 seconds',
+    },
+  ]
+}
+
+function createStartingTasks(): LifecycleTask[] {
+  return [
     {
       name: 'Create application window',
-      execute: () => {
+      execute: () => Effect.gen(function* () {
         if (!window) {
           window = new AppWindow()
           window.webContents.once('dom-ready', () => {
@@ -96,163 +175,117 @@ async function starting() {
             window = null
           })
         }
-      },
-      critical: true,
+      }),
     },
     {
       name: 'Register protocol handler',
-      execute: () => {
+      execute: () => Effect.sync(() => {
         if (window && !protocolRegistered) {
           router.register(window.webContents.session.protocol)
           protocolRegistered = true
         }
-      },
-      critical: true,
+      }),
     },
     {
       name: 'Register window router',
-      execute: () => {
+      execute: () => Effect.sync(() => {
         if (window) {
           window.use(router)
         }
-      },
-      critical: true,
+      }),
     },
     {
       name: 'Setup application tray',
-      execute: () => {
-        setupAppTray(window)
-      },
-      critical: false,
+      execute: () => Effect.sync(() => setupAppTray(window)),
     },
     {
       name: 'Show application window',
-      execute: async () => {
+      execute: () => Effect.gen(function* () {
         if (window) {
-          await window.showWhenReady()
+          yield* Effect.promise(() => window!.showWhenReady())
         }
-      },
-      critical: true,
-      timeout: 10000,
+      }),
+      timeout: '10 seconds',
     },
-  ])
-  await lifecycle.setPhase(LifecyclePhase.RUNNING)
+  ]
 }
 
 // ============================================
-// 应用启动流程
+// 启动流程 (STARTING phase — 可重入，用于 activate)
 // ============================================
-async function bootstrap() {
+
+async function starting(lifecycle: typeof LifecycleTag.Service) {
+  if (creatingWindow)
+    return
+  creatingWindow = true
+
   try {
-    // ============================================
-    // 阶段 1: 初始化系统
-    // ============================================
-    await lifecycle.setPhase(LifecyclePhase.INITIALIZING)
-    await lifecycle.executeTasks([
-      {
-        name: 'Register custom protocol',
-        execute: async () => {
-          protocol.registerSchemesAsPrivileged([
-            {
-              scheme: SCHEME,
-              privileges: {
-                standard: true,
-                secure: true,
-                supportFetchAPI: true,
-                corsEnabled: true,
-                allowServiceWorkers: true,
-              },
-            },
-          ])
-          logger.info('[Main] Custom protocol registered successfully.')
-        },
-      },
-      {
-        name: 'Wait for Electron ready',
-        execute: async () => {
-          await app.whenReady()
-          setupAppMenu()
-        },
-        critical: true,
-        timeout: 10000,
-      },
-      {
-        name: 'Migrate database',
-        execute: () => migrateDb(),
-        critical: true,
-        timeout: 5000,
-      },
-      {
-        name: 'Initialize chat module',
-        execute: () => initChat(),
-        critical: true,
-      },
-      {
-        name: 'Initialize config store',
-        execute: async () => {
-          await configStore.init()
-          // 应用开机自启动设置
-          app.setLoginItemSettings({ openAtLogin: configStore.get('autoStart') })
-        },
-        critical: true,
-        timeout: 3000,
-      },
-      {
-        name: 'Initialize provider store',
-        execute: () => providerStore.init(),
-        critical: true,
-        timeout: 3000,
-      },
-      {
-        name: 'Initialize MCP store',
-        execute: () => mcpStore.init(),
-        critical: true,
-        timeout: 3000,
-      },
-      {
-        name: 'Initialize agents',
-        execute: () => agents.init(),
-        critical: true,
-        timeout: 3000,
-      },
-      {
-        name: 'init autoUpdater',
-        execute: () => {
-          initAutoUpdater()
-        },
-        critical: false,
-        timeout: 5000,
-      },
-    ])
-    await starting()
-    // 初始化自动更新（生产环境）
-    try {
-      initAutoUpdater()
-    }
-    catch (e) {
-      logger.warn('[Main] initAutoUpdater failed', e)
-    }
+    await Effect.runPromise(
+      lifecycle.executeTasks(createStartingTasks()).pipe(
+        Effect.tap(() => lifecycle.setPhase(LifecyclePhase.RUNNING)),
+      ),
+    )
   }
-  catch (error) {
-    await lifecycle.setPhase(LifecyclePhase.ERROR)
-    logger.error('[Bootstrap] Fatal error during startup:', error)
-    logger.error('[Bootstrap] Error stack:', (error as Error).stack)
-    // 打印错误时的性能报告摘要
-    lifecycle.printPerformanceSummary()
-
-    app.quit()
-    throw error
+  finally {
+    creatingWindow = false
   }
 }
+
+// ============================================
+// Bootstrap Effect
+// ============================================
+
+const bootstrap = Effect.gen(function* () {
+  const lifecycle = yield* LifecycleTag
+
+  // 注册生命周期钩子
+  registerLifecycleHooks(lifecycle)
+
+  // Phase 1: INITIALIZING
+  yield* lifecycle.setPhase(LifecyclePhase.INITIALIZING)
+  yield* lifecycle.executeTasks(createInitTasks())
+
+  // 非关键任务: autoUpdater
+  yield* Effect.sync(() => initAutoUpdater()).pipe(
+    Effect.catchAll(() => Effect.sync(() => {
+      logger.warn('[Bootstrap] AutoUpdater init skipped')
+    })),
+  )
+
+  // Phase 2: STARTING
+  yield* lifecycle.setPhase(LifecyclePhase.STARTING)
+  yield* lifecycle.executeTasks(createStartingTasks())
+
+  yield* lifecycle.setPhase(LifecyclePhase.RUNNING)
+
+  return lifecycle
+}).pipe(
+  Effect.tapError(error =>
+    Effect.gen(function* () {
+      const lifecycle = yield* LifecycleTag
+      yield* lifecycle.setPhase(LifecyclePhase.ERROR)
+      logger.error('[Bootstrap] Fatal error during startup:', error)
+      logger.error('[Bootstrap] Error stack:', error instanceof Error ? error.stack : String(error))
+      yield* lifecycle.printPerformanceSummary()
+      app.quit()
+    }),
+  ),
+  Effect.provide(LifecycleLayer),
+)
 
 // ============================================
 // 启动应用
 // ============================================
 logger.info('[Main] Starting Holix AI application...')
-bootstrap().catch((err) => {
+
+const lifecyclePromise = Effect.runPromise(bootstrap).catch((err) => {
   logger.error('[Main] Bootstrap failed:', err)
   process.exit(1)
 })
+
+// ============================================
+// Electron 事件
+// ============================================
 
 app.on('second-instance', () => {
   logger.info('Second instance detected. Bringing the main window to the front.')
@@ -263,30 +296,28 @@ app.on('second-instance', () => {
 })
 
 app.on('window-all-closed', async () => {
-  // macOS: 即使所有窗口关闭，应用也不退出（符合 macOS 应用习惯）
   if (process.platform === 'darwin') {
     return
   }
-
-  // 其他平台：所有窗口关闭时退出应用
-  await lifecycle.setPhase(LifecyclePhase.STOPPING)
+  const lifecycle = await lifecyclePromise
+  await Effect.runPromise(lifecycle.setPhase(LifecyclePhase.STOPPING))
   app.quit()
 })
 
-app.on('activate', () => {
-  logger.info('[Main] Application activated', lifecycle.getPhase(), AppWindow.getAllWindows().length)
+app.on('activate', async () => {
+  const lifecycle = await lifecyclePromise
+  const phase = await Effect.runPromise(lifecycle.getPhase())
+  logger.info('[Main] Application activated', phase, AppWindow.getAllWindows().length)
 
-  if (lifecycle.getPhase() === LifecyclePhase.RUNNING) {
-    // 如果有窗口但被隐藏了，显示它
+  if (phase === LifecyclePhase.RUNNING) {
     if (window && !window.isVisible()) {
       window.show()
       logger.info('[Main] Window was hidden, now showing.')
       return
     }
 
-    // 如果没有窗口，创建新窗口
     if (AppWindow.getAllWindows().length === 0) {
-      starting()
+      starting(lifecycle)
         .then(() => {
           logger.info('[Main] Application activated and window created.')
         })
@@ -299,14 +330,26 @@ app.on('activate', () => {
 
 app.on('before-quit', async () => {
   setIsQuitting(true)
-  await lifecycle.setPhase(LifecyclePhase.STOPPING)
-  logger.info('[Main] Application is quitting...')
-  lifecycle.printPerformanceSummary()
+  try {
+    const lifecycle = await lifecyclePromise
+    await Effect.runPromise(lifecycle.setPhase(LifecyclePhase.STOPPING))
+    logger.info('[Main] Application is quitting...')
+    await Effect.runPromise(lifecycle.printPerformanceSummary())
+  }
+  catch {
+    // lifecycle may not have been created if bootstrap failed
+  }
 })
 
 app.on('will-quit', async () => {
-  await lifecycle.setPhase(LifecyclePhase.STOPPED)
-  logger.info('[Main] Application stopped')
+  try {
+    const lifecycle = await lifecyclePromise
+    await Effect.runPromise(lifecycle.setPhase(LifecyclePhase.STOPPED))
+    logger.info('[Main] Application stopped')
+  }
+  catch {
+    // ignore
+  }
 })
 
 if (import.meta.env.PROD) {
