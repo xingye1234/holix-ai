@@ -28,9 +28,7 @@ export function AsideChatSidebar() {
         <SidebarMenu>
           {filteredChats.sort((a, b) => b.updatedAt - a.updatedAt).map((chat) => {
             return (
-              <SidebarMenuItem key={chat.id}>
-                <ChatPanel {...chat} />
-              </SidebarMenuItem>
+              <ChatPanel {...chat} key={chat.id} />
             )
           })}
         </SidebarMenu>
