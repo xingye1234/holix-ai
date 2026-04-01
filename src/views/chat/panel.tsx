@@ -119,9 +119,6 @@ export function ChatPanel(props: Chat) {
             <span className="font-medium truncate text-sm">{props.title}</span>
             <span className="shrink-0 text-[10px] text-muted-foreground">{timeAgo(props.updatedAt)}</span>
           </div>
-          <div onClick={e => e.preventDefault()}>
-
-          </div>
         </Link>
       </SidebarMenuButton>
       <SidebarMenuAction>
