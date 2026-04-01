@@ -25,8 +25,8 @@ export function AsideChatHeader() {
         </SidebarMenuItem>
 
         <SidebarMenuItem className="space-y-1">
-          <SidebarMenuButton asChild isActive={location === '/skill-store'}>
-            <Link to="/skill-store">
+          <SidebarMenuButton asChild isActive={location === '/skills'}>
+            <Link to="/skills">
               <Wrench className="h-4 w-4 text-muted-foreground" />
               <span>{t('chat.sidebar.skills')}</span>
             </Link>
