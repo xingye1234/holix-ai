@@ -8,25 +8,16 @@ import { ChatTitleBar } from '@/views/chat/title-bar'
 
 export default function WindowChrome() {
   const { isMacOS, isWindows } = usePlatform()
-  const sidebarCollapsed = useUI(state => state.sidebarCollapsed)
   const pathname = useRouterState({ select: s => s.location.pathname })
   const isChatRoute = pathname.startsWith('/chat/')
-  const leftChromeWidth = sidebarCollapsed
-    ? (isMacOS ? '156px' : '112px')
-    : 'var(--app-sidebar-width)'
 
   return (
     <>
       <div className="pointer-events-none absolute inset-x-0 top-0 z-40 flex h-(--app-header-height)">
         <div
-          className={`app-drag-region pointer-events-auto flex shrink-0 items-center justify-between border-b px-3 ${
-            isMacOS ? 'pl-[74px]' : 'pl-3'
+          className={`app-drag-region w-(--app-sidebar-width) pointer-events-auto flex shrink-0 items-center justify-between px-3 ${
+            isMacOS ? 'pl-25' : 'pl-3'
           }`}
-          style={{
-            width: leftChromeWidth,
-            backgroundColor: 'var(--region-sidebar)',
-            borderColor: 'var(--border)',
-          }}
         >
           <div className="app-no-drag flex items-center gap-1.5">
             <SidebarToggleButton />
@@ -35,7 +26,7 @@ export default function WindowChrome() {
         </div>
 
         <div
-          className={`app-drag-region pointer-events-auto flex min-w-0 flex-1 items-center border-b px-5 ${
+          className={`app-drag-region pointer-events-auto flex min-w-0 flex-1 items-center px-5 ${
             isWindows ? 'pr-36' : 'pr-5'
           }`}
           style={{

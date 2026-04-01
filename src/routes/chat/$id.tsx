@@ -1,7 +1,7 @@
-import type { PendingMessage } from '@/node/database/schema/chat'
+import type { Message, PendingMessage } from '@/node/database/schema/chat'
 import { createFileRoute } from '@tanstack/react-router'
 import { AnimatePresence } from 'framer-motion'
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { SelectionToolbar } from '@/components/message-selection'
 import { ChatContext } from '@/context/chat'
@@ -74,7 +74,8 @@ function Component() {
   )
 
   // 获取当前聊天的所有消息ID
-  const messageIds = useMemo(() => chat?.messages ?? [], [chat?.messages])
+  const messages = useMessageStore(state => state.messages)
+  const messageIds = useMemo(() => Object.values(messages).map((m: Message) => m.uid), [messages])
 
   // 启用键盘快捷键
   useMessageShortcuts({ messageIds })
