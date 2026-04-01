@@ -6,7 +6,7 @@ export interface AppSideBarProps {
 
 export default function AppSideBar(props: AppSideBarProps) {
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible="offcanvas" className="border-none">
       <SidebarInset>
         {props.children}
       </SidebarInset>
