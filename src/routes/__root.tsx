@@ -12,14 +12,8 @@ import WindowChrome from '@/views/shared/window-chrome'
 import { SidebarProvider } from '@/components/ui/sidebar'
 
 function RootLayout() {
-  const [splashDone, setSplashDone] = useState(false)
   const [isSettingsPanelOpen, setIsSettingsPanelOpen] = useState(false)
   const pathname = useRouterState({ select: s => s.location.pathname })
-
-  useEffect(() => {
-    const t = setTimeout(() => setSplashDone(true), 800)
-    return () => clearTimeout(t)
-  }, [])
 
   useEffect(() => {
     if (!pathname.startsWith('/chat/')) {
@@ -39,35 +33,33 @@ function RootLayout() {
 
   return (
     <>
-      <AnimatePresence>
-        {!splashDone && <SplashScreen key="splash" />}
-      </AnimatePresence>
       <SettingsPanelProvider value={settingsPanelValue}>
-        <div className="relative size-full overflow-hidden" style={{ backgroundColor: 'var(--background)' }}>
+        <SidebarProvider
+          style={
+            {
+              '--sidebar-width': 'calc(var(--spacing) * 72)',
+              '--header-height': 'calc(var(--spacing) * 12)',
+            } as React.CSSProperties
+          }
+
+          className="relative size-full overflow-hidden"
+        >
           <WindowChrome />
           <section
             className="flex h-full overflow-hidden"
           >
-            <SidebarProvider style={
-              {
-                '--sidebar-width': 'calc(var(--spacing) * 72)',
-                '--header-height': 'calc(var(--spacing) * 12)',
-              } as React.CSSProperties
-            }
-            >
-              <AppSideBar>
-                <AsideChatHeader />
-                <AsideChatSidebar />
-                <div className="mt-auto px-2 pt-2">
-                  <AppSetting variant="sidebar" />
-                </div>
-              </AppSideBar>
-              <AppMain>
-                <Outlet />
-              </AppMain>
-            </SidebarProvider>
+            <AppSideBar>
+              <AsideChatHeader />
+              <AsideChatSidebar />
+              <div className="mt-auto px-2 pt-2">
+                <AppSetting variant="sidebar" />
+              </div>
+            </AppSideBar>
+            <AppMain>
+              <Outlet />
+            </AppMain>
           </section>
-        </div>
+        </SidebarProvider>
       </SettingsPanelProvider>
     </>
   )
