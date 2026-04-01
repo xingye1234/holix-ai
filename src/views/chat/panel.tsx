@@ -111,6 +111,7 @@ export function ChatPanel(props: Chat) {
     <SidebarMenuButton
       aria-label={`Open chat: ${props.title}`}
       asChild
+      isActive={location === `/chat/${props.uid}`}
     >
       <Link to="/chat/$id" params={{ id: props.uid }}>
         <div className="flex w-full items-center justify-between gap-2 min-w-0">

@@ -1,5 +1,5 @@
-import { Link } from '@tanstack/react-router'
-import { AlignJustify, Bot, MessageSquare, PanelLeftClose, PanelLeftOpen, Plus, Wrench } from 'lucide-react'
+import { Link, useRouterState } from '@tanstack/react-router'
+import { AlignJustify, MessageSquare, PanelLeftClose, PanelLeftOpen, Plus, Wrench } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useI18n } from '@/i18n/provider'
 import useUI from '@/store/ui'
@@ -7,6 +7,7 @@ import { SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '
 
 export function AsideChatHeader() {
   const { t } = useI18n()
+  const location = useRouterState({ select: s => s.location.pathname })
 
   return (
     <SidebarHeader className="pb-3 pt-(--app-header-height)">
@@ -14,6 +15,7 @@ export function AsideChatHeader() {
         <SidebarMenuItem>
           <SidebarMenuButton
             asChild
+            isActive={location === '/'}
           >
             <Link to="/">
               <Plus className="h-4 w-4" />
@@ -23,22 +25,12 @@ export function AsideChatHeader() {
         </SidebarMenuItem>
 
         <SidebarMenuItem className="space-y-1">
-          <SidebarMenuButton asChild>
+          <SidebarMenuButton asChild isActive={location === '/skill-store'}>
             <Link to="/skill-store">
               <Wrench className="h-4 w-4 text-muted-foreground" />
               <span>{t('chat.sidebar.skills')}</span>
             </Link>
           </SidebarMenuButton>
-          {/* <SidebarMenuButton
-            to="/agents"
-            className="flex h-10 w-full items-center justify-start gap-2 rounded-xl px-3 text-sm font-medium text-foreground/90 transition-colors hover:bg-background/70 hover:text-foreground"
-            activeProps={{
-              className: 'bg-background text-foreground shadow-xs',
-            }}
-          >
-            <Bot className="h-4 w-4 text-muted-foreground" />
-            <span>{t('chat.sidebar.agents')}</span>
-          </SidebarMenuButton> */}
         </SidebarMenuItem>
       </SidebarMenu>
     </SidebarHeader>
