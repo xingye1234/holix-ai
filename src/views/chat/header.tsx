@@ -3,7 +3,7 @@ import { AlignJustify, MessageSquare, PanelLeftClose, PanelLeftOpen, Plus, Wrenc
 import { Button } from '@/components/ui/button'
 import { useI18n } from '@/i18n/provider'
 import useUI from '@/store/ui'
-import { SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar'
+import { SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from '@/components/ui/sidebar'
 
 export function AsideChatHeader() {
   const { t } = useI18n()
@@ -58,19 +58,18 @@ export function ChatLayoutToggle() {
 }
 
 export function SidebarToggleButton() {
-  const sidebarCollapsed = useUI(state => state.sidebarCollapsed)
-  const toggleSidebar = useUI(state => state.toggleSidebar)
   const { t } = useI18n()
+  const { open, setOpen } = useSidebar()
 
   return (
     <Button
       variant="ghost"
       size="icon"
-      title={sidebarCollapsed ? t('chat.sidebar.expand') : t('chat.sidebar.collapse')}
+      title={open ? t('chat.sidebar.collapse') : t('chat.sidebar.expand')}
       className="h-8 w-8 rounded-lg text-muted-foreground/80 hover:bg-background/80 hover:text-foreground"
-      onClick={toggleSidebar}
+      onClick={() => setOpen(!open)}
     >
-      {sidebarCollapsed
+      {open
         ? <PanelLeftOpen className="h-4 w-4" />
         : <PanelLeftClose className="h-4 w-4" />}
     </Button>

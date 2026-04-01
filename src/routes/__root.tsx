@@ -51,9 +51,7 @@ function RootLayout() {
             <AppSideBar>
               <AsideChatHeader />
               <AsideChatSidebar />
-              <div className="mt-auto px-2 pt-2">
-                <AppSetting variant="sidebar" />
-              </div>
+              <AppSetting />
             </AppSideBar>
             <AppMain>
               <Outlet />
