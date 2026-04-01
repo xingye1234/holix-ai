@@ -10,6 +10,7 @@ import { I18nProvider } from './i18n/provider'
 import logger from './lib/logger'
 import { router } from './router'
 import { useToolApprovalStore } from './store/tool-approval'
+import { TooltipProvider } from '@/components/ui/tooltip'
 
 export default function App() {
   // 初始化所有数据
@@ -44,7 +45,9 @@ export default function App() {
   return (
     <I18nProvider>
       <ThemeProvider>
-        <RouterProvider router={router} defaultPreload="intent" />
+        <TooltipProvider>
+          <RouterProvider router={router} defaultPreload="intent" />
+        </TooltipProvider>
         <Toaster position="top-center" />
         <ToolApprovalModal />
       </ThemeProvider>
