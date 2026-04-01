@@ -1,23 +1,27 @@
 import { motion } from 'framer-motion'
 import useUI from '@/store/ui'
+import { SidebarInset, SidebarProvider } from '../ui/sidebar'
 
 export interface AppSideBarProps {
   children: React.ReactNode
 }
 
 export default function AppSideBar(props: AppSideBarProps) {
-  const sidebarCollapsed = useUI(state => state.sidebarCollapsed)
+  // const sidebarCollapsed = useUI(state => state.sidebarCollapsed)
 
   return (
-    <motion.aside
-      animate={{ width: sidebarCollapsed ? 0 : 320 }}
-      transition={{ duration: 0.25, ease: 'easeInOut' }}
-      className="flex flex-col pt-(--app-header-height) overflow-hidden shrink-0 transition-all duration-300"
-      style={{ minWidth: 0 }}
+    <SidebarProvider
+      style={
+        {
+          '--sidebar-width': 'calc(var(--spacing) * 72)',
+          '--header-height': 'calc(var(--spacing) * 12)',
+        } as React.CSSProperties
+      }
+      className="flex h-full w-(--app-sidebar-width)  flex-col px-3 pb-3"
     >
-      <div className="flex h-full w-(--app-sidebar-width) flex-col px-3 pb-3">
+      <SidebarInset>
         {props.children}
-      </div>
-    </motion.aside>
+      </SidebarInset>
+    </SidebarProvider>
   )
 }

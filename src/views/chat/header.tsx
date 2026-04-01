@@ -3,41 +3,33 @@ import { AlignJustify, Bot, MessageSquare, PanelLeftClose, PanelLeftOpen, Plus, 
 import { Button } from '@/components/ui/button'
 import { useI18n } from '@/i18n/provider'
 import useUI from '@/store/ui'
+import { SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar'
 
 export function AsideChatHeader() {
   const { t } = useI18n()
 
   return (
-    <header className="px-2 pt-3 pb-3">
-      <div className="space-y-2.5">
-        <Link
-          to="/"
-          className="block w-full"
-          activeProps={{
-            className: 'pointer-events-none',
-          }}
-        >
-          <Button
-            variant="default"
-            className="h-11 w-full justify-start gap-2 rounded-xl bg-foreground text-background shadow-none hover:bg-foreground/92"
+    <SidebarHeader className="px-2 pt-3 pb-3 pt-(--app-header-height)">
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <SidebarMenuButton
+            asChild
           >
-            <Plus className="h-4 w-4" />
-            <span>{t('chat.sidebar.newChat')}</span>
-          </Button>
-        </Link>
+            <Link to="/">
+              <Plus className="h-4 w-4" />
+              <span>{t('chat.sidebar.newChat')}</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
 
-        <div className="space-y-1">
-          <Link
-            to="/skills"
-            className="flex h-10 w-full items-center justify-start gap-2 rounded-xl px-3 text-sm font-medium text-foreground/90 transition-colors hover:bg-background/70 hover:text-foreground"
-            activeProps={{
-              className: 'bg-background text-foreground shadow-xs',
-            }}
-          >
-            <Wrench className="h-4 w-4 text-muted-foreground" />
-            <span>{t('chat.sidebar.skills')}</span>
-          </Link>
-          <Link
+        <SidebarMenuItem className="space-y-1">
+          <SidebarMenuButton asChild>
+            <Link to="/skill-store">
+              <Wrench className="h-4 w-4 text-muted-foreground" />
+              <span>{t('chat.sidebar.skills')}</span>
+            </Link>
+          </SidebarMenuButton>
+          {/* <SidebarMenuButton
             to="/agents"
             className="flex h-10 w-full items-center justify-start gap-2 rounded-xl px-3 text-sm font-medium text-foreground/90 transition-colors hover:bg-background/70 hover:text-foreground"
             activeProps={{
@@ -46,10 +38,10 @@ export function AsideChatHeader() {
           >
             <Bot className="h-4 w-4 text-muted-foreground" />
             <span>{t('chat.sidebar.agents')}</span>
-          </Link>
-        </div>
-      </div>
-    </header>
+          </SidebarMenuButton> */}
+        </SidebarMenuItem>
+      </SidebarMenu>
+    </SidebarHeader>
   )
 }
 
