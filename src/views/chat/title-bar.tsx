@@ -1,5 +1,5 @@
 import { useRouterState } from '@tanstack/react-router'
-import { SlidersHorizontal } from 'lucide-react'
+import { Ellipsis } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useSettingsPanel } from '@/context/settings-panel'
 import { usePlatform } from '@/hooks/platform'
@@ -13,7 +13,6 @@ export function ChatTitleBar() {
   const currentChatId = pathname.startsWith('/chat/') ? pathname.slice('/chat/'.length) : null
   const chat = useChat(state => state.chats.find(item => item.uid === currentChatId))
   const isChatRoute = currentChatId !== null
-
   const title = chat?.title?.trim() || (isChatRoute ? '新对话' : 'Holix AI')
 
   return (
@@ -21,7 +20,7 @@ export function ChatTitleBar() {
       data-testid="chat-title-bar"
       className={cn('flex min-w-0 flex-1 items-center gap-3', isWindows ? 'pr-32' : 'pr-2')}
     >
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0">
         <h1 className="truncate text-sm font-semibold text-foreground/88">
           {title}
         </h1>
@@ -42,7 +41,7 @@ export function ChatTitleBar() {
             )}
             onClick={toggle}
           >
-            <SlidersHorizontal className="h-4 w-4" />
+            <Ellipsis className="h-4 w-4" />
           </Button>
         )}
       </div>

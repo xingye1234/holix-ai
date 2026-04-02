@@ -85,7 +85,7 @@ export function ArticleLayout({
                   />
                 )}
                 <div
-                  className="max-w-[75%] bg-primary text-primary-foreground rounded-2xl rounded-tr-none px-4 py-2.5 text-sm transition-all duration-200"
+                  className="max-w-[75%] min-w-80 bg-primary text-primary-foreground rounded-2xl rounded-tr-none px-4 py-2.5 text-sm transition-all duration-200"
                   onClick={() => isSelectionMode && toggleMessageSelection(id)}
                   style={{ boxShadow: 'var(--message-user-shadow)' }}
                 >

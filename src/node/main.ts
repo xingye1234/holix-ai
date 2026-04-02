@@ -310,21 +310,27 @@ app.on('activate', async () => {
   logger.info('[Main] Application activated', phase, AppWindow.getAllWindows().length)
 
   if (phase === LifecyclePhase.RUNNING) {
-    if (window && !window.isVisible()) {
-      window.show()
-      logger.info('[Main] Window was hidden, now showing.')
+    // 优先信任内部 window 引用，避免 getAllWindows() 在某些情况下返回 0 导致误判
+    if (window && !window.isDestroyed()) {
+      if (!window.isVisible()) {
+        window.show()
+        logger.info('[Main] Window was hidden, now showing.')
+      }
+      else {
+        window.focus()
+        logger.info('[Main] Window is already visible, focusing.')
+      }
       return
     }
 
-    if (AppWindow.getAllWindows().length === 0) {
-      starting(lifecycle)
-        .then(() => {
-          logger.info('[Main] Application activated and window created.')
-        })
-        .catch((err) => {
-          logger.error('[Main] Failed to activate application:', err)
-        })
-    }
+    // 只有窗口真正不存在时才重建
+    starting(lifecycle)
+      .then(() => {
+        logger.info('[Main] Application activated and window created.')
+      })
+      .catch((err) => {
+        logger.error('[Main] Failed to activate application:', err)
+      })
   }
 })
 
