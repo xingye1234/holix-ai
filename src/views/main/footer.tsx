@@ -234,7 +234,7 @@ export default function MainFooter() {
   }, [pendingMessages])
 
   return (
-    <footer className="relative w-full mt-auto h-(--app-chat-footer-height) border-t transition-colors duration-300" style={{ backgroundColor: 'var(--region-input)', borderColor: 'var(--border)' }}>
+    <footer className="relative container mx-auto mt-auto h-(--app-chat-footer-height) border-t transition-colors duration-300" style={{ backgroundColor: 'var(--region-input)', borderColor: 'var(--border)' }}>
       {/* 回到底部浮动按钮：当用户滚动到远离底部时出现 */}
       <AnimatePresence>
         {!isAtBottom && (
