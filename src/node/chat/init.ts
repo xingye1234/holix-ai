@@ -64,31 +64,6 @@ export function initChat() {
     const systemMessages = chat.prompts || []
     const workspace = updatedChat?.workspace || []
 
-    // if (agentName) {
-    //   const agent = agents.get(agentName)
-    //   if (agent) {
-    //     logger.info(`[Chat] Applying agent ${agentName} configuration`)
-
-    //     // Agent 提示词优先于聊天默认提示词
-    //     if (agent.prompt) {
-    //       systemMessages = [agent.prompt]
-    //     }
-
-    //     // 应用 Agent 的模型配置（如果指定）
-    //     if (agent.provider && agent.model) {
-    //       provider = providers.find(p => p.name === agent.provider)
-    //       model = agent.model.toLowerCase()
-    //       logger.info(`[Chat] Using agent model: ${agent.provider} / ${agent.model}`)
-    //     }
-
-    //     // TODO: 应用 Agent 的 skills 和 mcps
-    //     // 这需要在 session orchestration 层面支持
-    //   }
-    //   else {
-    //     logger.warn(`[Chat] Agent ${agentName} not found`)
-    //   }
-    // }
-
     if (!provider || !provider.apiKey) {
       logger.error(`[Chat] Provider not found or missing API key for chat ${chatId}`)
       return
