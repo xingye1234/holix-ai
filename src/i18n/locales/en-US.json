@@ -271,6 +271,73 @@
   "chat": {
     "searchPlaceholder": "Search chats...",
     "renamePlaceholder": "Enter new conversation name",
+    "titleBar": {
+      "newChat": "New conversation",
+      "openSettings": "Open chat settings",
+      "closeSettings": "Close chat settings"
+    },
+    "workspace": {
+      "empty": "No workspace items yet. Add files or folders below.",
+      "selectFiles": "Select files",
+      "selectFolders": "Select folders"
+    },
+    "settingsPanel": {
+      "managementTitle": "Conversation management",
+      "managementDescription": "Manage the current conversation title, expiration strategy, and key actions in one place.",
+      "renameTitle": "Conversation title",
+      "renameDescription": "Give it a clearer name so you can return to it quickly from the sidebar.",
+      "saveName": "Save title",
+      "expiryTitle": "Expiration",
+      "currentExpiry": "Current: {{value}}",
+      "adjustExpiry": "Adjust",
+      "expiryPopoverTitle": "Set expiration",
+      "expiryPopoverDescription": "Choose a specific date and time, or keep this conversation forever.",
+      "neverExpires": "Never expires",
+      "expirySummary": "Once expired, this conversation will become inactive based on the current policy; if you leave it unset, it stays available.",
+      "clearExpiry": "Clear",
+      "deleteTitle": "Delete current conversation",
+      "deleteDescription": "This removes the conversation, its messages, and related state. This action cannot be undone.",
+      "deleteAction": "Delete",
+      "deleteDialogTitle": "Delete conversation",
+      "deleteDialogDescription": "Are you sure you want to delete this conversation and all of its messages? This action cannot be undone.",
+      "deleteConfirm": "Delete anyway",
+      "contextRulesTitle": "Context building rules",
+      "contextRulesDescription": "Control how much historical context is automatically included with each question.",
+      "maxMessagesLabel": "Context message count",
+      "maxMessagesHint": "Read at most the most recent N messages for each request (1-200).",
+      "timeWindowLabel": "Context time window",
+      "timeWindowHint": "Only include messages within the selected time window, or allow all time.",
+      "autoScrollLabel": "Auto-scroll to bottom after sending",
+      "autoScrollDescription": "After sending a new message, the chat list automatically scrolls to the latest reply.",
+      "saveButton": "Save settings",
+      "saving": "Saving...",
+      "skillsTitle": "Conversation Skills overrides (higher priority than global)",
+      "skillsDescription": "Override the global skill enablement state for this conversation only.",
+      "skillsEmpty": "No configurable Skills available",
+      "skillSourceLabel": "Source: ",
+      "skillSource": {
+        "enabledByChat": "Forced on by conversation",
+        "disabledByChat": "Forced off by conversation",
+        "disabledGlobally": "Disabled globally",
+        "followGlobal": "Follow global"
+      },
+      "timeWindow": {
+        "none": "No limit",
+        "lastHour": "Last 1 hour",
+        "lastSixHours": "Last 6 hours",
+        "lastDay": "Last 24 hours",
+        "lastThreeDays": "Last 3 days",
+        "lastWeek": "Last 7 days"
+      },
+      "skillsLoadError": "Failed to load skill settings",
+      "maxMessagesInvalid": "Message count must be an integer between 1 and 200",
+      "saveSuccess": "Context and skill settings saved",
+      "saveError": "Failed to save context settings",
+      "renameSuccess": "Conversation title updated",
+      "renameError": "Failed to rename conversation",
+      "expirySuccess": "Conversation expiration updated",
+      "expiryError": "Failed to update conversation expiration"
+    },
     "sidebar": {
       "title": "Chats",
       "newChat": "New Chat",
@@ -370,6 +437,15 @@
     }
   },
   "prompt": {
+    "add": "Add prompt",
+    "empty": "No prompts yet. Add one below.",
+    "itemTitle": "Prompt {{index}}",
+    "dialog": {
+      "addTitle": "Add prompt",
+      "editTitle": "Edit prompt",
+      "description": "Add the prompt content for this conversation",
+      "save": "Save changes"
+    },
     "inputPlaceholder": "Enter prompt content here...",
     "saveSuccess": "Prompt saved successfully",
     "saveError": "Failed to save prompt",
@@ -397,7 +473,24 @@
     "settings": "Settings",
     "preview": "Preview",
     "delete": "Delete message",
-    "stopGeneration": "Stop generating"
+    "stopGeneration": "Stop generating",
+    "deleteFailed": "Failed to delete messages",
+    "code": {
+      "expand": "Expand",
+      "collapse": "Collapse",
+      "copy": "Copy code",
+      "copied": "Copied"
+    }
+  },
+  "selection": {
+    "selectedCount": "{{count}} messages selected",
+    "copy": "Copy",
+    "preview": "Preview",
+    "export": "Export",
+    "delete": "Delete",
+    "deleteNone": "No messages were deleted",
+    "deleted": "Deleted {{count}} messages",
+    "copied": "Copied {{count}} messages"
   },
   "selector": {
     "selectProvider": "Select provider",
@@ -426,6 +519,32 @@
       "assistant": "AI Assistant",
       "user": "User",
       "system": "System"
+    }
+  },
+  "app": {
+    "search": {
+      "trigger": "Search...",
+      "inputPlaceholder": "Type a command or search messages...",
+      "searching": "Searching...",
+      "empty": "No results found.",
+      "groups": {
+        "chat": "Chats",
+        "messages": "Messages",
+        "actions": "Actions",
+        "theme": "Theme"
+      },
+      "actions": {
+        "newChat": "New Chat",
+        "settings": "Settings",
+        "lightTheme": "Light Theme",
+        "darkTheme": "Dark Theme",
+        "systemTheme": "System Theme"
+      }
+    },
+    "window": {
+      "minimize": "Minimize",
+      "maximize": "Maximize",
+      "close": "Close"
     }
   }
 }

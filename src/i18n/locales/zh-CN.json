@@ -271,6 +271,73 @@
   "chat": {
     "searchPlaceholder": "搜索聊天...",
     "renamePlaceholder": "输入新的会话名称",
+    "titleBar": {
+      "newChat": "新对话",
+      "openSettings": "打开聊天设置",
+      "closeSettings": "关闭聊天设置"
+    },
+    "workspace": {
+      "empty": "暂无工作区内容，点击下方按钮添加。",
+      "selectFiles": "选择文件",
+      "selectFolders": "选择文件夹"
+    },
+    "settingsPanel": {
+      "managementTitle": "会话管理",
+      "managementDescription": "调整当前会话的名称和过期策略，重要操作也统一放在这里。",
+      "renameTitle": "会话名称",
+      "renameDescription": "用一个更清晰的标题，方便在左侧列表里快速回到这个会话。",
+      "saveName": "保存名称",
+      "expiryTitle": "过期时间",
+      "currentExpiry": "当前：{{value}}",
+      "adjustExpiry": "调整时间",
+      "expiryPopoverTitle": "设置过期时间",
+      "expiryPopoverDescription": "可选择具体日期和时间，或者保持为永不过期。",
+      "neverExpires": "永不过期",
+      "expirySummary": "过期后会话会按照当前策略自动失效；如果你不设置，它会一直保留。",
+      "clearExpiry": "清除",
+      "deleteTitle": "删除当前会话",
+      "deleteDescription": "会同时删除会话里的全部消息和关联状态，这个操作无法撤销。",
+      "deleteAction": "删除",
+      "deleteDialogTitle": "删除会话",
+      "deleteDialogDescription": "确认要删除该会话及其所有消息吗？此操作无法撤销。",
+      "deleteConfirm": "继续删除",
+      "contextRulesTitle": "上下文构建规则",
+      "contextRulesDescription": "控制每次提问时，自动加入历史上下文的消息范围。",
+      "maxMessagesLabel": "上下文消息数量",
+      "maxMessagesHint": "每次请求最多读取最近 N 条消息（1~200）。",
+      "timeWindowLabel": "上下文时间窗口",
+      "timeWindowHint": "仅纳入时间窗口内的消息；可设置为不限时间。",
+      "autoScrollLabel": "发送后自动滚动到底部",
+      "autoScrollDescription": "发送新消息后，聊天列表会自动滚动到最底部，便于继续查看最新回复。",
+      "saveButton": "保存设置",
+      "saving": "保存中...",
+      "skillsTitle": "会话 Skills 开关（优先级高于全局）",
+      "skillsDescription": "你可以在当前会话覆盖 Skills 页面中的全局启用状态。",
+      "skillsEmpty": "暂无可配置 Skills",
+      "skillSourceLabel": "来源：",
+      "skillSource": {
+        "enabledByChat": "会话强制启用",
+        "disabledByChat": "会话强制禁用",
+        "disabledGlobally": "全局禁用",
+        "followGlobal": "跟随全局"
+      },
+      "timeWindow": {
+        "none": "不限时间",
+        "lastHour": "最近 1 小时",
+        "lastSixHours": "最近 6 小时",
+        "lastDay": "最近 24 小时",
+        "lastThreeDays": "最近 3 天",
+        "lastWeek": "最近 7 天"
+      },
+      "skillsLoadError": "加载技能设置失败",
+      "maxMessagesInvalid": "消息数量需为 1~200 的整数",
+      "saveSuccess": "上下文与技能设置已保存",
+      "saveError": "上下文设置保存失败",
+      "renameSuccess": "会话名称已更新",
+      "renameError": "重命名会话失败",
+      "expirySuccess": "会话过期时间已更新",
+      "expiryError": "更新会话过期时间失败"
+    },
     "sidebar": {
       "title": "对话",
       "newChat": "新聊天",
@@ -413,6 +480,15 @@
     }
   },
   "prompt": {
+    "add": "添加提示词",
+    "empty": "暂无提示词，点击下方按钮添加。",
+    "itemTitle": "提示词 {{index}}",
+    "dialog": {
+      "addTitle": "添加提示词",
+      "editTitle": "编辑提示词",
+      "description": "添加你的提示词内容",
+      "save": "保存更改"
+    },
     "inputPlaceholder": "在此输入提示词内容...",
     "saveSuccess": "提示词保存成功",
     "saveError": "提示词保存失败",
@@ -440,7 +516,24 @@
     "settings": "设置",
     "preview": "放大查看",
     "delete": "删除消息",
-    "stopGeneration": "停止生成"
+    "stopGeneration": "停止生成",
+    "deleteFailed": "删除消息失败",
+    "code": {
+      "expand": "展开",
+      "collapse": "收起",
+      "copy": "复制代码",
+      "copied": "已复制"
+    }
+  },
+  "selection": {
+    "selectedCount": "已选择 {{count}} 条消息",
+    "copy": "复制",
+    "preview": "放大查看",
+    "export": "导出",
+    "delete": "删除",
+    "deleteNone": "未删除任何消息",
+    "deleted": "已删除 {{count}} 条消息",
+    "copied": "已复制 {{count}} 条消息"
   },
   "selector": {
     "selectProvider": "选择供应商",
@@ -469,6 +562,32 @@
       "assistant": "AI 助手",
       "user": "用户",
       "system": "系统"
+    }
+  },
+  "app": {
+    "search": {
+      "trigger": "搜索...",
+      "inputPlaceholder": "输入命令或搜索消息...",
+      "searching": "搜索中...",
+      "empty": "未找到结果。",
+      "groups": {
+        "chat": "会话",
+        "messages": "消息",
+        "actions": "操作",
+        "theme": "主题"
+      },
+      "actions": {
+        "newChat": "新聊天",
+        "settings": "设置",
+        "lightTheme": "浅色主题",
+        "darkTheme": "深色主题",
+        "systemTheme": "系统主题"
+      }
+    },
+    "window": {
+      "minimize": "最小化",
+      "maximize": "最大化",
+      "close": "关闭"
     }
   }
 }

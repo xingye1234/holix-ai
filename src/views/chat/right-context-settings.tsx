@@ -34,9 +34,9 @@ function formatTimeValue(date: Date) {
   return `${hours}:${minutes}`
 }
 
-function formatExpiresLabel(expiresAt: number | null | undefined) {
+function formatExpiresLabel(expiresAt: number | null | undefined, neverExpiresLabel: string) {
   if (!expiresAt)
-    return '永不过期'
+    return neverExpiresLabel
 
   const date = new Date(expiresAt)
   return `${date.toLocaleDateString()} ${formatTimeValue(date)}`
@@ -110,7 +110,7 @@ export default function RightContextSettings() {
     { label: t('chat.settingsPanel.timeWindow.lastWeek'), value: '168' },
   ], [t])
   const initialSettings = useMemo(() => normalizeSettings(chat?.contextSettings), [chat?.contextSettings])
-  const expiresLabel = useMemo(() => formatExpiresLabel(chat?.expiresAt), [chat?.expiresAt])
+  const expiresLabel = useMemo(() => formatExpiresLabel(chat?.expiresAt, t('chat.settingsPanel.neverExpires')), [chat?.expiresAt, t])
   const isTitleDirty = chatTitle.trim().length > 0 && chatTitle.trim() !== (chat?.title ?? '')
 
   useEffect(() => {
@@ -265,9 +265,9 @@ export default function RightContextSettings() {
     <div className="space-y-4 p-1">
       <div className="rounded-xl border bg-card/70 p-4 shadow-sm space-y-4">
         <div className="space-y-1">
-          <h3 className="text-sm font-medium">会话管理</h3>
+          <h3 className="text-sm font-medium">{t('chat.settingsPanel.managementTitle')}</h3>
           <p className="text-xs text-muted-foreground">
-            调整当前会话的名称和过期策略，重要操作也统一放在这里。
+            {t('chat.settingsPanel.managementDescription')}
           </p>
         </div>
 
@@ -276,21 +276,21 @@ export default function RightContextSettings() {
             <FieldContent className="gap-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="space-y-1">
-                  <FieldTitle>会话名称</FieldTitle>
+                  <FieldTitle>{t('chat.settingsPanel.renameTitle')}</FieldTitle>
                   <FieldDescription className="text-xs">
-                    用一个更清晰的标题，方便在左侧列表里快速回到这个会话。
+                    {t('chat.settingsPanel.renameDescription')}
                   </FieldDescription>
                 </div>
                 <Button onClick={handleRenameChat} disabled={!chat || !isTitleDirty}>
-                  保存名称
+                  {t('chat.settingsPanel.saveName')}
                 </Button>
               </div>
               <Input
                 id="chat-title"
-                aria-label="会话名称"
+                aria-label={t('chat.settingsPanel.renameTitle')}
                 value={chatTitle}
                 onChange={e => setChatTitle(e.target.value)}
-                placeholder="输入新的会话名称"
+                placeholder={t('chat.renamePlaceholder')}
                 className="bg-background"
               />
             </FieldContent>
@@ -300,25 +300,23 @@ export default function RightContextSettings() {
             <FieldContent className="gap-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="space-y-1">
-                  <FieldTitle>过期时间</FieldTitle>
+                  <FieldTitle>{t('chat.settingsPanel.expiryTitle')}</FieldTitle>
                   <FieldDescription className="text-xs">
-                    当前：
-                    {' '}
-                    {expiresLabel}
+                    {t('chat.settingsPanel.currentExpiry', { value: expiresLabel })}
                   </FieldDescription>
                 </div>
                 <Popover open={isExpiryEditorOpen} onOpenChange={setIsExpiryEditorOpen}>
                   <PopoverTrigger asChild>
                     <Button variant="outline">
                       <CalendarClock className="size-4" />
-                      调整时间
+                      {t('chat.settingsPanel.adjustExpiry')}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent align="end" className="w-auto space-y-3 p-3">
                     <div className="space-y-1">
-                      <p className="text-sm font-medium">设置过期时间</p>
+                      <p className="text-sm font-medium">{t('chat.settingsPanel.expiryPopoverTitle')}</p>
                       <p className="text-xs text-muted-foreground">
-                        可选择具体日期和时间，或者保持为永不过期。
+                        {t('chat.settingsPanel.expiryPopoverDescription')}
                       </p>
                     </div>
                     <Calendar
@@ -336,7 +334,7 @@ export default function RightContextSettings() {
                         className="w-34"
                       />
                       <Button variant="outline" size="sm" onClick={() => setSelectedDate(undefined)}>
-                        永不过期
+                        {t('chat.settingsPanel.neverExpires')}
                       </Button>
                       <Button
                         size="sm"
@@ -346,7 +344,7 @@ export default function RightContextSettings() {
                         }}
                         disabled={!chat}
                       >
-                        保存
+                        {t('common.save')}
                       </Button>
                     </div>
                   </PopoverContent>
@@ -360,7 +358,7 @@ export default function RightContextSettings() {
                     {expiresLabel}
                   </ItemTitle>
                   <ItemDescription>
-                    过期后会话会按照当前策略自动失效；如果你不设置，它会一直保留。
+                    {t('chat.settingsPanel.expirySummary')}
                   </ItemDescription>
                 </ItemContent>
                 <ItemActions>
@@ -375,7 +373,7 @@ export default function RightContextSettings() {
                             await handleSaveExpiry()
                           }}
                         >
-                          清除
+                          {t('chat.settingsPanel.clearExpiry')}
                         </Button>
                       )
                     : null}
@@ -390,29 +388,29 @@ export default function RightContextSettings() {
             <ItemContent>
               <ItemTitle className="gap-2 text-destructive">
                 <Trash2 className="size-4" />
-                删除当前会话
+                {t('chat.settingsPanel.deleteTitle')}
               </ItemTitle>
               <ItemDescription className="text-xs">
-                会同时删除会话里的全部消息和关联状态，这个操作无法撤销。
+                {t('chat.settingsPanel.deleteDescription')}
               </ItemDescription>
             </ItemContent>
             <ItemActions>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button variant="destructive" disabled={!chat}>
-                    删除
+                    {t('chat.settingsPanel.deleteAction')}
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>删除会话</AlertDialogTitle>
+                    <AlertDialogTitle>{t('chat.settingsPanel.deleteDialogTitle')}</AlertDialogTitle>
                     <AlertDialogDescription>
-                      确认要删除该会话及其所有消息吗？此操作无法撤销。
+                      {t('chat.settingsPanel.deleteDialogDescription')}
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>取消</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDeleteChat}>继续删除</AlertDialogAction>
+                    <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDeleteChat}>{t('chat.settingsPanel.deleteConfirm')}</AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
@@ -422,15 +420,15 @@ export default function RightContextSettings() {
       </div>
 
       <div className="rounded-xl border bg-card/70 p-4 space-y-1 shadow-sm">
-        <h3 className="text-sm font-medium">上下文构建规则</h3>
+        <h3 className="text-sm font-medium">{t('chat.settingsPanel.contextRulesTitle')}</h3>
         <p className="text-xs text-muted-foreground">
-          控制每次提问时，自动加入历史上下文的消息范围。
+          {t('chat.settingsPanel.contextRulesDescription')}
         </p>
       </div>
 
       <div className="rounded-xl border bg-card/70 p-4 space-y-3 shadow-sm">
         <div className="space-y-2">
-          <Label htmlFor="context-max-messages">上下文消息数量</Label>
+          <Label htmlFor="context-max-messages">{t('chat.settingsPanel.maxMessagesLabel')}</Label>
           <Input
             id="context-max-messages"
             type="number"
@@ -439,31 +437,31 @@ export default function RightContextSettings() {
             value={maxMessages}
             onChange={e => setMaxMessages(e.target.value)}
           />
-          <p className="text-xs text-muted-foreground">每次请求最多读取最近 N 条消息（1~200）。</p>
+          <p className="text-xs text-muted-foreground">{t('chat.settingsPanel.maxMessagesHint')}</p>
         </div>
 
         <div className="space-y-2">
-          <Label>上下文时间窗口</Label>
+          <Label>{t('chat.settingsPanel.timeWindowLabel')}</Label>
           <Select value={timeWindow} onValueChange={setTimeWindow}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {TIME_WINDOW_OPTIONS.map(option => (
+              {timeWindowOptions.map(option => (
                 <SelectItem key={option.value} value={option.value}>
                   {option.label}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-          <p className="text-xs text-muted-foreground">仅纳入时间窗口内的消息；可设置为不限时间。</p>
+          <p className="text-xs text-muted-foreground">{t('chat.settingsPanel.timeWindowHint')}</p>
         </div>
 
         <div className="flex items-start justify-between gap-3 rounded-md border p-3">
           <div className="space-y-1">
-            <Label htmlFor="auto-scroll-to-bottom">发送后自动滚动到底部</Label>
+            <Label htmlFor="auto-scroll-to-bottom">{t('chat.settingsPanel.autoScrollLabel')}</Label>
             <p className="text-xs text-muted-foreground">
-              发送新消息后，聊天列表会自动滚动到最底部，便于继续查看最新回复。
+              {t('chat.settingsPanel.autoScrollDescription')}
             </p>
           </div>
           <Switch
@@ -474,13 +472,13 @@ export default function RightContextSettings() {
         </div>
 
         <Button className="w-full" onClick={handleSave} disabled={isSaving}>
-          {isSaving ? '保存中...' : '保存设置'}
+          {isSaving ? t('chat.settingsPanel.saving') : t('chat.settingsPanel.saveButton')}
         </Button>
       </div>
 
       <div className="rounded-xl border bg-card/70 p-4 space-y-3 shadow-sm">
-        <h3 className="text-sm font-medium">会话 Skills 开关（优先级高于全局）</h3>
-        <p className="text-xs text-muted-foreground">你可以在当前会话覆盖 Skills 页面中的全局启用状态。</p>
+        <h3 className="text-sm font-medium">{t('chat.settingsPanel.skillsTitle')}</h3>
+        <p className="text-xs text-muted-foreground">{t('chat.settingsPanel.skillsDescription')}</p>
 
         <div className="space-y-2 max-h-80 overflow-auto pr-1">
           {allSkills.map((skill) => {
@@ -491,7 +489,7 @@ export default function RightContextSettings() {
                   <p className="text-sm font-medium">{skill.name}</p>
                   <p className="text-xs text-muted-foreground truncate">{skill.description}</p>
                   <p className="text-[11px] text-muted-foreground mt-0.5">
-                    来源：
+                    {t('chat.settingsPanel.skillSourceLabel')}
                     {status.source}
                   </p>
                 </div>
@@ -499,7 +497,7 @@ export default function RightContextSettings() {
               </div>
             )
           })}
-          {allSkills.length === 0 && <p className="text-xs text-muted-foreground">暂无可配置 Skills</p>}
+          {allSkills.length === 0 && <p className="text-xs text-muted-foreground">{t('chat.settingsPanel.skillsEmpty')}</p>}
         </div>
       </div>
     </div>
