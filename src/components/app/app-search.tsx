@@ -3,6 +3,7 @@ import { useNavigate } from '@tanstack/react-router'
 import { MessageSquare, Monitor, Moon, Plus, SearchIcon, Settings, Sun } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { usePlatform } from '@/hooks/platform'
+import { useI18n } from '@/i18n/provider'
 import logger from '@/lib/logger'
 import { trpcClient } from '@/lib/trpc-client'
 import useChat from '@/store/chat'
@@ -20,7 +21,7 @@ import {
 
 export default function AppSearch({
   className,
-  label = 'Search...',
+  label,
   showShortcut = true,
 }: {
   className?: string
@@ -30,6 +31,7 @@ export default function AppSearch({
   const [open, setOpen] = useState(false)
   const { isMacOS } = usePlatform()
   const { setTheme } = useTheme()
+  const { t } = useI18n()
   const navigate = useNavigate()
   const searchQuery = useChat(state => state.searchQuery)
   const setSearchQuery = useChat(state => state.setSearchQuery)
@@ -143,7 +145,7 @@ export default function AppSearch({
         className={`app-no-drag group flex items-center gap-2 rounded-xl border border-input/60 bg-background/55 px-3 py-2 text-sm text-muted-foreground shadow-xs transition-colors hover:bg-accent/70 hover:text-accent-foreground focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring ${className ?? 'w-64 max-w-full'}`}
       >
         <SearchIcon className="size-4" />
-        <span className="flex-1 text-left">{label}</span>
+        <span className="flex-1 text-left">{label ?? t('app.search.trigger')}</span>
         {showShortcut && (
           <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
             <span className="text-xs">{isMacOS ? '⌘' : 'Ctrl'}</span>
@@ -154,17 +156,17 @@ export default function AppSearch({
 
       <CommandDialog open={open} onOpenChange={setOpen} commandProps={{ shouldFilter: false }}>
         <CommandInput
-          placeholder="Type a command or search messages..."
+          placeholder={t('app.search.inputPlaceholder')}
           value={searchQuery}
           onValueChange={handleSearchChange}
           onCompositionStart={handleCompositionStart}
           onCompositionEnd={handleCompositionEnd}
         />
         <CommandList>
-          <CommandEmpty>{isSearching ? 'Searching...' : 'No results found.'}</CommandEmpty>
+          <CommandEmpty>{isSearching ? t('app.search.searching') : t('app.search.empty')}</CommandEmpty>
 
           {searchResults.chatList.length > 0 && (
-            <CommandGroup heading="Chat">
+            <CommandGroup heading={t('app.search.groups.chat')}>
               {searchResults.chatList.map(({ chat }) => (
                 <CommandItem
                   key={chat.uid}
@@ -179,7 +181,7 @@ export default function AppSearch({
           )}
 
           {searchResults.messageList.length > 0 && (
-            <CommandGroup heading="Messages">
+            <CommandGroup heading={t('app.search.groups.messages')}>
               {searchResults.messageList.map(({ message: msg }) => (
                 <CommandItem
                   key={msg.uid}
@@ -195,14 +197,14 @@ export default function AppSearch({
 
           {searchQuery.trim() === '' && (
             <>
-              <CommandGroup heading="Actions">
+              <CommandGroup heading={t('app.search.groups.actions')}>
                 <CommandItem onSelect={() => runCommand(() => navigate({ to: '/' }))}>
                   <Plus className="mr-2 size-4" />
-                  <span>New Chat</span>
+                  <span>{t('app.search.actions.newChat')}</span>
                 </CommandItem>
                 <CommandItem onSelect={() => runCommand(() => navigate({ to: '/setting/general' }))}>
                   <Settings className="mr-2 size-4" />
-                  <span>Settings</span>
+                  <span>{t('app.search.actions.settings')}</span>
                   <CommandShortcut>
                     {isMacOS ? '⌘' : 'Ctrl'}
                     ,
@@ -210,18 +212,18 @@ export default function AppSearch({
                 </CommandItem>
               </CommandGroup>
               <CommandSeparator />
-              <CommandGroup heading="Theme">
+              <CommandGroup heading={t('app.search.groups.theme')}>
                 <CommandItem onSelect={() => runCommand(() => setTheme('light'))}>
                   <Sun className="mr-2 size-4" />
-                  <span>Light Theme</span>
+                  <span>{t('app.search.actions.lightTheme')}</span>
                 </CommandItem>
                 <CommandItem onSelect={() => runCommand(() => setTheme('dark'))}>
                   <Moon className="mr-2 size-4" />
-                  <span>Dark Theme</span>
+                  <span>{t('app.search.actions.darkTheme')}</span>
                 </CommandItem>
                 <CommandItem onSelect={() => runCommand(() => setTheme('system'))}>
                   <Monitor className="mr-2 size-4" />
-                  <span>System Theme</span>
+                  <span>{t('app.search.actions.systemTheme')}</span>
                 </CommandItem>
               </CommandGroup>
             </>

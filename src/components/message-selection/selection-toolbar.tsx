@@ -14,6 +14,7 @@ import {
   saveMessagesToFile,
   toExportableMessage,
 } from '@/lib/message-utils'
+import { useI18n } from '@/i18n/provider'
 import { useMessageStore } from '@/store/message'
 import useMessageSelection from '@/store/message-selection'
 
@@ -28,6 +29,7 @@ export function SelectionToolbar({
   onDeleteSelected,
   onExportSelected,
 }: SelectionToolbarProps) {
+  const { t } = useI18n()
   const selectedCount = useMessageSelection(state => state.getSelectedCount())
   const selectedMessageIds = useMessageSelection(state => state.selectedMessageIds)
   const disableSelectionMode = useMessageSelection(state => state.disableSelectionMode)
@@ -51,13 +53,13 @@ export function SelectionToolbar({
     const deletedCount = await onDeleteSelected?.(ids)
 
     if (deletedCount === 0) {
-      toast.error('未删除任何消息')
+      toast.error(t('selection.deleteNone'))
       return
     }
 
-    toast.success(`已删除 ${deletedCount ?? selectedCount} 条消息`)
+    toast.success(t('selection.deleted', { count: deletedCount ?? selectedCount }))
     disableSelectionMode()
-  }, [selectedCount, selectedMessageIds, onDeleteSelected, disableSelectionMode])
+  }, [disableSelectionMode, onDeleteSelected, selectedCount, selectedMessageIds, t])
 
   const handleCopy = useCallback(async () => {
     if (selectedCount === 0)
@@ -65,8 +67,8 @@ export function SelectionToolbar({
 
     const text = selectedMessages.map(msg => msg.content).join('\n\n---\n\n')
     await navigator.clipboard.writeText(text)
-    toast.success(`已复制 ${selectedCount} 条消息`)
-  }, [selectedCount, selectedMessages])
+    toast.success(t('selection.copied', { count: selectedCount }))
+  }, [selectedCount, selectedMessages, t])
 
   const handleExport = useCallback(async (format: MessageExportFormat) => {
     if (selectedCount === 0)
@@ -81,12 +83,12 @@ export function SelectionToolbar({
     })
 
     if (result.canceled) {
-      toast.info('已取消导出')
+      toast.info(t('preview.exportCanceled'))
       return
     }
 
-    toast.success(`导出成功：${result.filePath}`)
-  }, [onExportSelected, selectedCount, selectedMessageIds, selectedMessages])
+    toast.success(t('preview.exportSuccess', { filePath: result.filePath }))
+  }, [onExportSelected, selectedCount, selectedMessageIds, selectedMessages, t])
 
   const handlePreview = useCallback(() => {
     if (selectedCount === 0)
@@ -94,8 +96,8 @@ export function SelectionToolbar({
 
     const win = openMessagePreviewWindow(selectedMessages)
     if (!win)
-      toast.error('新窗口打开失败，请检查系统设置')
-  }, [selectedCount, selectedMessages])
+      toast.error(t('message.previewFailed'))
+  }, [selectedCount, selectedMessages, t])
 
   if (selectedCount === 0)
     return null
@@ -105,11 +107,7 @@ export function SelectionToolbar({
       <div className="flex items-center justify-between px-4 py-2 max-w-4xl mx-auto">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium">
-            已选择
-            {' '}
-            <span className="text-primary">{selectedCount}</span>
-            {' '}
-            条消息
+            {t('selection.selectedCount', { count: selectedCount })}
           </span>
         </div>
 
@@ -121,7 +119,7 @@ export function SelectionToolbar({
             className="gap-1.5 h-8"
           >
             <Copy className="w-4 h-4" />
-            <span className="hidden sm:inline">复制</span>
+            <span className="hidden sm:inline">{t('selection.copy')}</span>
           </Button>
 
           <Button
@@ -131,7 +129,7 @@ export function SelectionToolbar({
             className="gap-1.5 h-8"
           >
             <Expand className="w-4 h-4" />
-            <span className="hidden sm:inline">放大查看</span>
+            <span className="hidden sm:inline">{t('selection.preview')}</span>
           </Button>
 
           <DropdownMenu>
@@ -142,18 +140,18 @@ export function SelectionToolbar({
                 className="gap-1.5 h-8"
               >
                 <Download className="w-4 h-4" />
-                <span className="hidden sm:inline">导出</span>
+                <span className="hidden sm:inline">{t('selection.export')}</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => handleExport('txt')}>
-                导出为文本
+                {t('preview.exportAsText')}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleExport('md')}>
-                导出为 Markdown
+                {t('preview.exportAsMarkdown')}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleExport('json')}>
-                导出为 JSON
+                {t('preview.exportAsJson')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -165,7 +163,7 @@ export function SelectionToolbar({
             className="gap-1.5 h-8 text-destructive hover:text-destructive hover:bg-destructive/10"
           >
             <Trash2 className="w-4 h-4" />
-            <span className="hidden sm:inline">删除</span>
+            <span className="hidden sm:inline">{t('selection.delete')}</span>
           </Button>
 
           <div className="w-px h-6 bg-border mx-1" />
@@ -177,7 +175,7 @@ export function SelectionToolbar({
             className="gap-1.5 h-8"
           >
             <X className="w-4 h-4" />
-            <span className="hidden sm:inline">取消</span>
+            <span className="hidden sm:inline">{t('common.cancel')}</span>
           </Button>
         </div>
       </div>

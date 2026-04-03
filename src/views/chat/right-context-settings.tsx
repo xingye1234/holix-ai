@@ -14,19 +14,11 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { useChatContext } from '@/context/chat'
+import { useI18n } from '@/i18n/provider'
 import { getConfig } from '@/lib/config'
 import { trpcClient } from '@/lib/trpc-client'
 import { DEFAULT_CHAT_CONTEXT_SETTINGS } from '@/node/database/schema/chat'
 import useChat from '@/store/chat'
-
-const TIME_WINDOW_OPTIONS: Array<{ label: string, value: string }> = [
-  { label: '不限时间', value: 'none' },
-  { label: '最近 1 小时', value: '1' },
-  { label: '最近 6 小时', value: '6' },
-  { label: '最近 24 小时', value: '24' },
-  { label: '最近 3 天', value: '72' },
-  { label: '最近 7 天', value: '168' },
-]
 
 function normalizeSettings(settings?: ChatContextSettings | null): ChatContextSettings {
   return {
@@ -52,6 +44,7 @@ function formatExpiresLabel(expiresAt: number | null | undefined) {
 
 export default function RightContextSettings() {
   const { chat } = useChatContext()
+  const { t } = useI18n()
   const navigate = useNavigate()
   const location = useRouterState({ select: s => s.location.pathname })
   const chats = useChat(state => state.chats)
@@ -99,7 +92,7 @@ export default function RightContextSettings() {
       setChatEnabledSkills(chatSettings.enabledSkills ?? [])
     }).catch(() => {
       if (!cancelled) {
-        toast.error('加载技能设置失败')
+        toast.error(t('chat.settingsPanel.skillsLoadError'))
       }
     })
 
@@ -108,6 +101,14 @@ export default function RightContextSettings() {
     }
   }, [chat?.uid])
 
+  const timeWindowOptions = useMemo(() => [
+    { label: t('chat.settingsPanel.timeWindow.none'), value: 'none' },
+    { label: t('chat.settingsPanel.timeWindow.lastHour'), value: '1' },
+    { label: t('chat.settingsPanel.timeWindow.lastSixHours'), value: '6' },
+    { label: t('chat.settingsPanel.timeWindow.lastDay'), value: '24' },
+    { label: t('chat.settingsPanel.timeWindow.lastThreeDays'), value: '72' },
+    { label: t('chat.settingsPanel.timeWindow.lastWeek'), value: '168' },
+  ], [t])
   const initialSettings = useMemo(() => normalizeSettings(chat?.contextSettings), [chat?.contextSettings])
   const expiresLabel = useMemo(() => formatExpiresLabel(chat?.expiresAt), [chat?.expiresAt])
   const isTitleDirty = chatTitle.trim().length > 0 && chatTitle.trim() !== (chat?.title ?? '')
@@ -137,7 +138,7 @@ export default function RightContextSettings() {
 
     const parsedMaxMessages = Number(maxMessages)
     if (!Number.isInteger(parsedMaxMessages) || parsedMaxMessages <= 0 || parsedMaxMessages > 200) {
-      toast.error('消息数量需为 1~200 的整数')
+      toast.error(t('chat.settingsPanel.maxMessagesInvalid'))
       return
     }
 
@@ -160,10 +161,10 @@ export default function RightContextSettings() {
           enabledSkills: chatEnabledSkills,
         }),
       ])
-      toast.success('上下文与技能设置已保存')
+      toast.success(t('chat.settingsPanel.saveSuccess'))
     }
     catch {
-      toast.error('上下文设置保存失败')
+      toast.error(t('chat.settingsPanel.saveError'))
     }
     finally {
       setIsSaving(false)
@@ -172,15 +173,15 @@ export default function RightContextSettings() {
 
   const getSkillStatus = (skillName: string) => {
     if (chatEnabledSkills.includes(skillName)) {
-      return { disabled: false, source: '会话强制启用' }
+      return { disabled: false, source: t('chat.settingsPanel.skillSource.enabledByChat') }
     }
     if (chatDisabledSkills.includes(skillName)) {
-      return { disabled: true, source: '会话强制禁用' }
+      return { disabled: true, source: t('chat.settingsPanel.skillSource.disabledByChat') }
     }
     if (globalDisabledSkills.includes(skillName)) {
-      return { disabled: true, source: '全局禁用' }
+      return { disabled: true, source: t('chat.settingsPanel.skillSource.disabledGlobally') }
     }
-    return { disabled: false, source: '跟随全局' }
+    return { disabled: false, source: t('chat.settingsPanel.skillSource.followGlobal') }
   }
 
   const toggleSkill = (skillName: string, disabled: boolean) => {
@@ -214,10 +215,10 @@ export default function RightContextSettings() {
         title: nextTitle,
       })
       updateChat(chat.uid, { title: nextTitle })
-      toast.success('会话名称已更新')
+      toast.success(t('chat.settingsPanel.renameSuccess'))
     }
     catch {
-      toast.error('重命名会话失败')
+      toast.error(t('chat.settingsPanel.renameError'))
     }
   }
 
@@ -239,10 +240,10 @@ export default function RightContextSettings() {
         expiresAt,
       })
       updateChat(chat.uid, { expiresAt })
-      toast.success('会话过期时间已更新')
+      toast.success(t('chat.settingsPanel.expirySuccess'))
     }
     catch {
-      toast.error('更新会话过期时间失败')
+      toast.error(t('chat.settingsPanel.expiryError'))
     }
   }
 

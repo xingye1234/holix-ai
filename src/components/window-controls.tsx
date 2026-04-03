@@ -1,6 +1,7 @@
 import { Maximize2, Minimize2, Minus, X } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { usePlatform } from '@/hooks/platform'
+import { useI18n } from '@/i18n/provider'
 import { onUpdate } from '@/lib/command'
 import { close, minimize, toggleMaximize } from '@/lib/system'
 import { cn } from '@/lib/utils'
@@ -27,6 +28,7 @@ function Button({
 
 export function WindowControls() {
   const { isMacOS } = usePlatform()
+  const { t } = useI18n()
 
   const [isMaximized, setIsMaximized] = useState(false)
 
@@ -57,13 +59,13 @@ export function WindowControls() {
         ? null
         : (
             <div className="flex items-center gap-2">
-              <Button className="hover:bg-gray-200/60 rounded-sm" onClick={handleMinimize} aria-label="Minimize">
+              <Button className="hover:bg-gray-200/60 rounded-sm" onClick={handleMinimize} aria-label={t('app.window.minimize')}>
                 <Minus size={14} />
               </Button>
-              <Button className="hover:bg-gray-200/60 rounded-sm" onClick={handleToggleMaximize} aria-label="Maximize">
+              <Button className="hover:bg-gray-200/60 rounded-sm" onClick={handleToggleMaximize} aria-label={t('app.window.maximize')}>
                 {isMaximized ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
               </Button>
-              <Button className="hover:bg-red-600 hover:text-white rounded-sm" onClick={handleClose} aria-label="Close">
+              <Button className="hover:bg-red-600 hover:text-white rounded-sm" onClick={handleClose} aria-label={t('app.window.close')}>
                 <X size={14} />
               </Button>
             </div>

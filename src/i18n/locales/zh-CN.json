@@ -7,7 +7,17 @@
     "edit": "编辑"
   },
   "home": {
+    "kicker": "新的对话，从一个清晰的问题开始",
     "title": "与 Holix AI 对话",
+    "subtitle": "在这里快速起一个新会话。你可以先写一个主题，再补充你的问题，或者直接输入内容开始。",
+    "panelTitle": "开始一个新会话",
+    "panelDescription": "先选模型，再输入标题或正文，Holix 会帮你把这次对话组织成一条新的会话记录。",
+    "titleLabel": "会话标题",
+    "contentLabel": "你的问题",
+    "titleTipTitle": "标题可以留空",
+    "titleTipDesc": "如果你只输入正文，我们会先用截断标题占位，后续再自动生成更合适的标题。",
+    "contentTipTitle": "直接写问题也可以",
+    "contentTipDesc": "支持一句话开始，也可以先写上下文、目标和限制条件，再发送给模型。",
     "inputPlaceholder": "请输入问题",
     "createChatFailed": "创建聊天失败",
     "chatTitlePlaceholder": "聊天标题（可选，留空则自动生成）",

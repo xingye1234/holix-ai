@@ -5,10 +5,12 @@ import { Button } from '@/components/ui/button'
 import { ButtonGroup } from '@/components/ui/button-group'
 import { Item, ItemActions, ItemContent, ItemDescription, ItemTitle } from '@/components/ui/item'
 import { useChatContext } from '@/context/chat'
+import { useI18n } from '@/i18n/provider'
 import { setTRPCOptions, trpcClient } from '@/lib/trpc-client'
 
 export default function RightWorkspace() {
   const { chat } = useChatContext()
+  const { t } = useI18n()
 
   // 设置全局超时时间
   useEffect(() => {
@@ -140,7 +142,7 @@ export default function RightWorkspace() {
     <div className="size-full space-y-4">
       <div className="space-y-2">
         {workspace.length === 0 && (
-          <div className="text-sm text-muted-foreground mt-4">暂无提示词，点击下方按钮添加。</div>
+          <div className="text-sm text-muted-foreground mt-4">{t('chat.workspace.empty')}</div>
         )}
         {workspace.length > 0
           && workspace.map((workspace, index: number) => {
@@ -166,10 +168,10 @@ export default function RightWorkspace() {
 
       <ButtonGroup className="w-full">
         <Button className="w-1/2" onClick={selectFiles}>
-          选择文件
+          {t('chat.workspace.selectFiles')}
         </Button>
         <Button className="w-1/2" onClick={selectFolder}>
-          选择文件夹
+          {t('chat.workspace.selectFolders')}
         </Button>
       </ButtonGroup>
     </div>

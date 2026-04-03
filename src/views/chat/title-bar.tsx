@@ -3,17 +3,19 @@ import { Ellipsis } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useSettingsPanel } from '@/context/settings-panel'
 import { usePlatform } from '@/hooks/platform'
+import { useI18n } from '@/i18n/provider'
 import { cn } from '@/lib/utils'
 import useChat from '@/store/chat'
 
 export function ChatTitleBar() {
   const { isOpen, toggle } = useSettingsPanel()
+  const { t } = useI18n()
   const pathname = useRouterState({ select: s => s.location.pathname })
   const { isWindows } = usePlatform()
   const currentChatId = pathname.startsWith('/chat/') ? pathname.slice('/chat/'.length) : null
   const chat = useChat(state => state.chats.find(item => item.uid === currentChatId))
   const isChatRoute = currentChatId !== null
-  const title = chat?.title?.trim() || (isChatRoute ? '新对话' : 'Holix AI')
+  const title = chat?.title?.trim() || (isChatRoute ? t('chat.titleBar.newChat') : 'Holix AI')
 
   return (
     <div
@@ -32,8 +34,8 @@ export function ChatTitleBar() {
             data-testid="chat-title-bar-settings"
             variant="ghost"
             size="icon"
-            title={isOpen ? '关闭聊天设置' : '打开聊天设置'}
-            aria-label={isOpen ? '关闭聊天设置' : '打开聊天设置'}
+            title={isOpen ? t('chat.titleBar.closeSettings') : t('chat.titleBar.openSettings')}
+            aria-label={isOpen ? t('chat.titleBar.closeSettings') : t('chat.titleBar.openSettings')}
             aria-pressed={isOpen}
             className={cn(
               'h-8 w-8 rounded-lg text-muted-foreground/80 hover:bg-background/80 hover:text-foreground',

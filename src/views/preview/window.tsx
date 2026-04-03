@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
+import { useI18n } from '@/i18n/provider'
 import {
   getMessagePreviewSession,
   saveMessagesToFile,
@@ -18,6 +19,7 @@ import {
 import { formatWithLocalTZ } from '@/lib/time'
 
 export function PreviewWindow() {
+  const { t } = useI18n()
   const [fileName, setFileName] = useState('messages-export')
 
   const session = useMemo(() => {
@@ -43,23 +45,23 @@ export function PreviewWindow() {
       })
 
       if (res.canceled) {
-        toast.info('已取消导出')
+        toast.info(t('preview.exportCanceled'))
         return
       }
 
-      toast.success(`导出成功：${res.filePath}`)
+      toast.success(t('preview.exportSuccess', { filePath: res.filePath }))
     }
     catch (error) {
       console.error(error)
-      toast.error('导出失败')
+      toast.error(t('preview.exportFailed'))
     }
   }
 
   if (!messages.length) {
     return (
       <div className="h-screen flex items-center justify-center flex-col gap-3 text-muted-foreground">
-        <p>未找到可预览的消息内容。</p>
-        <Button variant="outline" onClick={() => window.close()}>关闭窗口</Button>
+        <p>{t('preview.noMessages')}</p>
+        <Button variant="outline" onClick={() => window.close()}>{t('preview.closeWindow')}</Button>
       </div>
     )
   }
@@ -74,31 +76,31 @@ export function PreviewWindow() {
             value={fileName}
             onChange={e => setFileName(e.target.value.trim() || 'messages-export')}
             className="max-w-xs h-8"
-            placeholder="导出文件名"
+            placeholder={t('preview.fileNamePlaceholder')}
           />
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button size="sm" variant="outline" className="gap-1.5">
                 <Download className="w-4 h-4" />
-                导出
+                {t('preview.export')}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => handleExport('txt')}>导出为文本</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExport('md')}>导出为 Markdown</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExport('json')}>导出为 JSON</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport('txt')}>{t('preview.exportAsText')}</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport('md')}>{t('preview.exportAsMarkdown')}</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport('json')}>{t('preview.exportAsJson')}</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
           <Button size="sm" variant="outline" className="gap-1.5" onClick={() => window.print()}>
             <Printer className="w-4 h-4" />
-            打印
+            {t('preview.print')}
           </Button>
 
           <Button size="sm" variant="ghost" className="gap-1.5 ml-auto" onClick={() => location.reload()}>
             <RefreshCcw className="w-4 h-4" />
-            刷新
+            {t('preview.refresh')}
           </Button>
         </div>
       </div>
@@ -107,7 +109,7 @@ export function PreviewWindow() {
         {messages.map(message => (
           <article key={message.id} className="rounded-xl border bg-card p-4 shadow-xs">
             <header className="mb-3 flex items-center justify-between text-xs text-muted-foreground">
-              <span>{message.role === 'assistant' ? 'AI' : message.role === 'user' ? '用户' : message.role}</span>
+              <span>{message.role === 'assistant' ? t('preview.role.assistant') : message.role === 'user' ? t('preview.role.user') : t(`preview.role.${message.role}`)}</span>
               <span>{formatWithLocalTZ(message.createdAt, 'YYYY-MM-DD HH:mm:ss')}</span>
             </header>
 

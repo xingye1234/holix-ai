@@ -7,7 +7,17 @@
     "edit": "Edit"
   },
   "home": {
+    "kicker": "Start a fresh conversation with a clear prompt",
     "title": "Chat with Holix AI",
+    "subtitle": "Start a new chat here. Add a title first, or jump straight into your question and let the conversation take shape naturally.",
+    "panelTitle": "Create a new conversation",
+    "panelDescription": "Pick a model, add a title or your first message, and Holix will organize it as a new chat thread.",
+    "titleLabel": "Conversation title",
+    "contentLabel": "Your message",
+    "titleTipTitle": "The title can stay empty",
+    "titleTipDesc": "If you only enter the message, we will use a short fallback title first and refine it automatically later.",
+    "contentTipTitle": "You can start directly with the prompt",
+    "contentTipDesc": "A single sentence works, and so does a fuller brief with context, goals, and constraints.",
     "inputPlaceholder": "Ask anything",
     "createChatFailed": "Failed to create chat",
     "chatTitlePlaceholder": "Chat title (optional, auto-generated if empty)",

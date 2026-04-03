@@ -7,6 +7,7 @@ import { SelectionToolbar } from '@/components/message-selection'
 import { ChatContext } from '@/context/chat'
 import { useSettingsPanel } from '@/context/settings-panel'
 import { useMessageShortcuts } from '@/hooks/use-message-shortcuts'
+import { useI18n } from '@/i18n/provider'
 import { updateConfig } from '@/lib/config'
 import useChat from '@/store/chat'
 import { useMessageStore } from '@/store/message'
@@ -20,6 +21,7 @@ export const Route = createFileRoute('/chat/$id')({
 
 function Component() {
   const { id } = Route.useParams()
+  const { t } = useI18n()
   // ✅ 配合 immer 优化，chat 对象引用只在真正变化时才更新
   const chat = useChat(state => state.chats.find(chat => chat.uid === id))
   const deleteMessages = useMessageStore(state => state.deleteMessages)
@@ -60,17 +62,17 @@ function Component() {
       try {
         const deletedCount = await deleteMessages(chat.uid, messageIds)
         if (deletedCount === 0) {
-          toast.error('删除消息失败')
+          toast.error(t('message.deleteFailed'))
         }
         return deletedCount
       }
       catch (error) {
         console.error('Failed to delete messages:', error)
-        toast.error('删除消息失败')
+        toast.error(t('message.deleteFailed'))
         return 0
       }
     },
-    [chat, deleteMessages],
+    [chat, deleteMessages, t],
   )
 
   // 获取当前聊天的所有消息ID

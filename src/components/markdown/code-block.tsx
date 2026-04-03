@@ -2,6 +2,7 @@ import type { ComponentPropsWithoutRef } from 'react'
 import { Check, ChevronDown, ChevronUp, Copy } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { useI18n } from '@/i18n/provider'
 import { cn } from '@/lib/utils'
 
 interface CodeBlockProps extends ComponentPropsWithoutRef<'code'> {
@@ -74,6 +75,7 @@ export function PreBlock({
   className,
   ...props
 }: PreBlockProps) {
+  const { t } = useI18n()
   const [copied, setCopied] = useState(false)
   const preRef = useRef<HTMLPreElement>(null)
 
@@ -122,19 +124,19 @@ export function PreBlock({
             size="sm"
             className="h-7 px-2 text-[11px]"
             onClick={() => setExpanded(prev => !prev)}
-            title={expanded ? '收起代码' : '展开代码'}
+            title={expanded ? t('message.code.collapse') : t('message.code.expand')}
           >
             {expanded
               ? (
                   <>
                     <ChevronUp className="w-3.5 h-3.5" />
-                    收起
+                    {t('message.code.collapse')}
                   </>
                 )
               : (
                   <>
                     <ChevronDown className="w-3.5 h-3.5" />
-                    展开
+                    {t('message.code.expand')}
                   </>
                 )}
           </Button>
@@ -145,7 +147,7 @@ export function PreBlock({
           size="sm"
           className="h-7 w-7 p-0 opacity-80 hover:opacity-100"
           onClick={handleCopy}
-          title={copied ? '已复制' : '复制代码'}
+          title={copied ? t('message.code.copied') : t('message.code.copy')}
         >
           {copied
             ? (

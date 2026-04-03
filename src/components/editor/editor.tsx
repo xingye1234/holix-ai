@@ -26,8 +26,8 @@ export const Editor = forwardRef<EditorHandle, EditorProps>((props: EditorProps,
       theme: Object.assign(
         {
           root: cn(
-            'editor-root caret-black dark:caret-white overflow-y-auto h-full w-full field-sizing-content rounded-xl border border-border/60 bg-card/75 px-4 py-3 text-base leading-6 shadow-sm transition-[color,box-shadow,border-color,background-color] outline-none dark:bg-card/60 md:text-sm',
-            'focus-visible:border-primary/40 focus-visible:ring-[3px] focus-visible:ring-primary/15 focus-visible:shadow-md',
+            'editor-root caret-black dark:caret-white overflow-y-auto h-full w-full field-sizing-content rounded-xl border border-border/60 bg-card/75 px-4 py-3 text-base leading-6 shadow-[0_10px_24px_-22px_rgba(0,0,0,0.2)] transition-[color,box-shadow,border-color,background-color] outline-none dark:bg-card/60 md:text-sm',
+            'focus-visible:border-primary/40 focus-visible:ring-[3px] focus-visible:ring-primary/15 focus-visible:shadow-[0_14px_28px_-22px_rgba(0,0,0,0.22)]',
             'aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40',
             'disabled:cursor-not-allowed disabled:opacity-50',
             props.rootClassName,
