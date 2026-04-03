@@ -1,10 +1,12 @@
 import {
   getChatByUid,
+  updateChatTitle,
   updateLastMessagePreview,
 } from '../database/chat-operations'
 import { createUserMessage, getLatestMessages } from '../database/message-operations'
 import { DEFAULT_CHAT_CONTEXT_SETTINGS } from '../database/schema/chat'
-import { agents } from '../agents'
+import { runBuiltinSubAgent } from '../agents/sub-agents'
+import { fallbackTitleFromQuestion } from '../agents/sub-agents/builtin/title-from-question'
 import { onCommand } from '../platform/commands'
 import { logger } from '../platform/logger'
 import { providerStore } from '../platform/provider'
@@ -43,6 +45,16 @@ export function initChat() {
       chatUid: chatId,
       updates: { lastMessagePreview: content },
     })
+
+    if (updatedChat && shouldAutoGenerateTitle(updatedChat.title, content)) {
+      void autoGenerateChatTitle({
+        chatUid: chatId,
+        currentTitle: updatedChat.title,
+        question: content,
+        providerName: chat.provider,
+        model: chat.model,
+      })
+    }
 
     // 获取供应商配置
     const providers = providerStore.get('providers')
@@ -127,4 +139,45 @@ export function initChat() {
       logger.info(`[Chat] Aborted ${count} sessions for chat ${chatId}`)
     }
   })
+}
+
+function shouldAutoGenerateTitle(currentTitle: string, question: string) {
+  const fallbackTitle = fallbackTitleFromQuestion(question)
+  return currentTitle === '新对话' || currentTitle === fallbackTitle
+}
+
+async function autoGenerateChatTitle(params: {
+  chatUid: string
+  currentTitle: string
+  question: string
+  providerName: string
+  model: string
+}) {
+  try {
+    const provider = providerStore.get('providers').find(p => p.name === params.providerName)
+    const generated = await runBuiltinSubAgent('title-from-question', {
+      question: params.question,
+      modelConfig: provider
+        ? {
+            provider: provider.apiType,
+            model: params.model,
+            apiKey: provider.apiKey,
+            baseURL: provider.baseUrl,
+          }
+        : undefined,
+    })
+
+    if (!generated.title || generated.title === params.currentTitle) {
+      return
+    }
+
+    await updateChatTitle(params.chatUid, generated.title)
+    update('chat.updated', {
+      chatUid: params.chatUid,
+      updates: { title: generated.title },
+    })
+  }
+  catch (error) {
+    logger.warn(`[Chat] Failed to auto generate title for chat ${params.chatUid}:`, error)
+  }
 }

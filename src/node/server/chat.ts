@@ -32,14 +32,14 @@ export const chatRouter = router({
       z.object({
         provider: z.string(),
         model: z.string(),
-        title: z.string(),
+        title: z.string().optional(),
       }),
     )
     .mutation(async ({ input }) => {
       const chat = await createChat({
         provider: input.provider,
         model: input.model,
-        title: input.title,
+        title: input.title?.trim() || '新对话',
       })
       return chat
     }),

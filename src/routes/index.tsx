@@ -13,15 +13,12 @@ import { estimateTokens, formatTokenCount } from '@/share/token'
 import useChat from '@/store/chat'
 import ProviderModelSelector from '@/views/shared/provider-model-selector'
 
-// 从 value 中提取标题：取前面部分内容
 function generateTitle(text: string) {
   const trimmed = text.trim()
-  // 尝试在句号、问号、感叹号或换行符处断开
   const match = trimmed.match(/^(.{1,50}[。？！\n])/)
   if (match) {
     return match[1].replace(/\n/g, ' ').trim()
   }
-  // 如果没有标点，直接截取前 50 个字符
   return trimmed.length > 50 ? `${trimmed.substring(0, 50)}...` : trimmed
 }
 
@@ -57,7 +54,9 @@ function Index() {
     if (!canSend)
       return
 
-    const titleToUse = hasTitle ? chatTitle.trim() : generateTitle(value);
+    const titleToUse = hasTitle
+      ? chatTitle.trim()
+      : generateTitle(value);
 
     (async () => {
       const providerConfig = await getProvider(provider)
@@ -73,7 +72,11 @@ function Index() {
         throw new Error(`Provider ${provider} is not configured`)
       }
 
-      const newChat = await chat.createChat({ provider, model, title: titleToUse })
+      const newChat = await chat.createChat({
+        provider,
+        model,
+        title: titleToUse,
+      })
 
       if (newChat) {
         navigate({
@@ -91,7 +94,7 @@ function Index() {
         }
       }
     })()
-      .catch((err) => {
+      .catch((err: any) => {
         console.error('Failed to create chat:', err)
         toast.error(`${t('home.createChatFailed')}: ${err.message || err}`)
       })

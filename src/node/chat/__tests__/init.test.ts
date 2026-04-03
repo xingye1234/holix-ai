@@ -44,7 +44,9 @@ const mockGetChatByUid = vi.hoisted(() => vi.fn())
 const mockCreateUserMessage = vi.hoisted(() => vi.fn())
 const mockGetLatestMessages = vi.hoisted(() => vi.fn())
 const mockUpdateLastMessagePreview = vi.hoisted(() => vi.fn())
+const mockUpdateChatTitle = vi.hoisted(() => vi.fn())
 const mockUpdate = vi.hoisted(() => vi.fn())
+const mockRunBuiltinSubAgent = vi.hoisted(() => vi.fn())
 const mockProviderStore = vi.hoisted(() => ({
   get: vi.fn(() => ({ providers: [] as Array<{ name: string, apiType: string, apiKey: string, baseUrl: string }> })),
 }))
@@ -63,6 +65,7 @@ vi.mock('../session-orchestrator', () => ({
 
 vi.mock('../../database/chat-operations', () => ({
   getChatByUid: mockGetChatByUid,
+  updateChatTitle: mockUpdateChatTitle,
   updateLastMessagePreview: mockUpdateLastMessagePreview,
 }))
 
@@ -85,6 +88,10 @@ vi.mock('../platform/update', () => ({
 
 vi.mock('../platform/provider', () => ({
   providerStore: mockProviderStore,
+}))
+
+vi.mock('../../agents/sub-agents', () => ({
+  runBuiltinSubAgent: mockRunBuiltinSubAgent,
 }))
 
 // ============================================
@@ -122,6 +129,10 @@ describe('initChat', () => {
     })
 
     mockGetLatestMessages.mockResolvedValue([])
+    mockRunBuiltinSubAgent.mockResolvedValue({
+      title: '优化后的标题',
+      source: 'llm',
+    })
 
     mockProviderStore.get.mockReturnValue({
       providers: [
@@ -220,6 +231,58 @@ describe('initChat', () => {
       expect(mockUpdate).toHaveBeenCalledWith('chat.updated', {
         chatUid: 'chat-789',
         updates: { lastMessagePreview: 'Preview test' },
+      })
+    })
+
+    it('should auto generate title after message when current title is fallback title', async () => {
+      mockGetChatByUid
+        .mockResolvedValueOnce({
+          uid: 'chat-title',
+          title: '请帮我分析一下 React useEffect 的依赖',
+          provider: 'openai',
+          model: 'gpt-4',
+          prompts: [],
+          contextSettings: {
+            maxMessages: 10,
+            timeWindowHours: null,
+            autoScrollToBottomOnSend: true,
+          },
+          workspace: [],
+        })
+        .mockResolvedValueOnce({
+          uid: 'chat-title',
+          title: '请帮我分析一下 React useEffect 的依赖',
+          provider: 'openai',
+          model: 'gpt-4',
+          prompts: [],
+          contextSettings: {
+            maxMessages: 10,
+            timeWindowHours: null,
+            autoScrollToBottomOnSend: true,
+          },
+          workspace: [],
+        })
+
+      const { messageHandler } = getHandlers()
+
+      if (!messageHandler)
+        return
+
+      await messageHandler({
+        chatId: 'chat-title',
+        content: '请帮我分析一下 React useEffect 的依赖和闭包陷阱',
+        replyTo: null,
+      })
+
+      await Promise.resolve()
+
+      expect(mockRunBuiltinSubAgent).toHaveBeenCalledWith('title-from-question', expect.objectContaining({
+        question: '请帮我分析一下 React useEffect 的依赖和闭包陷阱',
+      }))
+      expect(mockUpdateChatTitle).toHaveBeenCalledWith('chat-title', '优化后的标题')
+      expect(mockUpdate).toHaveBeenCalledWith('chat.updated', {
+        chatUid: 'chat-title',
+        updates: { title: '优化后的标题' },
       })
     })
 

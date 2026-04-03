@@ -17,7 +17,7 @@ interface ChatStore {
   createChat: (params: {
     provider: string
     model: string
-    title: string
+    title?: string
   }) => Promise<Chat | null>
   // 添加会话到列表
   addChat: (chat: Chat) => void
@@ -68,7 +68,7 @@ const useChat = create<ChatStore>((set, get) => {
     createChat: async (params: {
       provider: string
       model: string
-      title: string
+      title?: string
     }) => {
       try {
         set({ isLoading: true })
