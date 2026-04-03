@@ -418,7 +418,9 @@
   },
   "selector": {
     "selectProvider": "选择供应商",
-    "selectModel": "选择模型"
+    "selectModel": "选择模型",
+    "selectProviderModel": "选择供应商 / 模型",
+    "noAvailableProviderModel": "没有可用的供应商模型"
   },
   "preview": {
     "title": "消息预览",

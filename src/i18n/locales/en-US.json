@@ -375,7 +375,9 @@
   },
   "selector": {
     "selectProvider": "Select provider",
-    "selectModel": "Select model"
+    "selectModel": "Select model",
+    "selectProviderModel": "Select provider / model",
+    "noAvailableProviderModel": "Enable at least one provider with supported models in Settings first"
   },
   "preview": {
     "title": "Message Preview",

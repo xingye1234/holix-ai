@@ -75,9 +75,8 @@ describe('providerModelSelector', () => {
     })
 
     await waitFor(() => {
-      const [providerSelect, modelSelect] = screen.getAllByRole('combobox')
-      expect(providerSelect).toHaveTextContent('anthropic')
-      expect(modelSelect).toHaveTextContent('claude-3-7')
+      const select = screen.getByRole('combobox')
+      expect(select).toHaveTextContent('anthropic / claude-3-7')
     })
 
     await act(async () => {
@@ -86,8 +85,38 @@ describe('providerModelSelector', () => {
       await Promise.all([firstProviders.promise, firstDefault.promise])
     })
 
-    const [providerSelect, modelSelect] = screen.getAllByRole('combobox')
-    expect(providerSelect).toHaveTextContent('anthropic')
-    expect(modelSelect).toHaveTextContent('claude-3-7')
+    const select = screen.getByRole('combobox')
+    expect(select).toHaveTextContent('anthropic / claude-3-7')
+  })
+
+  it('matches settings by showing enabled providers with supported models', async () => {
+    vi.mocked(getProviders).mockResolvedValue([
+      makeProvider({
+        name: 'openai',
+        apiKey: '',
+        models: ['gpt-4o'],
+      }),
+      makeProvider({
+        name: 'anthropic',
+        apiType: 'anthropic',
+        apiKey: 'anthropic-key',
+        models: [],
+      }),
+      makeProvider({
+        name: 'deepseek',
+        apiType: 'deepseek',
+        enabled: false,
+        apiKey: 'deepseek-key',
+        models: ['deepseek-chat'],
+      }),
+    ])
+    vi.mocked(getDefaultProvider).mockResolvedValue('openai')
+
+    render(<ProviderModelSelector />)
+
+    await waitFor(() => {
+      const select = screen.getByRole('combobox')
+      expect(select).toHaveTextContent('openai / gpt-4o')
+    })
   })
 })

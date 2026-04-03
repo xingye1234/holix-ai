@@ -68,13 +68,10 @@ vi.mock('@/views/shared/agent-selector', () => ({
 }))
 
 vi.mock('@/views/shared/provider-model-selector', () => ({
-  default: ({ onProviderChange, onModelChange }: { onProviderChange?: (provider: string) => void, onModelChange?: (model: string) => void }) => (
+  default: ({ onSelectionChange }: { onSelectionChange?: (selection: { provider: string, model: string }) => void }) => (
     <div>
-      <button type="button" onClick={() => onProviderChange?.('anthropic')}>
-        change-provider
-      </button>
-      <button type="button" onClick={() => onModelChange?.('claude-3-7')}>
-        change-model
+      <button type="button" onClick={() => onSelectionChange?.({ provider: 'anthropic', model: 'claude-3-7' })}>
+        change-selection
       </button>
     </div>
   ),
@@ -150,57 +147,33 @@ describe('mainFooter provider/model sync', () => {
     })
   })
 
-  it('keeps the latest model when provider/model updates resolve out of order', async () => {
+  it('updates provider and model in a single request for combined selector changes', async () => {
     const user = userEvent.setup()
-    const providerUpdate = Promise.withResolvers<any>()
-    const modelUpdate = Promise.withResolvers<any>()
+    const combinedUpdate = Promise.withResolvers<any>()
 
-    mocks.chatUpdateMock.mockImplementation(({ provider, model }: { provider?: string, model?: string }) => {
-      if (provider) {
-        return providerUpdate.promise
-      }
-      if (model) {
-        return modelUpdate.promise
-      }
-      throw new Error('unexpected update payload')
+    mocks.chatUpdateMock.mockImplementation(() => {
+      return combinedUpdate.promise
     })
 
     renderFooter()
 
-    await user.click(screen.getByRole('button', { name: 'change-provider' }))
-    await user.click(screen.getByRole('button', { name: 'change-model' }))
+    await user.click(screen.getByRole('button', { name: 'change-selection' }))
 
     await act(async () => {
-      modelUpdate.resolve(makeChat({
+      combinedUpdate.resolve(makeChat({
         provider: 'anthropic',
         model: 'claude-3-7',
       }))
-      await modelUpdate.promise
-    })
-
-    await waitFor(() => {
-      const chat = useChat.getState().chats[0]
-      expect(chat.provider).toBe('openai')
-      expect(chat.model).toBe('claude-3-7')
-    })
-
-    await act(async () => {
-      providerUpdate.resolve(makeChat({
-        provider: 'anthropic',
-        model: 'gpt-4o',
-      }))
-      await providerUpdate.promise
+      await combinedUpdate.promise
     })
 
     const chat = useChat.getState().chats[0]
     expect(chat.provider).toBe('anthropic')
     expect(chat.model).toBe('claude-3-7')
-    expect(mocks.chatUpdateMock).toHaveBeenNthCalledWith(1, {
+    expect(mocks.chatUpdateMock).toHaveBeenCalledTimes(1)
+    expect(mocks.chatUpdateMock).toHaveBeenCalledWith({
       uid: 'chat-1',
       provider: 'anthropic',
-    })
-    expect(mocks.chatUpdateMock).toHaveBeenNthCalledWith(2, {
-      uid: 'chat-1',
       model: 'claude-3-7',
     })
   })

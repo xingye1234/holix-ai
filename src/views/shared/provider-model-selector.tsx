@@ -1,36 +1,87 @@
 import type { AIProvider } from '@/types/provider'
 import { useCallback, useEffect, useState } from 'react'
 import { ProviderAvatar } from '@/components/provider-avatar'
+import { useI18n } from '@/i18n/provider'
 import { getDefaultProvider, getProviders } from '@/lib/provider'
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 export interface ProviderModelSelectorProps {
   initialProvider?: string
   initialModel?: string
   triggerOnInitialize?: boolean
+  onSelectionChange?: (selection: { provider: string, model: string }) => void
   onProviderChange?: (provider: string) => void
   onModelChange?: (model: string) => void
   className?: string
+}
+
+interface ProviderOption {
+  provider: AIProvider
+  models: string[]
+}
+
+interface ProviderModelOption {
+  provider: AIProvider
+  model: string
+  value: string
+}
+
+function getSelectableProviders(providers: AIProvider[]) {
+  return providers
+    .filter(provider => provider.enabled)
+    .map((provider): ProviderOption => ({
+      provider,
+      models: provider.models
+        .map(model => model.trim())
+        .filter(Boolean),
+    }))
+    .filter(option => option.models.length > 0)
+}
+
+function buildSelectionValue(provider: string, model: string) {
+  return `${encodeURIComponent(provider)}::${encodeURIComponent(model)}`
+}
+
+function parseSelectionValue(value: string) {
+  const [provider = '', model = ''] = value.split('::')
+  return {
+    provider: decodeURIComponent(provider),
+    model: decodeURIComponent(model),
+  }
+}
+
+function flattenProviderOptions(providerOptions: ProviderOption[]): ProviderModelOption[] {
+  return providerOptions.flatMap(option =>
+    option.models.map(model => ({
+      provider: option.provider,
+      model,
+      value: buildSelectionValue(option.provider.name, model),
+    })),
+  )
 }
 
 export default function ProviderModelSelector({
   initialProvider: propInitialProvider,
   initialModel: propInitialModel,
   triggerOnInitialize = false,
+  onSelectionChange,
   onProviderChange,
   onModelChange,
   className,
 }: ProviderModelSelectorProps) {
-  const [providers, setProviders] = useState<AIProvider[]>([])
-  const [selectedProvider, setSelectedProvider] = useState<string>('')
-  const [selectedModel, setSelectedModel] = useState<string>('')
+  const { t } = useI18n()
+  const [providerOptions, setProviderOptions] = useState<ProviderOption[]>([])
+  const [selectedValue, setSelectedValue] = useState<string>('')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     let cancelled = false
 
-    setSelectedProvider(propInitialProvider ?? '')
-    setSelectedModel(propInitialModel ?? '')
+    setSelectedValue(
+      propInitialProvider && propInitialModel
+        ? buildSelectionValue(propInitialProvider, propInitialModel)
+        : '',
+    )
 
     const init = async () => {
       try {
@@ -40,21 +91,20 @@ export default function ProviderModelSelector({
           return
         }
 
-        const enabledProviders = providerList.filter(p => p.enabled)
-        setProviders(enabledProviders)
+        const selectableProviders = getSelectableProviders(providerList)
+        setProviderOptions(selectableProviders)
 
-        let targetProvider: AIProvider | undefined
+        let targetProvider: ProviderOption | undefined
         if (propInitialProvider) {
-          targetProvider = enabledProviders.find(p => p.name === propInitialProvider)
+          targetProvider = selectableProviders.find(p => p.provider.name === propInitialProvider)
         }
         if (!targetProvider) {
-          targetProvider = enabledProviders.find(p => p.name === defaultProviderName) || enabledProviders[0]
+          targetProvider = selectableProviders.find(p => p.provider.name === defaultProviderName) || selectableProviders[0]
         }
 
         if (targetProvider) {
-          setSelectedProvider(targetProvider.name)
-
-          const availableModels = targetProvider.models || []
+          const providerName = targetProvider.provider.name
+          const availableModels = targetProvider.models
           let targetModel = ''
           if (propInitialModel && availableModels.includes(propInitialModel)) {
             targetModel = propInitialModel
@@ -64,12 +114,19 @@ export default function ProviderModelSelector({
           }
 
           if (targetModel) {
-            setSelectedModel(targetModel)
+            setSelectedValue(buildSelectionValue(providerName, targetModel))
             if (triggerOnInitialize) {
-              onProviderChange?.(targetProvider.name)
+              onSelectionChange?.({ provider: providerName, model: targetModel })
+              onProviderChange?.(providerName)
               onModelChange?.(targetModel)
             }
           }
+          else {
+            setSelectedValue('')
+          }
+        }
+        else {
+          setSelectedValue('')
         }
       }
       catch (error) {
@@ -89,85 +146,58 @@ export default function ProviderModelSelector({
     return () => {
       cancelled = true
     }
-  }, [propInitialProvider, propInitialModel, triggerOnInitialize, onModelChange, onProviderChange])
+  }, [propInitialProvider, propInitialModel, triggerOnInitialize, onModelChange, onProviderChange, onSelectionChange])
 
-  const handleProviderChange = useCallback(
-    (providerName: string) => {
-      setSelectedProvider(providerName)
-      onProviderChange?.(providerName)
-
-      const provider = providers.find(p => p.name === providerName)
-      if (provider?.models && provider.models.length > 0) {
-        const firstModel = provider.models[0]
-        setSelectedModel(firstModel)
-        onModelChange?.(firstModel)
-      }
+  const handleSelectionChange = useCallback(
+    (value: string) => {
+      const nextSelection = parseSelectionValue(value)
+      setSelectedValue(value)
+      onSelectionChange?.(nextSelection)
+      onProviderChange?.(nextSelection.provider)
+      onModelChange?.(nextSelection.model)
     },
-    [providers, onProviderChange, onModelChange],
+    [onModelChange, onProviderChange, onSelectionChange],
   )
 
-  const handleModelChange = useCallback(
-    (model: string) => {
-      setSelectedModel(model)
-      onModelChange?.(model)
-    },
-    [onModelChange],
-  )
-
-  const currentProvider = providers.find(p => p.name === selectedProvider)
-  const availableModels = currentProvider?.models || []
+  const selectionOptions = flattenProviderOptions(providerOptions)
 
   if (loading) {
+    return <div className="h-10 w-72 animate-pulse rounded-md bg-muted" />
+  }
+
+  if (providerOptions.length === 0) {
     return (
-      <div className="flex items-center gap-2">
-        <div className="h-10 w-40 bg-muted animate-pulse rounded-md" />
-        <div className="h-10 w-56 bg-muted animate-pulse rounded-md" />
+      <div className="text-sm text-muted-foreground">
+        {t('selector.noAvailableProviderModel')}
       </div>
     )
   }
 
-  if (providers.length === 0) {
-    return <div className="text-sm text-muted-foreground">请先在设置中配置 AI 供应商</div>
-  }
-
   return (
-    <div className={`flex items-center gap-2 ${className || ''}`}>
-      <Select value={selectedProvider} onValueChange={handleProviderChange}>
-        <SelectTrigger className="w-40">
-          <SelectValue placeholder="选择供应商" />
+    <div className={className}>
+      <Select value={selectedValue} onValueChange={handleSelectionChange}>
+        <SelectTrigger className="w-72 max-w-full">
+          <SelectValue placeholder={t('selector.selectProviderModel')} />
         </SelectTrigger>
-        <SelectContent>
-          <SelectGroup>
-            {providers.map(provider => (
-              <SelectItem key={provider.name} value={provider.name}>
-                <span className="flex items-center gap-2">
-                  <ProviderAvatar
-                    avatar={provider.avatar}
-                    name={provider.name}
-                    className="size-5 border-0"
-                    fallbackClassName="bg-transparent"
-                    textClassName="text-xs"
-                  />
-                  <span>{provider.name}</span>
+        <SelectContent align="start">
+          {selectionOptions.map(option => (
+            <SelectItem key={option.value} value={option.value}>
+              <span className="flex min-w-0 items-center gap-2">
+                <ProviderAvatar
+                  avatar={option.provider.avatar}
+                  name={option.provider.name}
+                  className="size-5 border-0"
+                  fallbackClassName="bg-transparent"
+                  textClassName="text-xs"
+                />
+                <span className="truncate">
+                  {option.provider.name}
+                  {' / '}
+                  {option.model}
                 </span>
-              </SelectItem>
-            ))}
-          </SelectGroup>
-        </SelectContent>
-      </Select>
-
-      <Select value={selectedModel} onValueChange={handleModelChange} disabled={availableModels.length === 0}>
-        <SelectTrigger className="w-56">
-          <SelectValue placeholder="选择模型" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectGroup>
-            {availableModels.map(model => (
-              <SelectItem key={model} value={model}>
-                {model}
-              </SelectItem>
-            ))}
-          </SelectGroup>
+              </span>
+            </SelectItem>
+          ))}
         </SelectContent>
       </Select>
     </div>

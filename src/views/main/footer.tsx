@@ -83,41 +83,24 @@ export default function MainFooter() {
     [workspaceFileSuggestions],
   )
 
-  const handleProviderChange = useCallback(
-    async (newProvider: string) => {
-      if (chat) {
-        try {
-          await trpcClient.chat.update({
-            uid: chat.uid,
-            provider: newProvider,
-          })
-          updateChat(chat.uid, {
-            provider: newProvider,
-          })
-        }
-        catch (error) {
-          console.error('Failed to update provider:', error)
-        }
-      }
-    },
-    [chat, updateChat],
-  )
+  const handleProviderModelChange = useCallback(
+    async ({ provider, model }: { provider: string, model: string }) => {
+      if (!chat)
+        return
 
-  const handleModelChange = useCallback(
-    async (newModel: string) => {
-      if (chat) {
-        try {
-          await trpcClient.chat.update({
-            uid: chat.uid,
-            model: newModel,
-          })
-          updateChat(chat.uid, {
-            model: newModel,
-          })
-        }
-        catch (error) {
-          console.error('Failed to update model:', error)
-        }
+      try {
+        await trpcClient.chat.update({
+          uid: chat.uid,
+          provider,
+          model,
+        })
+        updateChat(chat.uid, {
+          provider,
+          model,
+        })
+      }
+      catch (error) {
+        console.error('Failed to update provider/model:', error)
       }
     },
     [chat, updateChat],
@@ -299,8 +282,7 @@ export default function MainFooter() {
           <ProviderModelSelector
             initialProvider={chat?.provider}
             initialModel={chat?.model}
-            onProviderChange={handleProviderChange}
-            onModelChange={handleModelChange}
+            onSelectionChange={handleProviderModelChange}
           />
           <Button className="ml-auto" disabled={!chat || value.trim().length === 0} onClick={onSend}>
             <Send />
