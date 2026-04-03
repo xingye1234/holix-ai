@@ -46,7 +46,7 @@ function RootLayout() {
         >
           <WindowChrome />
           <section
-            className="flex h-full overflow-hidden"
+            className="flex h-full overflow-hidden w-full"
           >
             <AppSideBar>
               <AsideChatHeader />

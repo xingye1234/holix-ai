@@ -11,12 +11,12 @@ export default function ChatPanel() {
   return (
     <motion.div
       initial={{ width: 0 }}
-      animate={{ width: 420 }}
+      animate={{ width: 367 }}
       exit={{ width: 0 }}
       transition={{ duration: 0.2 }}
-      className={cn('h-full w-105 border-l flex flex-col overflow-hidden')}
+      className={cn('h-full border-l flex flex-col overflow-hidden')}
     >
-      <div className="h-full flex flex-col">
+      <div className="h-full flex flex-col w-105">
         <div className="flex-1 overflow-hidden">
           <Tabs defaultValue="context" className="h-full flex flex-col">
             <TabsList className="m-2 p-1 grid grid-cols-3 shrink-0">

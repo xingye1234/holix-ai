@@ -1,19 +1,40 @@
-import { act, render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ChatContext } from '@/context/chat'
+import useChat from '@/store/chat'
 
 const mocks = vi.hoisted(() => ({
   skillList: vi.fn(),
   getSkillSettings: vi.fn(),
   getConfig: vi.fn(),
   toastError: vi.fn(),
+  toastSuccess: vi.fn(),
+  chatUpdate: vi.fn(),
+  chatDelete: vi.fn(),
+  pathname: '/chat/chat-1',
 }))
 
 vi.mock('sonner', () => ({
   toast: {
     error: mocks.toastError,
-    success: vi.fn(),
+    success: mocks.toastSuccess,
   },
+}))
+
+vi.mock('@/lib/logger', () => ({
+  default: {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  },
+}))
+
+vi.mock('@tanstack/react-router', () => ({
+  useRouterState: ({ select }: { select: (state: { location: { pathname: string } }) => unknown }) =>
+    select({ location: { pathname: mocks.pathname } }),
+  useNavigate: () => vi.fn(),
 }))
 
 vi.mock('@/lib/config', () => ({
@@ -29,6 +50,8 @@ vi.mock('@/lib/trpc-client', () => ({
       getSkillSettings: mocks.getSkillSettings,
       updateContextSettings: vi.fn(),
       updateSkillSettings: vi.fn(),
+      update: mocks.chatUpdate,
+      delete: mocks.chatDelete,
     },
   },
 }))
@@ -82,6 +105,13 @@ function renderSettings(chat = makeChat()) {
 describe('rightContextSettings', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mocks.pathname = '/chat/chat-1'
+    useChat.setState({
+      chats: [makeChat()],
+      isLoading: false,
+      initialized: true,
+      searchQuery: '',
+    })
   })
 
   it('ignores stale skill settings responses when switching chats quickly', async () => {
@@ -138,5 +168,28 @@ describe('rightContextSettings', () => {
 
     expect(screen.getByText('来源：会话强制禁用')).toBeInTheDocument()
     expect(screen.queryByText('来源：会话强制启用')).not.toBeInTheDocument()
+  })
+
+  it('allows renaming the current chat from the settings panel', async () => {
+    const user = userEvent.setup()
+    mocks.skillList.mockResolvedValue([])
+    mocks.getConfig.mockResolvedValue({ disabledSkills: [] })
+    mocks.getSkillSettings.mockResolvedValue({ disabledSkills: [], enabledSkills: [] })
+    mocks.chatUpdate.mockResolvedValue({})
+
+    renderSettings()
+
+    const input = await screen.findByLabelText('会话名称')
+    await user.clear(input)
+    await user.type(input, 'Renamed Chat')
+    const managementSection = input.closest('[data-slot="field"]')
+    if (!managementSection)
+      throw new Error('management section not found')
+    await user.click(within(managementSection).getByRole('button', { name: '保存名称' }))
+
+    expect(mocks.chatUpdate).toHaveBeenCalledWith({
+      uid: 'chat-1',
+      title: 'Renamed Chat',
+    })
   })
 })
