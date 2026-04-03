@@ -1,9 +1,10 @@
 import type { ProviderType, VendorPreset } from '@/share/models'
 import type { AIProvider } from '@/types/provider'
 import { createFileRoute } from '@tanstack/react-router'
-import { Pencil, Plus, Star } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
+import { ImagePlus, Pencil, Plus, RotateCcw, Star, Upload } from 'lucide-react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { toast } from 'sonner'
+import { ProviderAvatar, PROVIDER_AVATAR_PRESETS } from '@/components/provider-avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -43,6 +44,44 @@ function getHostname(url: string): string {
   }
 }
 
+async function readFileAsDataUrl(file: File) {
+  return await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result))
+    reader.onerror = () => reject(new Error('read-failed'))
+    reader.readAsDataURL(file)
+  })
+}
+
+async function loadImage(src: string) {
+  return await new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image()
+    image.onload = () => resolve(image)
+    image.onerror = () => reject(new Error('image-load-failed'))
+    image.src = src
+  })
+}
+
+async function convertImageFileToAvatar(file: File) {
+  const rawDataUrl = await readFileAsDataUrl(file)
+  const image = await loadImage(rawDataUrl)
+  const maxSize = 160
+  const scale = Math.min(maxSize / image.width, maxSize / image.height, 1)
+  const width = Math.max(1, Math.round(image.width * scale))
+  const height = Math.max(1, Math.round(image.height * scale))
+  const canvas = document.createElement('canvas')
+  canvas.width = width
+  canvas.height = height
+  const context = canvas.getContext('2d')
+
+  if (!context)
+    throw new Error('canvas-unavailable')
+
+  context.drawImage(image, 0, 0, width, height)
+
+  return canvas.toDataURL('image/webp', 0.85)
+}
+
 // ─── ProviderFormDialog ────────────────────────────────────────────────────
 
 const EMPTY_FORM = {
@@ -74,6 +113,8 @@ function ProviderFormDialog({
   onDelete,
 }: ProviderFormDialogProps) {
   const { t } = useI18n()
+  const fileInputId = useId()
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   const [form, setForm] = useState(EMPTY_FORM)
   const [selectedVendorId, setSelectedVendorId] = useState<string | null>(null)
@@ -114,6 +155,35 @@ function ProviderFormDialog({
   function handleFieldChange(field: 'name' | 'avatar' | 'baseUrl', value: string) {
     setSelectedVendorId(null)
     setForm(prev => ({ ...prev, [field]: value }))
+  }
+
+  async function handleAvatarUpload(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    if (!file)
+      return
+
+    try {
+      if (!file.type.startsWith('image/')) {
+        toast.error(t('settings.provider.toast.invalidAvatarFile'))
+        return
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error(t('settings.provider.toast.avatarFileTooLarge'))
+        return
+      }
+
+      const avatar = await convertImageFileToAvatar(file)
+      handleFieldChange('avatar', avatar)
+      toast.success(t('settings.provider.toast.avatarUploadSuccess'))
+    }
+    catch (error) {
+      console.error('Failed to process avatar file:', error)
+      toast.error(t('settings.provider.toast.avatarUploadError'))
+    }
+    finally {
+      event.target.value = ''
+    }
   }
 
   function handleSave() {
@@ -202,13 +272,80 @@ function ProviderFormDialog({
           {/* Avatar */}
           <div className="space-y-2">
             <Label htmlFor="dialog-avatar">{t('settings.provider.addDialog.avatarLabel')}</Label>
-            <Input
-              id="dialog-avatar"
-              value={form.avatar}
-              onChange={e => handleFieldChange('avatar', e.target.value)}
-              maxLength={2}
-              placeholder={t('settings.provider.addDialog.avatarPlaceholder')}
-            />
+            <div className="rounded-xl border bg-muted/20 p-4">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                <ProviderAvatar
+                  avatar={form.avatar}
+                  name={form.name}
+                  className="size-16 border-2"
+                  fallbackClassName="text-lg"
+                  textClassName="text-2xl"
+                />
+                <div className="flex flex-1 flex-col gap-2">
+                  <div className="flex flex-wrap gap-2">
+                    <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
+                      <Upload className="mr-2 size-4" />
+                      {t('settings.provider.addDialog.uploadAvatarButton')}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => handleFieldChange('avatar', EMPTY_FORM.avatar)}
+                    >
+                      <RotateCcw className="mr-2 size-4" />
+                      {t('settings.provider.addDialog.resetAvatarButton')}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {t('settings.provider.addDialog.avatarHelp')}
+                  </p>
+                </div>
+              </div>
+
+              <input
+                id={fileInputId}
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarUpload}
+              />
+
+              <div className="mt-4 space-y-2">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <ImagePlus className="size-4" />
+                  {t('settings.provider.addDialog.avatarPresetLabel')}
+                </div>
+                <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
+                  {PROVIDER_AVATAR_PRESETS.map(preset => (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      className="flex flex-col items-center gap-2 rounded-lg border p-2 transition-colors hover:bg-accent hover:text-accent-foreground"
+                      onClick={() => handleFieldChange('avatar', preset.avatar)}
+                    >
+                      <ProviderAvatar
+                        avatar={preset.avatar}
+                        name={preset.label}
+                        className="size-12 border"
+                        textClassName="text-base"
+                      />
+                      <span className="text-[11px] text-muted-foreground">{preset.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-4 space-y-2">
+                <Label htmlFor="dialog-avatar">{t('settings.provider.addDialog.avatarInputLabel')}</Label>
+                <Input
+                  id="dialog-avatar"
+                  value={form.avatar}
+                  onChange={e => handleFieldChange('avatar', e.target.value)}
+                  placeholder={t('settings.provider.addDialog.avatarPlaceholder')}
+                />
+              </div>
+            </div>
           </div>
 
           {/* Base URL */}
@@ -457,7 +594,12 @@ function RouteComponent() {
                     {/* Row 1: avatar, name, badge, star, switch */}
                     <div className="flex items-center justify-between px-4 pt-4">
                       <div className="flex items-center gap-2">
-                        <span className="text-xl">{provider.avatar}</span>
+                        <ProviderAvatar
+                          avatar={provider.avatar}
+                          name={provider.name}
+                          className="size-9"
+                          textClassName="text-lg"
+                        />
                         <span className="font-semibold leading-none">{provider.name}</span>
                         {defaultProviderState === provider.name && (
                           <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">

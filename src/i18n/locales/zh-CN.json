@@ -83,14 +83,23 @@
         "addSuccess": "供应商添加成功",
         "addError": "添加失败：{{message}}",
         "deleteSuccess": "供应商删除成功",
-        "deleteError": "删除失败：{{message}}"
+        "deleteError": "删除失败：{{message}}",
+        "avatarUploadSuccess": "头像上传成功",
+        "avatarUploadError": "头像处理失败，请重试",
+        "invalidAvatarFile": "请选择图片文件",
+        "avatarFileTooLarge": "图片不能超过 5MB"
       },
       "addDialog": {
         "title": "添加新供应商",
         "nameLabel": "名称",
         "namePlaceholder": "OpenAI",
         "avatarLabel": "头像",
-        "avatarPlaceholder": "🤖",
+        "avatarPlaceholder": "可输入 emoji、图片地址或 Data URL",
+        "avatarInputLabel": "头像值",
+        "avatarPresetLabel": "选择预置图片",
+        "uploadAvatarButton": "上传自定义图片",
+        "resetAvatarButton": "恢复默认头像",
+        "avatarHelp": "支持上传自定义图片，也可以从下方选择一张内置头像。",
         "modelsLabel": "模型列表",
         "cancelButton": "取消",
         "addButton": "添加"

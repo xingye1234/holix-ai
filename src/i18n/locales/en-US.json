@@ -83,14 +83,23 @@
         "addSuccess": "Provider added successfully",
         "addError": "Failed to add: {{message}}",
         "deleteSuccess": "Provider deleted successfully",
-        "deleteError": "Failed to delete: {{message}}"
+        "deleteError": "Failed to delete: {{message}}",
+        "avatarUploadSuccess": "Avatar uploaded successfully",
+        "avatarUploadError": "Failed to process avatar image",
+        "invalidAvatarFile": "Please choose an image file",
+        "avatarFileTooLarge": "Image must be smaller than 5MB"
       },
       "addDialog": {
         "title": "Add New Provider",
         "nameLabel": "Name",
         "namePlaceholder": "OpenAI",
         "avatarLabel": "Avatar",
-        "avatarPlaceholder": "🤖",
+        "avatarPlaceholder": "Enter emoji, image URL, or Data URL",
+        "avatarInputLabel": "Avatar value",
+        "avatarPresetLabel": "Choose a preset image",
+        "uploadAvatarButton": "Upload custom image",
+        "resetAvatarButton": "Reset avatar",
+        "avatarHelp": "Upload your own image or choose one of the built-in avatar presets below.",
         "modelsLabel": "Model List",
         "cancelButton": "Cancel",
         "addButton": "Add"

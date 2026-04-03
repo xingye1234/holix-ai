@@ -1,5 +1,6 @@
 import type { AIProvider } from '@/types/provider'
 import { useCallback, useEffect, useState } from 'react'
+import { ProviderAvatar } from '@/components/provider-avatar'
 import { getDefaultProvider, getProviders } from '@/lib/provider'
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
@@ -140,7 +141,13 @@ export default function ProviderModelSelector({
             {providers.map(provider => (
               <SelectItem key={provider.name} value={provider.name}>
                 <span className="flex items-center gap-2">
-                  <span>{provider.avatar}</span>
+                  <ProviderAvatar
+                    avatar={provider.avatar}
+                    name={provider.name}
+                    className="size-5 border-0"
+                    fallbackClassName="bg-transparent"
+                    textClassName="text-xs"
+                  />
                   <span>{provider.name}</span>
                 </span>
               </SelectItem>
