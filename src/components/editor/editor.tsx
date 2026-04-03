@@ -26,7 +26,10 @@ export const Editor = forwardRef<EditorHandle, EditorProps>((props: EditorProps,
       theme: Object.assign(
         {
           root: cn(
-            'editor-root caret-black dark:caret-white overflow-y-auto w-full h-full border-input focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 field-sizing-content w-full rounded-md border bg-transparent px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 md:text-sm leading-4',
+            'editor-root caret-black dark:caret-white overflow-y-auto h-full w-full field-sizing-content rounded-xl border border-border/60 bg-card/75 px-4 py-3 text-base leading-6 shadow-sm transition-[color,box-shadow,border-color,background-color] outline-none dark:bg-card/60 md:text-sm',
+            'focus-visible:border-primary/40 focus-visible:ring-[3px] focus-visible:ring-primary/15 focus-visible:shadow-md',
+            'aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40',
+            'disabled:cursor-not-allowed disabled:opacity-50',
             props.rootClassName,
           ),
         },
@@ -67,7 +70,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>((props: EditorProps,
             <ContentEditable
               aria-placeholder={props.ariaPlaceholder || ''}
               placeholder={(
-                <div className="editor-placeholder px-3 py-2 text-base md:text-sm text-muted-foreground select-none absolute top-0 left-0 pointer-events-none">
+                <div className="editor-placeholder pointer-events-none absolute top-0 left-0 select-none px-4 py-3 text-base text-muted-foreground/80 md:text-sm">
                   {props.placeholder || ''}
                 </div>
               )}

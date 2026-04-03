@@ -112,6 +112,7 @@ function Index() {
           value={chatTitle}
           onChange={e => setChatTitle(e.target.value)}
           placeholder={t('home.chatTitlePlaceholder')}
+          className="h-12 rounded-xl border-border/60 bg-card/70 px-4 text-sm shadow-sm transition-[color,box-shadow,border-color,background-color] focus-visible:border-primary/40 focus-visible:ring-primary/15 dark:bg-card/60"
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey)
               onSend()
@@ -121,6 +122,7 @@ function Index() {
           placeholder={t('home.inputPlaceholder')}
           ariaPlaceholder={t('home.inputPlaceholder')}
           rootClassName="min-h-[200px]"
+          wrapperClassName="rounded-2xl"
           onError={(err) => {
             console.error(`editor:`, err ? err.message : 'unknown error')
           }}

@@ -250,7 +250,7 @@ export default function MainFooter() {
             placeholder={t('message.inputPlaceholder')}
             ariaPlaceholder={t('message.inputPlaceholder')}
             rootClassName="min-h-(--app-chat-input-height)"
-            wrapperClassName="h-(--app-chat-input-height)"
+            wrapperClassName="h-(--app-chat-input-height) rounded-2xl"
             onError={(err) => {
               console.error(`editor:`, err ? err.message : 'unknown error')
             }}
