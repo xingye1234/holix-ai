@@ -8,7 +8,7 @@ import './styles/root.css'
 const rootElement = document.getElementById('root')
 if (rootElement) {
   createRoot(rootElement).render(
-    <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
+    <ThemeProvider defaultTheme="system">
       <PreviewWindow />
       <Toaster position="top-center" richColors />
     </ThemeProvider>,

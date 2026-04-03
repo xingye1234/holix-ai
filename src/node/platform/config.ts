@@ -7,6 +7,7 @@ export interface ConfigData {
     height: number
   }
   theme: string
+  codeTheme: string
   currentChatId?: string
   context7ApiKey?: string
   autoStart: boolean
@@ -26,6 +27,7 @@ export class Config extends Store<ConfigData> {
           height: 800,
         },
         theme: 'system',
+        codeTheme: 'github',
         currentChatId: undefined,
         context7ApiKey: '',
         autoStart: false,

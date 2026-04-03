@@ -4,10 +4,12 @@
  * - 可配置样式主题
  * - 支持流式输出光标
  */
+import { useMemo } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { MarkdownCode, MarkdownPre } from '@/components/markdown/code-block'
-import { rehypeShiki } from '@/lib/shiki'
+import { useTheme } from '@/components/theme-provider'
+import { createRehypeShiki } from '@/lib/shiki'
 import { cn } from '@/lib/utils'
 
 interface MarkdownRendererProps {
@@ -29,6 +31,9 @@ export function MarkdownRenderer({
   className,
   compact = false,
 }: MarkdownRendererProps) {
+  const { codeTheme } = useTheme()
+  const rehypeShiki = useMemo(() => createRehypeShiki(codeTheme), [codeTheme])
+
   return (
     <div
       className={cn(

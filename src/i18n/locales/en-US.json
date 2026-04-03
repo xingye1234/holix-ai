@@ -33,11 +33,27 @@
       "title": "General Settings",
       "subtitle": "Manage basic application settings and behavior",
       "appearance": "Appearance",
-      "theme": "Theme",
-      "themeDesc": "Choose the appearance theme of the app",
+      "appTheme": "App theme",
+      "appThemeDesc": "Control the overall light or dark appearance of the application.",
+      "codeTheme": "Code theme",
+      "codeThemeDesc": "Control the syntax highlighting style for Markdown code blocks, with matching light and dark variants.",
       "light": "Light",
       "dark": "Dark",
       "system": "System",
+      "codeThemes": {
+        "github": {
+          "label": "GitHub",
+          "description": "Clean and familiar, close to the reading experience on modern code hosting platforms."
+        },
+        "vitesse": {
+          "label": "Vitesse",
+          "description": "Higher contrast and a livelier feel, great for scanning longer code snippets."
+        },
+        "catppuccin": {
+          "label": "Catppuccin",
+          "description": "Softer and moodier, better for a warmer, more atmospheric code-reading experience."
+        }
+      },
       "language": "Language",
       "languageDesc": "Choose the display language of the app",
       "startup": "Startup & Close",

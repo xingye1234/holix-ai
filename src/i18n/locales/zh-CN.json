@@ -33,11 +33,27 @@
       "title": "常规设置",
       "subtitle": "管理应用的基本设置和行为",
       "appearance": "外观",
-      "theme": "主题",
-      "themeDesc": "选择应用的外观主题",
+      "appTheme": "应用主题",
+      "appThemeDesc": "控制整个应用界面的明暗外观",
+      "codeTheme": "代码显示主题",
+      "codeThemeDesc": "控制消息中 Markdown 代码块的高亮风格，会随应用明暗自动切换对应版本。",
       "light": "浅色",
       "dark": "深色",
       "system": "跟随系统",
+      "codeThemes": {
+        "github": {
+          "label": "GitHub",
+          "description": "干净克制，接近日常代码托管平台的阅读体验。"
+        },
+        "vitesse": {
+          "label": "Vitesse",
+          "description": "对比更鲜明，整体更轻快，适合长时间浏览代码。"
+        },
+        "catppuccin": {
+          "label": "Catppuccin",
+          "description": "更柔和也更有氛围，适合喜欢温润色彩的阅读风格。"
+        }
+      },
       "language": "语言",
       "languageDesc": "选择应用的显示语言",
       "startup": "启动与关闭",

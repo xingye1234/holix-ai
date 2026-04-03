@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { useI18n } from '@/i18n/provider'
+import { CODE_THEME_PRESETS } from '@/lib/theme-system'
 import { getConfig, updateConfig } from '@/lib/config'
 
 export const Route = createFileRoute('/setting/general')({
@@ -30,7 +31,7 @@ function RouteComponent() {
   const [closeToTray, setCloseToTray] = useState(config.closeToTray ?? true)
   const [showNotifications, setShowNotifications] = useState(true)
   const { locale, setLocale, t } = useI18n()
-  const { theme, setTheme } = useTheme()
+  const { theme, codeTheme, setTheme, setCodeTheme } = useTheme()
   const [apiKey, setApiKey] = useState(config.context7ApiKey ?? '')
 
   const handleSaveApiKey = useCallback(async () => {
@@ -66,9 +67,9 @@ function RouteComponent() {
           <div className="rounded-lg border p-4 space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <Label className="text-base">{t('settings.general.theme')}</Label>
+                <Label className="text-base">{t('settings.general.appTheme')}</Label>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {t('settings.general.themeDesc')}
+                  {t('settings.general.appThemeDesc')}
                 </p>
               </div>
               <Select value={theme} onValueChange={v => setTheme(v as 'light' | 'dark' | 'system')}>
@@ -80,7 +81,65 @@ function RouteComponent() {
                   <SelectItem value="dark">{t('settings.general.dark')}</SelectItem>
                   <SelectItem value="system">{t('settings.general.system')}</SelectItem>
                 </SelectContent>
-              </Select>
+                </Select>
+              </div>
+
+            <div className="rounded-xl border bg-muted/30 p-4 space-y-3">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <Label className="text-base">{t('settings.general.codeTheme')}</Label>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {t('settings.general.codeThemeDesc')}
+                  </p>
+                </div>
+                <Select value={codeTheme} onValueChange={v => setCodeTheme(v as typeof codeTheme)}>
+                  <SelectTrigger className="w-44">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CODE_THEME_PRESETS.map(preset => (
+                      <SelectItem key={preset.id} value={preset.id}>
+                        {t(preset.labelKey)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid gap-2 sm:grid-cols-3">
+                {CODE_THEME_PRESETS.map(preset => {
+                  const selected = preset.id === codeTheme
+                  return (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      onClick={() => setCodeTheme(preset.id)}
+                      className={`rounded-xl border p-3 text-left transition-colors ${selected ? 'border-primary bg-primary/5' : 'border-border bg-background hover:bg-accent/40'}`}
+                    >
+                      <div className="mb-2 flex items-center justify-between">
+                        <p className="text-sm font-medium">{t(preset.labelKey)}</p>
+                        <span className={`size-2.5 rounded-full ${selected ? 'bg-primary' : 'bg-muted-foreground/30'}`} />
+                      </div>
+                      <div className="mb-2 overflow-hidden rounded-md border">
+                        <div className="bg-[#f6f8fa] px-2 py-1 text-[11px] text-[#57606a]">
+                          const theme = &quot;{t(preset.labelKey)}&quot;
+                        </div>
+                        <div className="bg-[#0d1117] px-2 py-1.5 text-[11px] text-[#c9d1d9]">
+                          <span className="text-[#ff7b72]">console</span>
+                          <span className="text-[#c9d1d9]">.</span>
+                          <span className="text-[#d2a8ff]">log</span>
+                          <span className="text-[#c9d1d9]">(</span>
+                          <span className="text-[#a5d6ff]">theme</span>
+                          <span className="text-[#c9d1d9]">)</span>
+                        </div>
+                      </div>
+                      <p className="text-xs leading-5 text-muted-foreground">
+                        {t(preset.descriptionKey)}
+                      </p>
+                    </button>
+                  )
+                })}
+              </div>
             </div>
 
             <div className="flex items-center justify-between">
