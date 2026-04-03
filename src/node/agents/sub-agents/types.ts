@@ -32,4 +32,3 @@ export interface BuiltinSubAgent<TId extends BuiltinSubAgentId = BuiltinSubAgent
   description: string
   run: (input: BuiltinSubAgentInputMap[TId]) => Promise<BuiltinSubAgentOutputMap[TId]>
 }
-

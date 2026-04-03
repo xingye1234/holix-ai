@@ -1,7 +1,5 @@
 import { motion } from 'framer-motion'
-import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { useSettingsPanel } from '@/context/settings-panel'
 import { cn } from '@/lib/utils'
 import RightContextSettings from './right-context-settings'
 import Prompts from './right-prompts'

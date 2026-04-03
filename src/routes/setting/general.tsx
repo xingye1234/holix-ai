@@ -81,8 +81,8 @@ function RouteComponent() {
                   <SelectItem value="dark">{t('settings.general.dark')}</SelectItem>
                   <SelectItem value="system">{t('settings.general.system')}</SelectItem>
                 </SelectContent>
-                </Select>
-              </div>
+              </Select>
+            </div>
 
             <div className="rounded-xl border bg-muted/30 p-4 space-y-3">
               <div className="flex items-center justify-between gap-4">
@@ -107,7 +107,7 @@ function RouteComponent() {
               </div>
 
               <div className="grid gap-2 sm:grid-cols-3">
-                {CODE_THEME_PRESETS.map(preset => {
+                {CODE_THEME_PRESETS.map((preset) => {
                   const selected = preset.id === codeTheme
                   return (
                     <button
@@ -122,7 +122,9 @@ function RouteComponent() {
                       </div>
                       <div className="mb-2 overflow-hidden rounded-md border">
                         <div className="bg-[#f6f8fa] px-2 py-1 text-[11px] text-[#57606a]">
-                          const theme = &quot;{t(preset.labelKey)}&quot;
+                          const theme = &quot;
+                          {t(preset.labelKey)}
+                          &quot;
                         </div>
                         <div className="bg-[#0d1117] px-2 py-1.5 text-[11px] text-[#c9d1d9]">
                           <span className="text-[#ff7b72]">console</span>

@@ -1,3 +1,4 @@
+import type { Chat } from '../database/schema/chat'
 import { z } from 'zod'
 import logger from '@/lib/logger'
 import {
@@ -23,6 +24,13 @@ const contextSettingsSchema = z.object({
   timeWindowHours: z.number().int().min(1).max(24 * 30).nullable(),
   autoScrollToBottomOnSend: z.boolean().default(true),
 })
+
+function emitChatUpdated(chatUid: string, updates: Partial<Chat>) {
+  update('chat.updated', {
+    chatUid,
+    updates,
+  })
+}
 
 // 定义聊天相关的 procedures
 export const chatRouter = router({
@@ -135,7 +143,10 @@ export const chatRouter = router({
     )
     .mutation(async ({ input }) => {
       const chat = await updateChatPrompts(input.chatUid, input.prompts)
-      update('chat.updated', chat)
+      emitChatUpdated(chat.uid, {
+        prompts: chat.prompts,
+        updatedAt: chat.updatedAt,
+      })
       return chat
     }),
 
@@ -149,7 +160,10 @@ export const chatRouter = router({
     )
     .mutation(async ({ input }) => {
       const chat = await updateChatContextSettings(input.chatUid, input.contextSettings)
-      update('chat.updated', chat)
+      emitChatUpdated(chat.uid, {
+        contextSettings: chat.contextSettings,
+        updatedAt: chat.updatedAt,
+      })
       return chat
     }),
 
@@ -190,7 +204,10 @@ export const chatRouter = router({
     .mutation(async ({ input }) => {
       const chat = await updateChatWorkspace(input.chatUid, input.workspace)
       // 通知渲染线程更新
-      update('chat.updated', chat)
+      emitChatUpdated(chat.uid, {
+        workspace: chat.workspace,
+        updatedAt: chat.updatedAt,
+      })
       return chat
     }),
 
@@ -214,7 +231,10 @@ export const chatRouter = router({
     )
     .mutation(async ({ input }) => {
       const chat = await updatePendingMessages(input.chatUid, input.pendingMessages as any)
-      update('chat.updated', chat)
+      emitChatUpdated(chat.uid, {
+        pendingMessages: chat.pendingMessages,
+        updatedAt: chat.updatedAt,
+      })
       return chat
     }),
   // 删除会话（带通知）

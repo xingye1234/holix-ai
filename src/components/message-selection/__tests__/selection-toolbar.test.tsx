@@ -20,6 +20,37 @@ vi.mock('@/lib/logger', () => ({
   },
 }))
 
+vi.mock('@/i18n/provider', () => ({
+  useI18n: () => ({
+    t: (key: string, options?: Record<string, unknown>) => {
+      const dict: Record<string, string> = {
+        'selection.copy': '复制',
+        'selection.preview': '放大查看',
+        'selection.export': '导出',
+        'selection.delete': '删除',
+        'selection.deleteNone': '未删除任何消息',
+        'common.cancel': '取消',
+        'preview.exportCanceled': '已取消导出',
+        'message.previewFailed': '新窗口打开失败，请检查系统设置',
+        'preview.exportAsText': '导出为文本',
+        'preview.exportAsMarkdown': '导出为 Markdown',
+        'preview.exportAsJson': '导出为 JSON',
+      }
+
+      if (key === 'selection.selectedCount')
+        return `已选择 ${options?.count} 条消息`
+      if (key === 'selection.deleted')
+        return `已删除 ${options?.count} 条消息`
+      if (key === 'selection.copied')
+        return `已复制 ${options?.count} 条消息`
+      if (key === 'preview.exportSuccess')
+        return `导出成功：${options?.filePath}`
+
+      return dict[key] ?? key
+    },
+  }),
+}))
+
 describe('selectionToolbar', () => {
   const mockOnDeleteSelected = vi.fn()
   const mockOnExportSelected = vi.fn()

@@ -19,7 +19,6 @@ export function useMessageShortcuts({
 }: UseMessageShortcutsProps) {
   const isSelectionMode = useMessageSelection(state => state.isSelectionMode)
   const selectAllMessages = useMessageSelection(state => state.selectAllMessages)
-  const clearSelection = useMessageSelection(state => state.clearSelection)
   const disableSelectionMode = useMessageSelection(state => state.disableSelectionMode)
 
   useEffect(() => {

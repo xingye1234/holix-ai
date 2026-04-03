@@ -43,7 +43,7 @@ function extractTextContent(content: unknown): string {
 function normalizeGeneratedTitle(rawTitle: string, fallbackQuestion: string): string {
   const cleaned = rawTitle
     .replace(/^["'\s]+|["'\s]+$/g, '')
-    .replace(/^标题[:：]\s*/i, '')
+    .replace(/^标题[:：]\s*/, '')
     .replace(/\s+/g, ' ')
     .trim()
 
@@ -94,4 +94,3 @@ export const titleFromQuestionSubAgent: BuiltinSubAgent<'title-from-question'> =
     }
   },
 }
-

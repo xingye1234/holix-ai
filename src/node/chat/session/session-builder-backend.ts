@@ -4,9 +4,11 @@ import {
   FilesystemBackend,
   StoreBackend,
 } from 'deepagents'
+import type {
+  deepAgentLongTermMemoryStore,
+} from '../../database/deepagents-store'
 import {
   DEEP_AGENT_LONG_TERM_MEMORY_NAMESPACE,
-  deepAgentLongTermMemoryStore,
 } from '../../database/deepagents-store'
 
 type DeepAgentParams = NonNullable<Parameters<typeof createDeepAgent>[0]>

@@ -43,4 +43,3 @@ export const CODE_THEME_PRESETS: CodeThemePreset[] = [
 export function getCodeThemePreset(codeTheme: CodeTheme) {
   return CODE_THEME_PRESETS.find(theme => theme.id === codeTheme) ?? CODE_THEME_PRESETS[0]
 }
-

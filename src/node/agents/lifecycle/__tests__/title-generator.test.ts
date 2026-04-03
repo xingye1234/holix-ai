@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { titleGeneratorAgent } from '../builtin/title-generator'
 import type { AgentContext } from '../types'
 

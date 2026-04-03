@@ -206,7 +206,9 @@ describe('sessionOrchestrator', () => {
 
     it('should clean up session after completion', async () => {
       let resolveRun: (value: void) => void
-      const runPromise = new Promise<void>((resolve) => { resolveRun = resolve })
+      const runPromise = new Promise<void>((resolve) => {
+        resolveRun = resolve
+      })
 
       mockChatSessionCreate.mockResolvedValue({
         abort: vi.fn(),

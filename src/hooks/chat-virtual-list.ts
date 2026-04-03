@@ -20,7 +20,6 @@
 
 import type { RefObject } from 'react'
 import type { LoadingState, ScrollBehavior, VirtualListHandle } from '@/components/virtual-list'
-import type { Message } from '@/node/database/schema/chat'
 import { useCallback, useRef, useState } from 'react'
 import { useChatContext } from '@/context/chat'
 import { useChatMessages, useInitialMessageLoad, useLoadMoreMessages } from '@/hooks/message'

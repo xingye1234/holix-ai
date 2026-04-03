@@ -35,7 +35,15 @@ vi.mock('@/lib/trpc-client', () => ({
 
 vi.mock('@/i18n/provider', () => ({
   useI18n: () => ({
-    t: (key: string) => key,
+    t: (key: string) => {
+      if (key === 'chat.titleBar.newChat')
+        return '新对话'
+      if (key === 'chat.titleBar.openSettings')
+        return '打开聊天设置'
+      if (key === 'chat.titleBar.closeSettings')
+        return '关闭聊天设置'
+      return key
+    },
   }),
 }))
 

@@ -31,6 +31,28 @@ vi.mock('@/lib/logger', () => ({
   },
 }))
 
+vi.mock('@/i18n/provider', () => ({
+  useI18n: () => ({
+    t: (key: string, options?: Record<string, unknown>) => {
+      const dict: Record<string, string> = {
+        'chat.settingsPanel.renameTitle': '会话名称',
+        'chat.renamePlaceholder': '输入新的会话名称',
+        'chat.settingsPanel.saveName': '保存名称',
+        'chat.settingsPanel.skillSource.enabledByChat': '会话强制启用',
+        'chat.settingsPanel.skillSource.disabledByChat': '会话强制禁用',
+        'chat.settingsPanel.skillSource.disabledGlobally': '全局禁用',
+        'chat.settingsPanel.skillSource.followGlobal': '跟随全局',
+        'chat.settingsPanel.skillSourceLabel': '来源：',
+      }
+
+      if (key === 'chat.settingsPanel.currentExpiry')
+        return `当前：${options?.value ?? ''}`
+
+      return dict[key] ?? key
+    },
+  }),
+}))
+
 vi.mock('@tanstack/react-router', () => ({
   useRouterState: ({ select }: { select: (state: { location: { pathname: string } }) => unknown }) =>
     select({ location: { pathname: mocks.pathname } }),

@@ -74,7 +74,7 @@ vi.mock('../session-builder', () => ({
     }
 
     buildAgent = vi.fn(async () => ({
-      stream: async function* () {
+      async* stream() {
         yield ['messages', {
           getType: () => 'ai',
           content: 'Hello',

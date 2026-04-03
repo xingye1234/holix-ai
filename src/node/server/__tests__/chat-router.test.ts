@@ -230,7 +230,13 @@ describe('chatRouter', () => {
       })
 
       expect(chatOps.updateChatPrompts).toHaveBeenCalledWith('chat-uid-001', ['You are helpful.'])
-      expect(update).toHaveBeenCalledWith('chat.updated', chat)
+      expect(update).toHaveBeenCalledWith('chat.updated', {
+        chatUid: 'chat-uid-001',
+        updates: {
+          prompts: chat.prompts,
+          updatedAt: chat.updatedAt,
+        },
+      })
       expect(result).toEqual(chat)
     })
   })
@@ -260,7 +266,13 @@ describe('chatRouter', () => {
         timeWindowHours: null,
         autoScrollToBottomOnSend: false,
       })
-      expect(update).toHaveBeenCalledWith('chat.updated', chat)
+      expect(update).toHaveBeenCalledWith('chat.updated', {
+        chatUid: 'chat-uid-001',
+        updates: {
+          contextSettings: chat.contextSettings,
+          updatedAt: chat.updatedAt,
+        },
+      })
       expect(result).toEqual(chat)
     })
   })
@@ -276,7 +288,13 @@ describe('chatRouter', () => {
       await caller.updateWorkspace({ chatUid: 'chat-uid-001', workspace })
 
       expect(chatOps.updateChatWorkspace).toHaveBeenCalledWith('chat-uid-001', workspace)
-      expect(update).toHaveBeenCalledWith('chat.updated', chat)
+      expect(update).toHaveBeenCalledWith('chat.updated', {
+        chatUid: 'chat-uid-001',
+        updates: {
+          workspace: chat.workspace,
+          updatedAt: chat.updatedAt,
+        },
+      })
     })
 
     it('清空工作区（null）', async () => {

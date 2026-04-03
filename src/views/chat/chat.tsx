@@ -2,7 +2,7 @@ import { matchSorter } from 'match-sorter'
 import { useMemo } from 'react'
 import useChat from '@/store/chat'
 import { ChatPanel } from './panel'
-import { SidebarContent, SidebarGroup, SidebarGroupLabel, SidebarMenu, SidebarMenuItem } from '@/components/ui/sidebar'
+import { SidebarContent, SidebarGroup, SidebarGroupLabel, SidebarMenu } from '@/components/ui/sidebar'
 
 export function AsideChatSidebar() {
   const chats = useChat(state => state.chats)
