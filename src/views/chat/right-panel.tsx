@@ -8,7 +8,6 @@ import Prompts from './right-prompts'
 import RightWorkspace from './right-workspace'
 
 export default function ChatPanel() {
-  const { close } = useSettingsPanel()
   return (
     <motion.div
       initial={{ width: 0 }}
@@ -18,17 +17,6 @@ export default function ChatPanel() {
       className={cn('h-full w-105 border-l flex flex-col overflow-hidden')}
     >
       <div className="h-full flex flex-col">
-        <div className="h-(--app-header-height) border-b px-4 flex items-center justify-between shrink-0">
-          <h2 className="text-sm font-semibold">设置</h2>
-          <Button
-            className="text-muted-foreground hover:text-foreground transition-colors"
-            onClick={() => close()}
-            title="关闭"
-            variant="ghost"
-          >
-            ✕
-          </Button>
-        </div>
         <div className="flex-1 overflow-hidden">
           <Tabs defaultValue="context" className="h-full flex flex-col">
             <TabsList className="m-2 p-1 grid grid-cols-3 shrink-0">

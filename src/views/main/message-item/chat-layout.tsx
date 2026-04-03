@@ -45,7 +45,7 @@ export function ChatLayout({
   return (
     <div
       className={cn(
-        'flex w-full gap-3 px-4 py-3 group transition-all duration-200 rounded-md -mx-2',
+        'flex w-full max-w-3xl gap-3 mx-auto px-4 py-3 group transition-all duration-200 rounded-md',
         isUser ? 'flex-row-reverse' : 'flex-row',
         isSelected && 'bg-primary/10 border-l-4 border-primary shadow-sm',
         isSelectionMode && 'hover:bg-accent/20',
