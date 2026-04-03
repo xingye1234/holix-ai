@@ -3,7 +3,7 @@
  *
  * 用法示例：
  * ```ts
- * import { skillManager, listSkills, getSkill } from './skills'
+ * import { skillManager } from './skills'
  *
  * // 初始化（应用启动时调用一次）
  * skillManager.initialize()
@@ -22,43 +22,7 @@ import { skillManager } from './manager'
 export { getSkillsDir, scanSkillsDir } from './loader'
 export { skillManager } from './manager'
 export type {
-  CommandToolDeclaration,
-  JsToolDeclaration,
   LoadedSkill,
-  SchemaField,
-  ScriptToolDeclaration,
-  Skill,
-  SkillManifest,
-  SkillMdFrontmatter,
-  ToolDeclaration,
+  SkillConfigField,
+  StandardSkillMetadata,
 } from './type'
-
-// ─── 便捷函数（兼容旧接口）──────────────────────────────────────────────────────
-
-/**
- * 列出所有已加载的 skill 信息
- * @deprecated 直接使用 skillManager.listSkills()
- */
-export function listSkills() {
-  return skillManager.listSkills().map(s => ({
-    name: s.name,
-    description: s.description,
-    prompt: s.prompt ?? '',
-  }))
-}
-
-/**
- * 按名称获取 skill 的 prompt
- * @deprecated 直接使用 skillManager.getSkill(name)
- */
-export function getSkill(name: string) {
-  const skill = skillManager.getSkill(name)
-  if (!skill)
-    return undefined
-
-  return {
-    name: skill.name,
-    description: skill.description,
-    prompt: skill.prompt ?? '',
-  }
-}

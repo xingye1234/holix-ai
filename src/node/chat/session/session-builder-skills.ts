@@ -187,8 +187,7 @@ function getAllowedToolsForSkill(skill: LoadedSkill) {
     return ['glob', 'grep', 'read_file']
   }
 
-  return skill.tools
-    .map(tool => tool.name)
+  return skill.allowedTools
     .filter(toolName => !DEEP_AGENT_BUILTIN_TOOL_NAMES.has(toolName))
 }
 

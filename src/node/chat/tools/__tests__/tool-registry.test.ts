@@ -1,6 +1,6 @@
 /**
  * ToolRegistry 单元测试
- * 测试 Skills 渐进式披露的三种策略：eager、lazy、smart
+ * 测试 Skills 在新架构下只影响 prompts，不再直接注册 tools
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -15,17 +15,14 @@ const mockSkillManager = vi.hoisted(() => {
     const skills: Record<string, any> = {
       'core-skill-1': {
         name: 'core-skill-1',
-        tools: [{ name: 'core_tool_1' }],
         prompt: 'Core skill 1 prompt',
       },
       'core-skill-2': {
         name: 'core-skill-2',
-        tools: [{ name: 'core_tool_2' }],
         prompt: 'Core skill 2 prompt',
       },
       'optional-skill': {
         name: 'optional-skill',
-        tools: [{ name: 'optional_tool' }],
         prompt: 'Optional skill prompt',
       },
     }
@@ -33,11 +30,7 @@ const mockSkillManager = vi.hoisted(() => {
   })
 
   return {
-    getAllTools: vi.fn(() => [
-      { name: 'skill1_tool1' },
-      { name: 'skill1_tool2' },
-      { name: 'skill2_tool1' },
-    ]),
+    getAllTools: vi.fn(() => []),
     getSkill: getSkillMock,
     getSystemPrompts: vi.fn(() => [
       '[Skill: skill1]\nSkill 1 prompt',
@@ -93,11 +86,6 @@ vi.mock('../context7', () => ({
   context7Tool: { name: 'context7' },
 }))
 
-vi.mock('../skills', () => ({
-  buildLoadSkillTool: vi.fn(() => ({ name: 'load_skill' })),
-  reloadSkillsTool: { name: 'reload_skills' },
-}))
-
 vi.mock('../system', () => ({
   systemEnvTool: { name: 'system_env' },
   systemPlatformTool: { name: 'system_platform' },
@@ -119,17 +107,14 @@ describe('toolRegistry', () => {
       const skills: Record<string, any> = {
         'core-skill-1': {
           name: 'core-skill-1',
-          tools: [{ name: 'core_tool_1' }],
           prompt: 'Core skill 1 prompt',
         },
         'core-skill-2': {
           name: 'core-skill-2',
-          tools: [{ name: 'core_tool_2' }],
           prompt: 'Core skill 2 prompt',
         },
         'optional-skill': {
           name: 'optional-skill',
-          tools: [{ name: 'optional_tool' }],
           prompt: 'Optional skill prompt',
         },
       }
@@ -169,13 +154,12 @@ describe('toolRegistry', () => {
   })
 
   describe('eager Strategy', () => {
-    it('should load all skill tools', () => {
+    it('should not load skill tools directly anymore', () => {
       const registry = new ToolRegistry({ strategy: 'eager' })
       const tools = registry.buildTools()
 
-      // Should include: system tools (4) + chat tools (2) + skill management (2) + context7 (1) + all skill tools (3)
-      expect(tools.length).toBe(12)
-      expect(mockSkillManager.getAllTools).toHaveBeenCalled()
+      expect(tools.length).toBe(7)
+      expect(mockSkillManager.getAllTools).not.toHaveBeenCalled()
     })
 
     it('should load all skill prompts', () => {
@@ -195,8 +179,7 @@ describe('toolRegistry', () => {
       const registry = new ToolRegistry({ strategy: 'lazy' })
       const tools = registry.buildTools()
 
-      // Should include: system tools (4) + chat tools (2) + skill management (2) + context7 (1) = 9
-      expect(tools.length).toBe(9)
+      expect(tools.length).toBe(7)
       expect(mockSkillManager.getAllTools).not.toHaveBeenCalled()
     })
 
@@ -204,29 +187,24 @@ describe('toolRegistry', () => {
       const registry = new ToolRegistry({ strategy: 'lazy' })
       const prompts = registry.getSkillSystemPrompts()
 
-      // Lazy mode should return skills summary, not empty array
       expect(prompts.length).toBe(1)
       expect(prompts[0]).toContain('Available Skills')
       expect(prompts[0]).toContain('skill1: Skill 1 description')
       expect(prompts[0]).toContain('skill2: Skill 2 description')
-      expect(prompts[0]).toContain('load_skill')
       expect(mockSkillManager.getSystemPrompts).not.toHaveBeenCalled()
       expect(mockSkillManager.getSkillsSummary).toHaveBeenCalled()
     })
   })
 
   describe('smart Strategy', () => {
-    it('should load only core skill tools', () => {
+    it('should not load core skill tools directly anymore', () => {
       const registry = new ToolRegistry({
         strategy: 'smart',
         coreSkills: ['core-skill-1', 'core-skill-2'],
       })
       const tools = registry.buildTools()
 
-      // Should include: system tools (4) + chat tools (2) + skill management (2) + context7 (1) + core skills (2)
-      expect(tools.length).toBe(11)
-      expect(mockSkillManager.getSkill).toHaveBeenCalledWith('core-skill-1')
-      expect(mockSkillManager.getSkill).toHaveBeenCalledWith('core-skill-2')
+      expect(tools.length).toBe(7)
       expect(mockSkillManager.getAllTools).not.toHaveBeenCalled()
     })
 
@@ -244,24 +222,11 @@ describe('toolRegistry', () => {
       expect(mockSkillManager.getSystemPrompts).not.toHaveBeenCalled()
     })
 
-    it('should handle missing core skills gracefully', () => {
-      const registry = new ToolRegistry({
-        strategy: 'smart',
-        coreSkills: ['core-skill-1', 'non-existent-skill'],
-      })
-      const tools = registry.buildTools()
-
-      // Should only load existing core skill
-      expect(tools.length).toBe(10) // 9 base + 1 core skill tool
-      expect(mockSkillManager.getSkill).toHaveBeenCalledWith('non-existent-skill')
-    })
-
     it('should skip prompts for skills without prompt field', () => {
       mockSkillManager.getSkill.mockImplementation((name: string) => {
         if (name === 'no-prompt-skill') {
           return {
             name: 'no-prompt-skill',
-            tools: [{ name: 'tool' }],
             prompt: null,
           }
         }
@@ -284,7 +249,7 @@ describe('toolRegistry', () => {
       const tools = registry.buildTools()
 
       // Context7 tool should be included
-      expect(tools.length).toBeGreaterThanOrEqual(9)
+      expect(tools.length).toBeGreaterThanOrEqual(7)
     })
 
     it('should not include context7 tool when disabled', () => {
@@ -355,21 +320,20 @@ describe('toolRegistry', () => {
       }
     })
 
-    it('should always include skill management tools', () => {
+    it('should not vary tool counts across skill strategies', () => {
       const strategies: Array<'eager' | 'lazy' | 'smart'> = ['eager', 'lazy', 'smart']
 
       for (const strategy of strategies) {
         const registry = new ToolRegistry({ strategy })
         const tools = registry.buildTools()
 
-        // Skill management tools should always be present
-        expect(tools.length).toBeGreaterThanOrEqual(2)
+        expect(tools.length).toBeGreaterThanOrEqual(6)
       }
     })
   })
 
   describe('strategy Comparison', () => {
-    it('should load different number of tools for each strategy', () => {
+    it('should load the same number of tools for each strategy', () => {
       const eagerRegistry = new ToolRegistry({ strategy: 'eager' })
       const lazyRegistry = new ToolRegistry({ strategy: 'lazy' })
       const smartRegistry = new ToolRegistry({
@@ -381,11 +345,8 @@ describe('toolRegistry', () => {
       const lazyTools = lazyRegistry.buildTools()
       const smartTools = smartRegistry.buildTools()
 
-      // eager should load most tools
-      expect(eagerTools.length).toBeGreaterThan(lazyTools.length)
-      // smart should load more than lazy but less than eager
-      expect(smartTools.length).toBeGreaterThan(lazyTools.length)
-      expect(smartTools.length).toBeLessThan(eagerTools.length)
+      expect(eagerTools.length).toBe(lazyTools.length)
+      expect(smartTools.length).toBe(lazyTools.length)
     })
 
     it('should load different prompts for each strategy', () => {
@@ -419,8 +380,7 @@ describe('toolRegistry', () => {
       const tools = registry.buildTools()
       const prompts = registry.getSkillSystemPrompts()
 
-      // Should behave like lazy strategy
-      expect(tools.length).toBe(9)
+      expect(tools.length).toBe(7)
       expect(prompts.length).toBe(0)
     })
 
@@ -428,17 +388,15 @@ describe('toolRegistry', () => {
       const registry = new ToolRegistry({ strategy: undefined as any })
       const tools = registry.buildTools()
 
-      // Should default to eager
-      expect(tools.length).toBe(12)
+      expect(tools.length).toBe(7)
     })
 
     it('should handle invalid strategy', () => {
       const registry = new ToolRegistry({ strategy: 'invalid' as any })
       const tools = registry.buildTools()
 
-      // Should default to eager behavior
-      expect(tools.length).toBe(12) // Same as eager strategy
-      expect(mockSkillManager.getAllTools).toHaveBeenCalled()
+      expect(tools.length).toBe(7)
+      expect(mockSkillManager.getAllTools).not.toHaveBeenCalled()
     })
   })
 })

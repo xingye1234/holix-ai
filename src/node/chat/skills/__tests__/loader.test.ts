@@ -1,26 +1,7 @@
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-
-const mockLoadJsTools = vi.fn((..._args: any[]) => [])
-
-vi.mock('../adapters/js', () => ({
-  loadJsTools: (...args: any[]) => mockLoadJsTools(...args),
-}))
-
-vi.mock('../adapters/command', () => ({
-  commandToTool: vi.fn(() => ({ name: 'mocked_command' })),
-  scriptToTool: vi.fn(() => ({ name: 'mocked_script' })),
-}))
-
-vi.mock('../../tools/approval', () => ({
-  wrapWithApproval: (tool: any) => tool,
-}))
-
-vi.mock('../../tools/skill-invocation', () => ({
-  wrapWithSkillInvocationLog: (tool: any) => tool,
-}))
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 const { getSkillsDir, scanSkillsDir } = await import('../loader')
 
@@ -72,7 +53,7 @@ describe('scanSkillsDir (standard skills)', () => {
     expect(skills[0].name).toBe('pdf-analysis')
     expect(skills[0].version).toBe('1.0.0')
     expect(skills[0].description).toBe('Analyze PDF')
-    expect(skills[0].tools).toEqual([])
+    expect(skills[0].allowedTools).toEqual([])
     expect(skills[0].prompt).toContain('<skill_content name="pdf-analysis">')
     expect(skills[0].prompt).toContain('# Skill: PDF')
     expect(skills[0].dir).toBe(join(testRoot, 'pdf-analysis'))
@@ -146,7 +127,7 @@ describe('scanSkillsDir (standard skills)', () => {
     expect(skills[0].prompt).toContain('- tests/test-case.json')
   })
 
-  it('keeps legacy skill.json compatibility as fallback', () => {
+  it('skips legacy skill.json directories without metadata.json', () => {
     const dir = join(testRoot, 'legacy')
     mkdirSync(dir, { recursive: true })
     writeFileSync(join(dir, 'skill.json'), JSON.stringify({
@@ -156,9 +137,7 @@ describe('scanSkillsDir (standard skills)', () => {
     }), 'utf-8')
 
     const skills = scanSkillsDir(testRoot)
-    expect(skills).toHaveLength(1)
-    expect(skills[0].name).toBe('legacy_skill')
-    expect(skills[0].prompt).toBe('legacy prompt')
+    expect(skills).toHaveLength(0)
   })
 
   it('deduplicates skill names', () => {

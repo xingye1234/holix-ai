@@ -19,11 +19,6 @@ export const DEEP_AGENT_BUILTIN_TOOL_NAMES = new Set([
   'execute',
 ])
 
-export const DEEP_AGENT_BUILTIN_SKILL_NAMES = new Set([
-  'file_system',
-  'code_reader',
-])
-
 type DeepAgentParams = NonNullable<Parameters<typeof createDeepAgent>[0]>
 export type SessionDeepAgentTools = NonNullable<DeepAgentParams['tools']>
 
@@ -44,7 +39,7 @@ export function getEnabledSkills(chatUid: string): LoadedSkill[] {
     .filter(skill => !disabledSkills.has(skill.name))
 }
 
-export async function buildSessionTools(enabledSkills: LoadedSkill[]) {
+export async function buildSessionTools(_enabledSkills: LoadedSkill[]) {
   const baseTools: StructuredToolInterface[] = [
     systemPlatformTool,
     systemEnvTool,
@@ -58,16 +53,10 @@ export async function buildSessionTools(enabledSkills: LoadedSkill[]) {
     baseTools.push(context7Tool)
   }
 
-  const customSkillTools = enabledSkills
-    .filter(skill => !DEEP_AGENT_BUILTIN_SKILL_NAMES.has(skill.name))
-    .flatMap(skill => skill.tools)
-    .filter(tool => !DEEP_AGENT_BUILTIN_TOOL_NAMES.has(tool.name))
-
   const mcpTools = await loadMcpTools()
 
   return dedupeToolsByName([
     ...baseTools,
-    ...customSkillTools,
     ...mcpTools,
   ])
 }

@@ -148,15 +148,10 @@ class SkillManager {
   }
 
   /**
-   * 收集所有 skills 提供的 LangChain tools（用于注入 agent）
-   * 工具的审批拦截器已在加载阶段按权限自动注入
+   * Skills 仅提供 Deep Agent skills 文档，不再直接提供工具实现
    */
   getAllTools(): DynamicStructuredTool[] {
-    const tools: DynamicStructuredTool[] = []
-    for (const skill of this.skills.values()) {
-      tools.push(...skill.tools)
-    }
-    return tools
+    return []
   }
 
   /**

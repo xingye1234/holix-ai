@@ -1,0 +1,7 @@
+{
+  "name": "file_system",
+  "version": "1.0.0",
+  "description": "Use the Deep Agent filesystem tools to inspect and edit local files in the workspace.",
+  "entry": "SKILL.md",
+  "allowedTools": ["ls", "glob", "grep", "read_file", "write_file", "edit_file"]
+}

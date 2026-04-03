@@ -1,0 +1,7 @@
+{
+  "name": "shell",
+  "version": "1.0.0",
+  "description": "Guide the agent when shell execution is necessary.",
+  "entry": "SKILL.md",
+  "allowedTools": ["execute"]
+}

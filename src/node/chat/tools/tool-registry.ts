@@ -9,7 +9,6 @@ import { logger } from '../../platform/logger'
 import { skillManager } from '../skills/manager'
 import { chatKeywordSearchTool, chatTimeSearchTool } from './chat'
 import { context7Tool } from './context7'
-import { buildLoadSkillTool, reloadSkillsTool } from './skills'
 import { systemEnvTool, systemPlatformTool, systemTimeTool, systemTimezoneTool } from './system'
 
 /**
@@ -69,13 +68,6 @@ export class ToolRegistry {
       chatKeywordSearchTool,
     ]
 
-    // Skill 管理工具（始终加载）
-    const enabledSkillNames = this.getEnabledSkills().map(s => s.name)
-    const skillManagementTools = [
-      buildLoadSkillTool(enabledSkillNames.length > 0 ? { enabledSkillNames } : undefined),
-      reloadSkillsTool,
-    ]
-
     // Context7 工具（可选）
     const context7Tools = (context7ApiKey && this.config.enableContext7)
       ? [context7Tool]
@@ -87,7 +79,6 @@ export class ToolRegistry {
     const tools = [
       ...systemTools,
       ...chatTools,
-      ...skillManagementTools,
       ...context7Tools,
       ...skillTools,
     ]
@@ -101,56 +92,8 @@ export class ToolRegistry {
    * 根据策略加载 Skill 工具
    */
   private loadSkillTools(): DynamicStructuredTool[] {
-    switch (this.config.strategy) {
-      case 'eager':
-        // 加载所有 Skill 工具（当前行为）
-        return this.loadAllSkillTools()
-
-      case 'lazy':
-        // 不加载任何 Skill 工具（完全渐进式）
-        return []
-
-      case 'smart':
-        // 只加载核心 Skills 的工具
-        return this.loadCoreSkillTools()
-
-      default:
-        return this.loadAllSkillTools()
-    }
-  }
-
-  /**
-   * 加载所有 Skill 工具
-   */
-  private loadAllSkillTools(): DynamicStructuredTool[] {
-    const enabledSkills = this.getEnabledSkills()
-    const tools = enabledSkills.length > 0
-      ? enabledSkills.flatMap(skill => skill.tools)
-      : skillManager.getAllTools()
-    logger.debug(`[ToolRegistry] Loaded all skill tools: ${tools.length}`)
-    return tools
-  }
-
-  /**
-   * 加载核心 Skills 的工具
-   */
-  private loadCoreSkillTools(): DynamicStructuredTool[] {
-    const coreSkills = this.config.coreSkills || []
-    const tools: DynamicStructuredTool[] = []
-
-    for (const skillName of coreSkills) {
-      const skill = skillManager.getSkill(skillName)
-      if (skill && !this.isSkillDisabled(skill.name)) {
-        tools.push(...skill.tools)
-        logger.debug(`[ToolRegistry] Loaded core skill: ${skillName} (${skill.tools.length} tools)`)
-      }
-      else {
-        logger.warn(`[ToolRegistry] Core skill not found: ${skillName}`)
-      }
-    }
-
-    logger.info(`[ToolRegistry] Loaded ${tools.length} core skill tools from ${coreSkills.length} skills`)
-    return tools
+    logger.debug(`[ToolRegistry] Skills no longer register tools directly (strategy=${this.config.strategy})`)
+    return []
   }
 
   /**
@@ -159,11 +102,9 @@ export class ToolRegistry {
   getSkillSystemPrompts(): string[] {
     switch (this.config.strategy) {
       case 'eager':
-        // 加载所有 Skill prompts（当前行为）
         return skillManager.getSystemPrompts()
 
       case 'lazy': {
-        // 渐进式加载：只提供 skills 摘要，让 AI 使用 load_skill 工具按需加载
         const summary = skillManager.getSkillsSummary()
           .filter(s => !this.isSkillDisabled(s.name))
         if (summary.length === 0) {
@@ -177,16 +118,13 @@ export class ToolRegistry {
         return [`
 # Available Skills
 
-You have access to the following skills. Use the \`load_skill\` tool to load a skill's full instructions when needed:
+The following Deep Agent skills are available for this conversation:
 
 ${skillsList}
-
-**Note**: Skills are loaded on-demand. When you need to use a skill's capabilities, call \`load_skill\` with the skill name to get its complete instructions.
 `.trim()]
       }
 
       case 'smart':
-        // 只加载核心 Skills 的 prompts
         return this.getCoreSkillPrompts()
 
       default:

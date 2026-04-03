@@ -54,7 +54,7 @@ export function parseGitHubSource(source: string): ParsedSource {
 export function collectSkillDirs(targetDir: string): string[] {
   const hasSupportedSkillFile = (dir: string) => {
     return [
-      'skill.json',
+      'metadata.json',
       'SKILL.md',
       'AGENTS.md',
       'CLAUDE.md',
@@ -123,7 +123,7 @@ function toDescription(prompt: string, fallback: string): string {
 }
 
 function ensureSkillManifest(skillDir: string): { name: string } {
-  const manifestPath = join(skillDir, 'skill.json')
+  const manifestPath = join(skillDir, 'metadata.json')
   if (existsSync(manifestPath)) {
     const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8')) as { name?: string }
     return { name: manifest.name?.trim() || basename(skillDir) }
@@ -140,10 +140,13 @@ function ensureSkillManifest(skillDir: string): { name: string } {
     name: skillName,
     version: '1.0.0',
     description: toDescription(prompt, `Imported from ${basename(promptSource)}`),
-    prompt,
+    entry: 'SKILL.md',
   }
 
   writeFileSync(manifestPath, JSON.stringify(generated, null, 2))
+  if (basename(promptSource) !== 'SKILL.md') {
+    writeFileSync(join(skillDir, 'SKILL.md'), `${prompt}\n`, 'utf-8')
+  }
   return { name: skillName }
 }
 
@@ -166,7 +169,7 @@ export function installSkillsFromGitHub(options: InstallOptions): InstallResult 
 
     const skillDirs = collectSkillDirs(sourceRoot)
     if (skillDirs.length === 0) {
-      throw new Error(`在 ${relativePath} 下未找到可识别的技能目录（skill.json/SKILL.md/AGENTS.md/CLAUDE.md 等）`)
+      throw new Error(`在 ${relativePath} 下未找到可识别的技能目录（metadata.json/SKILL.md/AGENTS.md/CLAUDE.md 等）`)
     }
 
     const installed: string[] = []

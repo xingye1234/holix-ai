@@ -13,45 +13,6 @@ import { scanSkillsDir } from '../loader'
 
 // ─── Mock 依赖 ────────────────────────────────────────────────────────────────
 
-// mock adapters 避免 langchain 在单元测试中被实例化
-vi.mock('../adapters/js', () => ({
-  loadJsTools: vi.fn(() => []),
-}))
-
-vi.mock('../adapters/command', () => ({
-  commandToTool: vi.fn(decl => ({
-    name: decl.name,
-    description: decl.description,
-    invoke: vi.fn(async () => 'command result'),
-  })),
-  scriptToTool: vi.fn(decl => ({
-    name: decl.name,
-    description: decl.description,
-    invoke: vi.fn(async () => 'script result'),
-  })),
-}))
-
-// mock approval-state 避免 kv-operations → connect → constant → Electron 依赖链
-vi.mock('../../tools/approval-state', () => ({
-  approvalState: {
-    isApproved: vi.fn(() => false),
-    isAlwaysAllowed: vi.fn(() => false),
-    setAlwaysAllow: vi.fn(),
-    removeAlwaysAllow: vi.fn(),
-    setSessionAllowAll: vi.fn(),
-    setSessionAllowSkill: vi.fn(),
-  },
-}))
-
-// mock approval / skill-invocation 避免 skill-invocation-log → connect → Electron 依赖链
-vi.mock('../../tools/approval', () => ({
-  wrapWithApproval: vi.fn((tool: unknown) => tool),
-}))
-
-vi.mock('../../tools/skill-invocation', () => ({
-  wrapWithSkillInvocationLog: vi.fn((tool: unknown) => tool),
-}))
-
 // mock constant - SkillManager 通过 APP_DATA_PATH 构建技能目录
 // 我们在每个测试中通过 SkillManager 内部的 skillsDir 来控制
 vi.mock('../../../constant', () => ({
@@ -67,7 +28,8 @@ let testRoot: string
 function makeSkillDir(skillName: string, manifest: object): void {
   const dir = join(testRoot, skillName)
   mkdirSync(dir, { recursive: true })
-  writeFileSync(join(dir, 'skill.json'), JSON.stringify(manifest), 'utf-8')
+  writeFileSync(join(dir, 'metadata.json'), JSON.stringify(manifest), 'utf-8')
+  writeFileSync(join(dir, 'SKILL.md'), `# ${skillName}\n`, 'utf-8')
 }
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
@@ -85,54 +47,50 @@ describe('getSkillsDir + scanSkillsDir（集成）', () => {
   it('从真实目录扫描并加载 skill', () => {
     makeSkillDir('code-assistant', {
       name: 'code_assistant',
+      version: '1.0.0',
       description: 'Expert code assistant',
-      prompt: 'You are an expert coder.',
+      entry: 'SKILL.md',
     })
 
     const skills = scanSkillsDir(testRoot)
 
     expect(skills).toHaveLength(1)
     expect(skills[0].name).toBe('code_assistant')
-    expect(skills[0].prompt).toBe('You are an expert coder.')
+    expect(skills[0].prompt).toContain('<skill_content')
   })
 
   it('加载多个 skill 后列表完整', () => {
-    makeSkillDir('skill-a', { name: 'skill_a', description: 'Skill A', prompt: 'Prompt A' })
-    makeSkillDir('skill-b', { name: 'skill_b', description: 'Skill B', prompt: 'Prompt B' })
+    makeSkillDir('skill-a', { name: 'skill_a', version: '1.0.0', description: 'Skill A', entry: 'SKILL.md' })
+    makeSkillDir('skill-b', { name: 'skill_b', version: '1.0.0', description: 'Skill B', entry: 'SKILL.md' })
 
     const skills = scanSkillsDir(testRoot)
 
     expect(skills).toHaveLength(2)
   })
 
-  it('skill 的 tools 列表默认为空（无 tools 声明时）', () => {
+  it('skill 的 allowedTools 列表默认为空（无 allowedTools 声明时）', () => {
     makeSkillDir('no-tools', {
       name: 'no_tools',
+      version: '1.0.0',
       description: 'No tools skill',
+      entry: 'SKILL.md',
     })
 
     const skills = scanSkillsDir(testRoot)
-    expect(skills[0].tools).toEqual([])
+    expect(skills[0].allowedTools).toEqual([])
   })
 
-  it('skill 声明 command tool 时 tools 被创建', () => {
-    makeSkillDir('with-cmd', {
-      name: 'with_cmd',
-      description: 'Has command tool',
-      tools: [
-        {
-          type: 'command',
-          name: 'run_it',
-          description: 'Run it',
-          command: 'echo {{input}}',
-          schema: { input: { type: 'string', description: 'Input' } },
-        },
-      ],
+  it('skill 可以通过 metadata.allowedTools 声明允许使用的工具', () => {
+    makeSkillDir('with-tools', {
+      name: 'with_tools',
+      version: '1.0.0',
+      description: 'Has tool allowlist',
+      entry: 'SKILL.md',
+      allowedTools: ['glob', 'grep'],
     })
 
     const skills = scanSkillsDir(testRoot)
-    expect(skills[0].tools).toHaveLength(1)
-    expect(skills[0].tools[0].name).toBe('run_it')
+    expect(skills[0].allowedTools).toEqual(['glob', 'grep'])
   })
 })
 
@@ -146,47 +104,43 @@ describe('skillManager 单例行为模拟', () => {
     rmSync(testRoot, { recursive: true, force: true })
   })
 
-  it('通过 scanSkillsDir + reduce 模拟 getAllTools', () => {
+  it('通过 scanSkillsDir + map 模拟获取 allowedTools', () => {
     makeSkillDir('tool-skill', {
       name: 'tool_skill',
-      description: 'Has tools',
-      tools: [
-        { type: 'command', name: 'cmd_a', description: 'Cmd A', command: 'echo a' },
-        { type: 'command', name: 'cmd_b', description: 'Cmd B', command: 'echo b' },
-      ],
+      version: '1.0.0',
+      description: 'Has tool allowlist',
+      entry: 'SKILL.md',
+      allowedTools: ['glob', 'grep'],
     })
 
     const skills = scanSkillsDir(testRoot)
-    const allTools = skills.flatMap(s => s.tools)
+    const allAllowedTools = skills.flatMap(s => s.allowedTools)
 
-    expect(allTools).toHaveLength(2)
-    expect(allTools.map(t => t.name)).toContain('cmd_a')
-    expect(allTools.map(t => t.name)).toContain('cmd_b')
+    expect(allAllowedTools).toEqual(['glob', 'grep'])
   })
 
   it('通过 scanSkillsDir + filter 模拟 getSystemPrompts', () => {
-    makeSkillDir('prompt-a', { name: 'prompt_a', description: 'PA', prompt: 'Prompt text A' })
-    makeSkillDir('no-prompt', { name: 'no_prompt', description: 'NP' })
-    makeSkillDir('prompt-b', { name: 'prompt_b', description: 'PB', prompt: 'Prompt text B' })
+    makeSkillDir('prompt-a', { name: 'prompt_a', version: '1.0.0', description: 'PA', entry: 'SKILL.md' })
+    makeSkillDir('no-prompt', { name: 'no_prompt', version: '1.0.0', description: 'NP', entry: 'SKILL.md' })
+    makeSkillDir('prompt-b', { name: 'prompt_b', version: '1.0.0', description: 'PB', entry: 'SKILL.md' })
 
     const skills = scanSkillsDir(testRoot)
     const prompts = skills
       .filter(s => s.prompt)
       .map(s => `[Skill: ${s.name}]\n${s.prompt}`)
 
-    expect(prompts).toHaveLength(2)
-    expect(prompts.some(p => p.includes('Prompt text A'))).toBe(true)
-    expect(prompts.some(p => p.includes('Prompt text B'))).toBe(true)
+    expect(prompts).toHaveLength(3)
+    expect(prompts.every(p => p.includes('<skill_content'))).toBe(true)
   })
 
   it('重载（reload）后能访问新增的 skill', () => {
     // 第一次扫描
-    makeSkillDir('existing', { name: 'existing', description: 'Already here' })
+    makeSkillDir('existing', { name: 'existing', version: '1.0.0', description: 'Already here', entry: 'SKILL.md' })
     const firstScan = scanSkillsDir(testRoot)
     expect(firstScan).toHaveLength(1)
 
     // 新增 skill
-    makeSkillDir('new-skill', { name: 'new_skill', description: 'Newly added' })
+    makeSkillDir('new-skill', { name: 'new_skill', version: '1.0.0', description: 'Newly added', entry: 'SKILL.md' })
 
     // 重新扫描
     const secondScan = scanSkillsDir(testRoot)
@@ -194,18 +148,13 @@ describe('skillManager 单例行为模拟', () => {
     expect(secondScan.map(s => s.name)).toContain('new_skill')
   })
 
-  it('重载后禁用的 skill 不再出现', () => {
-    makeSkillDir('to-disable', { name: 'to_disable', description: 'Will be disabled' })
+  it('缺少 metadata.json 的 legacy skill 不再出现', () => {
+    makeSkillDir('to-disable', { name: 'to_disable', version: '1.0.0', description: 'Will be skipped', entry: 'SKILL.md' })
 
     const firstScan = scanSkillsDir(testRoot)
     expect(firstScan).toHaveLength(1)
 
-    // 更新 manifest，禁用该 skill
-    writeFileSync(
-      join(testRoot, 'to-disable', 'skill.json'),
-      JSON.stringify({ name: 'to_disable', description: 'Disabled', disabled: true }),
-      'utf-8',
-    )
+    rmSync(join(testRoot, 'to-disable', 'metadata.json'))
 
     const secondScan = scanSkillsDir(testRoot)
     expect(secondScan).toHaveLength(0)

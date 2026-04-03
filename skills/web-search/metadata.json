@@ -1,0 +1,41 @@
+{
+  "name": "web_search",
+  "version": "1.1.0",
+  "description": "Guide the agent to use available web tools when freshness matters.",
+  "entry": "SKILL.md",
+  "config": [
+    {
+      "key": "apiToken",
+      "label": "BigModel API Token",
+      "type": "string",
+      "description": "用于 Authorization: Bearer <token> 的鉴权令牌",
+      "placeholder": "输入 BigModel token（不含 Bearer 前缀）",
+      "required": true,
+      "secret": true
+    },
+    {
+      "key": "searchEndpoint",
+      "label": "Web Search API Endpoint",
+      "type": "string",
+      "description": "默认使用 BigModel 官方 web_search 接口地址",
+      "default": "https://open.bigmodel.cn/api/paas/v4/web_search"
+    },
+    {
+      "key": "browserEndpoint",
+      "label": "Web Browser API Endpoint",
+      "type": "string",
+      "description": "默认使用 BigModel 官方 web_browser 接口地址（网页阅读）",
+      "default": "https://open.bigmodel.cn/api/paas/v4/web_browser"
+    },
+    {
+      "key": "defaultEngine",
+      "label": "Default Search Engine",
+      "type": "select",
+      "description": "未显式指定时使用的搜索引擎",
+      "default": "search_std",
+      "options": [
+        { "label": "search_std", "value": "search_std" }
+      ]
+    }
+  ]
+}

@@ -169,7 +169,8 @@ function createLoadedSkill(options: {
     description: options.description || `${options.name} description`,
     prompt: options.prompt,
     dir: skillDir,
-    tools: (options.toolNames || []).map(name => ({ name }) as any),
+    allowedTools: options.toolNames || [],
+    config: [],
   }
 }
 
@@ -445,7 +446,7 @@ describe('SessionBuilder', () => {
       expect(memoryContent).toContain('## beta')
     })
 
-    it('should compose tools from base tools, custom skills, mcp tools, and dedupe collisions', async () => {
+    it('should compose tools from base tools and mcp tools', async () => {
       const fileSystemSkill = createLoadedSkill({
         name: 'file_system',
         toolNames: ['read_file', 'write_file'],
@@ -483,8 +484,8 @@ describe('SessionBuilder', () => {
         'chat_time_search',
         'chat_keyword_search',
         'context7_search',
-        'custom_tool',
         'mcp_tool',
+        'custom_tool',
       ])
     })
   })

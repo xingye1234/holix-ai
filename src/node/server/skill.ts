@@ -1,4 +1,3 @@
-import type { SkillManifest } from '../chat/skills/type'
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import process from 'node:process'
@@ -46,18 +45,7 @@ export const skillRouter = router({
   list: procedure().query(() => {
     return skillManager.listSkills().map((skill) => {
       const isBuiltin = skill.dir.startsWith(BUILTIN_SKILLS_PATH)
-
-      // 重读 skill.json 拿 permissions、config 等原始声明
-      let manifest: SkillManifest | null = null
-      const manifestPath = join(skill.dir, 'skill.json')
-      if (existsSync(manifestPath)) {
-        try {
-          manifest = JSON.parse(readFileSync(manifestPath, 'utf-8'))
-        }
-        catch {}
-      }
-
-      const configFields = manifest?.config ?? []
+      const configFields = skill.config ?? []
       const configFieldKeys = configFields.map(f => f.key)
       const configValues = configFieldKeys.length > 0
         ? getSkillConfig(skill.name, configFieldKeys)
@@ -94,13 +82,12 @@ export const skillRouter = router({
         availableResourceDirs,
         allDirEntries,
         promptPreview,
-        toolCount: skill.tools.length,
-        tools: skill.tools.map(t => ({
-          name: t.name,
-          description: t.description,
+        toolCount: skill.allowedTools.length,
+        tools: skill.allowedTools.map(toolName => ({
+          name: toolName,
+          description: '',
         })),
-        /** 原始工具声明（含 permissions） */
-        declarations: manifest?.tools ?? [],
+        declarations: [],
         /** 配置字段声明列表（来自 manifest.config） */
         config: configFields,
         /** 当前已存储的配置值 */

@@ -47,11 +47,11 @@ describe('parseGitHubSource', () => {
 
 describe('collectSkillDirs', () => {
   it('collects direct skill dir and nested skill dirs', () => {
-    const root = mkdtempSync(join(tmpdir(), 'skill-installer-test-'))
+      const root = mkdtempSync(join(tmpdir(), 'skill-installer-test-'))
     try {
       const single = join(root, 'single')
       mkdirSync(single)
-      writeFileSync(join(single, 'skill.json'), '{"name":"single"}')
+      writeFileSync(join(single, 'metadata.json'), '{"name":"single","version":"1.0.0","description":"single","entry":"SKILL.md"}')
       expect(collectSkillDirs(single)).toEqual([single])
 
       const group = join(root, 'group')
@@ -59,8 +59,8 @@ describe('collectSkillDirs', () => {
       const skillB = join(group, 'b')
       mkdirSync(skillA, { recursive: true })
       mkdirSync(skillB, { recursive: true })
-      writeFileSync(join(skillA, 'skill.json'), '{"name":"a"}')
-      writeFileSync(join(skillB, 'skill.json'), '{"name":"b"}')
+      writeFileSync(join(skillA, 'metadata.json'), '{"name":"a","version":"1.0.0","description":"a","entry":"SKILL.md"}')
+      writeFileSync(join(skillB, 'metadata.json'), '{"name":"b","version":"1.0.0","description":"b","entry":"SKILL.md"}')
 
       const dirs = collectSkillDirs(group)
       expect(dirs).toHaveLength(2)
@@ -87,7 +87,7 @@ describe('collectSkillDirs', () => {
 })
 
 describe('installSkillsFromGitHub', () => {
-  it('creates skill.json from third-party markdown skill files', () => {
+  it('creates metadata.json and SKILL.md from third-party markdown skill files', () => {
     const root = mkdtempSync(join(tmpdir(), 'skill-installer-local-'))
     mocked.sourceRepo = join(root, 'repo')
     const destination = join(root, 'dest')
@@ -104,18 +104,20 @@ describe('installSkillsFromGitHub', () => {
 
     expect(result.installed).toEqual(['react'])
 
-    const manifestPath = join(destination, 'react', 'skill.json')
+    const manifestPath = join(destination, 'react', 'metadata.json')
     expect(existsSync(manifestPath)).toBe(true)
+    expect(existsSync(join(destination, 'react', 'SKILL.md'))).toBe(true)
 
     const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8')) as {
       name: string
       description: string
-      prompt: string
+      entry: string
     }
 
     expect(manifest.name).toBe('react')
     expect(manifest.description).toContain('React')
-    expect(manifest.prompt).toContain('Use hooks first.')
+    expect(manifest.entry).toBe('SKILL.md')
+    expect(readFileSync(join(destination, 'react', 'SKILL.md'), 'utf-8')).toContain('Use hooks first.')
 
     rmSync(root, { recursive: true, force: true })
     mocked.sourceRepo = ''

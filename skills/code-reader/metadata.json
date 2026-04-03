@@ -1,0 +1,7 @@
+{
+  "name": "code_reader",
+  "version": "1.0.0",
+  "description": "Guide the agent to inspect source code efficiently with the built-in file reading tools.",
+  "entry": "SKILL.md",
+  "allowedTools": ["glob", "grep", "read_file"]
+}

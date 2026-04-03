@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, Clock, Code2, Download, FolderTree, Info, Key, Lock, Package, Settings2, Sparkles, Star, Terminal, Wrench, Zap } from 'lucide-react'
+import { ChevronDown, ChevronRight, Download, FolderTree, Info, Package, Settings2, Sparkles, Star, Wrench, Zap } from 'lucide-react'
 import { useCallback, useState } from 'react'
 import { toast } from 'sonner'
 import { MarkdownRenderer } from '@/components/markdown/markdown-renderer'
@@ -14,48 +14,6 @@ import { useI18n } from '@/i18n/provider'
 import { updateConfig } from '@/lib/config'
 import { trpcClient } from '@/lib/trpc-client'
 
-// ─── 权限标签 ────────────────────────────────────────────────────────────────
-
-const RISK: Record<string, 'low' | 'medium' | 'high'> = {
-  'path': 'low',
-  'url': 'low',
-  'util': 'low',
-  'crypto': 'low',
-  'os': 'low',
-  'buffer': 'low',
-  'events': 'low',
-  'querystring': 'low',
-  'node:path': 'low',
-  'node:url': 'low',
-  'node:util': 'low',
-  'node:crypto': 'low',
-  'node:os': 'low',
-  'node:buffer': 'low',
-  'fs': 'medium',
-  'net': 'medium',
-  'http': 'medium',
-  'https': 'medium',
-  'stream': 'medium',
-  'dns': 'medium',
-  'node:fs': 'medium',
-  'node:net': 'medium',
-  'node:http': 'medium',
-  'child_process': 'high',
-  'worker_threads': 'high',
-  'cluster': 'high',
-  'node:child_process': 'high',
-  'node:worker_threads': 'high',
-}
-
-function riskColor(mod: string) {
-  const r = RISK[mod] ?? 'medium'
-  if (r === 'low')
-    return 'text-emerald-600 bg-emerald-50 border-emerald-200 dark:text-emerald-400 dark:bg-emerald-950 dark:border-emerald-800'
-  if (r === 'high')
-    return 'text-red-600 bg-red-50 border-red-200 dark:text-red-400 dark:bg-red-950 dark:border-red-800'
-  return 'text-amber-600 bg-amber-50 border-amber-200 dark:text-amber-400 dark:bg-amber-950 dark:border-amber-800'
-}
-
 // ─── 单个工具行 ──────────────────────────────────────────────────────────────
 
 function ToolRow({ tool }: { tool: { name: string, description: string } }) {
@@ -66,107 +24,10 @@ function ToolRow({ tool }: { tool: { name: string, description: string } }) {
       </span>
       <div className="min-w-0">
         <code className="text-xs font-mono font-semibold text-foreground">{tool.name}</code>
-        <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{tool.description}</p>
+        {tool.description && (
+          <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{tool.description}</p>
+        )}
       </div>
-    </div>
-  )
-}
-
-// ─── 权限面板 ────────────────────────────────────────────────────────────────
-
-interface Declaration {
-  type: string
-  file?: string
-  permissions?: {
-    allowedBuiltins?: string[]
-    allowedEnvKeys?: string[]
-    timeout?: number
-    memoryLimitMb?: number
-  }
-}
-
-function PermissionsPanel({ declarations }: { declarations: Declaration[] }) {
-  const { t } = useI18n()
-  const jsDecs = declarations.filter(d => d.type === 'js')
-  if (!jsDecs.length)
-    return null
-
-  return (
-    <div className="space-y-3">
-      {jsDecs.map((dec, i) => {
-        const p = dec.permissions ?? {}
-        const builtins = p.allowedBuiltins ?? []
-        const envKeys = p.allowedEnvKeys ?? []
-        const timeout = p.timeout ?? 10000
-        const mem = p.memoryLimitMb ?? 64
-
-        return (
-          <div key={i} className="rounded-md border bg-muted/30 px-3 py-2.5 space-y-2.5 text-xs">
-            {dec.file && (
-              <div className="flex items-center gap-1.5 text-muted-foreground">
-                <Code2 className="size-3" />
-                <span className="font-mono">{dec.file}</span>
-              </div>
-            )}
-
-            {/* 允许的内置模块 */}
-            <div>
-              <div className="flex items-center gap-1.5 text-muted-foreground mb-1.5">
-                <Lock className="size-3" />
-                <span>{t('settings.skills.permissions.allowedModules')}</span>
-              </div>
-              {builtins.length === 0
-                ? <span className="text-muted-foreground italic">{t('settings.skills.permissions.noModules')}</span>
-                : (
-                    <div className="flex flex-wrap gap-1">
-                      {builtins.map(m => (
-                        <span
-                          key={m}
-                          className={`inline-flex items-center rounded border px-1.5 py-0.5 font-mono text-[11px] ${riskColor(m)}`}
-                        >
-                          {m}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-            </div>
-
-            {/* 环境变量 */}
-            {envKeys.length > 0 && (
-              <div>
-                <div className="flex items-center gap-1.5 text-muted-foreground mb-1.5">
-                  <Key className="size-3" />
-                  <span>{t('settings.skills.permissions.envKeys')}</span>
-                </div>
-                <div className="flex flex-wrap gap-1">
-                  {envKeys.map(k => (
-                    <span key={k} className="inline-flex items-center rounded border px-1.5 py-0.5 font-mono text-[11px] text-blue-600 bg-blue-50 border-blue-200 dark:text-blue-400 dark:bg-blue-950 dark:border-blue-800">
-                      {k}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* 超时 & 内存 */}
-            <div className="flex items-center gap-4 text-muted-foreground">
-              <span className="flex items-center gap-1">
-                <Clock className="size-3" />
-                {t('settings.skills.permissions.timeout')}
-                {' '}
-                {timeout >= 1000 ? `${timeout / 1000}s` : `${timeout}ms`}
-              </span>
-              <span className="flex items-center gap-1">
-                <Terminal className="size-3" />
-                {t('settings.skills.permissions.memoryLimit')}
-                {' '}
-                {mem}
-                MB
-              </span>
-            </div>
-          </div>
-        )
-      })}
     </div>
   )
 }
@@ -281,7 +142,7 @@ function SkillCard({
 }) {
   const { t } = useI18n()
   const [expanded, setExpanded] = useState(false)
-  const hasDetails = skill.tools.length > 0 || skill.declarations.length > 0 || skill.prompt || (skill.config?.length ?? 0) > 0 || skill.availableResourceDirs.length > 0 || skill.allDirEntries.length > 0
+  const hasDetails = skill.tools.length > 0 || skill.prompt || (skill.config?.length ?? 0) > 0 || skill.availableResourceDirs.length > 0 || skill.allDirEntries.length > 0
 
   const getSourceLabel = (sourceLabel: string) => {
     if (sourceLabel === 'builtin')
@@ -434,17 +295,6 @@ function SkillCard({
                   </div>
                 </DialogContent>
               </Dialog>
-            </div>
-          )}
-
-          {/* 权限 */}
-          {skill.declarations.length > 0 && (
-            <div>
-              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 flex items-center gap-1.5">
-                <Lock className="size-3" />
-                {t('settings.skills.card.sandboxPermissions')}
-              </h4>
-              <PermissionsPanel declarations={skill.declarations as Declaration[]} />
             </div>
           )}
 
