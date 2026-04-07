@@ -68,7 +68,7 @@ function Index() {
         throw new Error(`Model ${model} not supported by provider ${provider}`)
       }
 
-      if (!providerConfig.apiKey?.trim()) {
+      if (providerConfig.apiType !== 'ollama' && !providerConfig.apiKey?.trim()) {
         throw new Error(`Provider ${provider} is not configured`)
       }
 

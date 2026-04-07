@@ -48,7 +48,8 @@ const mockUpdateChatTitle = vi.hoisted(() => vi.fn())
 const mockUpdate = vi.hoisted(() => vi.fn())
 const mockRunBuiltinSubAgent = vi.hoisted(() => vi.fn())
 const mockProviderStore = vi.hoisted(() => ({
-  get: vi.fn(() => ({ providers: [] as Array<{ name: string, apiType: string, apiKey: string, baseUrl: string }> })),
+  get: vi.fn(() => [] as Array<{ name: string, apiType: string, apiKey: string, baseUrl: string }>),
+  list: vi.fn(() => [] as Array<{ name: string, apiType: string, apiKey: string, baseUrl: string }>),
 }))
 
 // ============================================
@@ -134,16 +135,14 @@ describe('initChat', () => {
       source: 'llm',
     })
 
-    mockProviderStore.get.mockReturnValue({
-      providers: [
-        {
-          name: 'openai',
-          apiType: 'openai',
-          apiKey: 'sk-test',
-          baseUrl: 'https://api.openai.com/v1',
-        },
-      ],
-    })
+    mockProviderStore.list.mockReturnValue([
+      {
+        name: 'openai',
+        apiType: 'openai',
+        apiKey: 'sk-test',
+        baseUrl: 'https://api.openai.com/v1',
+      },
+    ])
     // Initialize chat once
     initChat()
   })
@@ -180,7 +179,7 @@ describe('initChat', () => {
       expect(mockGetChatByUid).toHaveBeenCalledWith('chat-123')
       expect(mockCreateUserMessage).toHaveBeenCalledWith('chat-123', 'Hello AI')
       expect(mockUpdateLastMessagePreview).toHaveBeenCalledWith('chat-123', 'Hello AI')
-      expect(mockProviderStore.get).toHaveBeenCalledWith('providers')
+      expect(mockProviderStore.list).toHaveBeenCalled()
       expect(mockSessionOrchestrator.startSession).toHaveBeenCalledWith(
         expect.objectContaining({
           chatUid: 'chat-123',
@@ -189,6 +188,53 @@ describe('initChat', () => {
             model: 'gpt-4',
             apiKey: 'sk-test',
             baseURL: 'https://api.openai.com/v1',
+          },
+        }),
+      )
+    })
+
+    it('should allow Ollama provider without api key', async () => {
+      const { messageHandler } = getHandlers()
+
+      if (!messageHandler)
+        return
+
+      mockGetChatByUid.mockResolvedValueOnce({
+        uid: 'chat-ollama',
+        title: 'Ollama test',
+        provider: 'ollama-local',
+        model: 'qwen3:32b',
+        prompts: [],
+        contextSettings: {
+          maxMessages: 10,
+          timeWindowHours: null,
+          autoScrollToBottomOnSend: true,
+        },
+        workspace: [],
+      })
+
+      mockProviderStore.list.mockReturnValueOnce([
+        {
+          name: 'ollama-local',
+          apiType: 'ollama',
+          apiKey: '',
+          baseUrl: 'http://localhost:11434/v1',
+        },
+      ])
+
+      await messageHandler({
+        chatId: 'chat-ollama',
+        content: 'hello ollama',
+        replyTo: null,
+      })
+
+      expect(mockSessionOrchestrator.startSession).toHaveBeenCalledWith(
+        expect.objectContaining({
+          modelConfig: {
+            provider: 'ollama',
+            model: 'qwen3:32b',
+            apiKey: '',
+            baseURL: 'http://localhost:11434/v1',
           },
         }),
       )
@@ -313,7 +359,7 @@ describe('initChat', () => {
         model: 'unknown-model',
       })
 
-      mockProviderStore.get.mockReturnValue({ providers: [] })
+      mockProviderStore.list.mockReturnValue([])
 
       const { messageHandler } = getHandlers()
 

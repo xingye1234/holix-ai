@@ -1,6 +1,7 @@
 import type { createDeepAgent } from 'deepagents'
 import type { SessionModelConfig } from './session-state'
 import { initChatModel } from 'langchain/chat_models/universal'
+import { buildOllamaHeaders, normalizeOllamaBaseUrl } from '../../platform/ollama'
 
 type DeepAgentParams = NonNullable<Parameters<typeof createDeepAgent>[0]>
 export type SessionDeepAgentModel = Exclude<DeepAgentParams['model'], string | undefined>
@@ -27,8 +28,11 @@ export async function buildSessionModel(modelConfig: SessionModelConfig) {
   }
 
   if (modelProvider === 'ollama') {
+    const headers = buildOllamaHeaders(apiKey)
+
     return await initChatModel(modelIdentifier, {
-      baseUrl: baseURL,
+      baseUrl: normalizeOllamaBaseUrl(baseURL),
+      ...(headers ? { headers } : {}),
       streaming: true,
     })
   }

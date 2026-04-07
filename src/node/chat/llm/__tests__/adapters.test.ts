@@ -596,6 +596,28 @@ describe('Ollama Adapter', () => {
       )
     })
 
+    it('should normalize /v1 suffix from config baseURL', () => {
+      createOllamaAdapter('llama3', { baseURL: 'http://localhost:11434/v1' })
+
+      expect(mockChatOllama).toHaveBeenCalledWith(
+        expect.objectContaining({
+          baseUrl: 'http://localhost:11434',
+        }),
+      )
+    })
+
+    it('should pass authorization header when apiKey is provided', () => {
+      createOllamaAdapter('llama3', { apiKey: 'secret-token' })
+
+      expect(mockChatOllama).toHaveBeenCalledWith(
+        expect.objectContaining({
+          headers: {
+            Authorization: 'Bearer secret-token',
+          },
+        }),
+      )
+    })
+
     it('should handle complete config', () => {
       const config = {
         temperature: 0.5,

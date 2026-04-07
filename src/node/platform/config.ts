@@ -1,4 +1,5 @@
 import { app } from 'electron'
+import type { OllamaSettings } from './ollama'
 import { Store } from './store'
 
 export interface ConfigData {
@@ -10,6 +11,7 @@ export interface ConfigData {
   codeTheme: string
   currentChatId?: string
   context7ApiKey?: string
+  ollama: OllamaSettings
   autoStart: boolean
   minimizeToTray: boolean
   closeToTray: boolean
@@ -29,6 +31,13 @@ export class Config extends Store<ConfigData> {
         codeTheme: 'github',
         currentChatId: undefined,
         context7ApiKey: '',
+        ollama: {
+          enabled: false,
+          host: 'localhost',
+          port: '11434',
+          apiKey: '',
+          models: [],
+        },
         autoStart: false,
         minimizeToTray: true,
         closeToTray: true,

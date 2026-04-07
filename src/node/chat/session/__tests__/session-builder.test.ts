@@ -291,6 +291,45 @@ describe('SessionBuilder', () => {
       )
     })
 
+    it('should normalize Ollama /v1 baseURL before initializing the session model', async () => {
+      const builder = new SessionBuilder({
+        modelConfig: createModelConfig({
+          provider: 'ollama',
+          model: 'qwen3:32b',
+          apiKey: '',
+          baseURL: 'http://localhost:11434/v1',
+        }),
+      })
+
+      await builder.buildAgent('chat-ollama-normalized')
+
+      expect(mockInitChatModel).toHaveBeenCalledWith('ollama:qwen3:32b', {
+        baseUrl: 'http://localhost:11434',
+        streaming: true,
+      })
+    })
+
+    it('should forward ollama authorization headers when api key is configured', async () => {
+      const builder = new SessionBuilder({
+        modelConfig: createModelConfig({
+          provider: 'ollama',
+          model: 'qwen3:32b',
+          apiKey: 'secret-token',
+          baseURL: 'http://localhost:11434',
+        }),
+      })
+
+      await builder.buildAgent('chat-ollama-auth')
+
+      expect(mockInitChatModel).toHaveBeenCalledWith('ollama:qwen3:32b', {
+        baseUrl: 'http://localhost:11434',
+        headers: {
+          Authorization: 'Bearer secret-token',
+        },
+        streaming: true,
+      })
+    })
+
     it('should create agent with backend rooted at workspace common path', async () => {
       const builder = new SessionBuilder({
         modelConfig: createModelConfig(),

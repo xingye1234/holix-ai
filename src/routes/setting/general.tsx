@@ -1,7 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useCallback, useState } from 'react'
+import { LoaderCircle, Search } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { toast } from 'sonner'
+import { Badge } from '@/components/ui/badge'
 import { useTheme } from '@/components/theme-provider'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
   Select,
@@ -12,8 +16,10 @@ import {
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { useI18n } from '@/i18n/provider'
+import { discoverProviderModels } from '@/lib/provider'
 import { CODE_THEME_PRESETS } from '@/lib/theme-system'
 import { getConfig, updateConfig } from '@/lib/config'
+import { buildOllamaBaseUrl } from '@/node/platform/ollama'
 
 export const Route = createFileRoute('/setting/general')({
   component: RouteComponent,
@@ -33,6 +39,15 @@ function RouteComponent() {
   const { locale, setLocale, t } = useI18n()
   const { theme, codeTheme, setTheme, setCodeTheme } = useTheme()
   const [apiKey, setApiKey] = useState(config.context7ApiKey ?? '')
+  const [ollamaEnabled, setOllamaEnabled] = useState(config.ollama?.enabled ?? false)
+  const [ollamaHost, setOllamaHost] = useState(config.ollama?.host ?? 'localhost')
+  const [ollamaPort, setOllamaPort] = useState(config.ollama?.port ?? '11434')
+  const [ollamaApiKey, setOllamaApiKey] = useState(config.ollama?.apiKey ?? '')
+  const [ollamaModels, setOllamaModels] = useState(config.ollama?.models ?? [])
+  const [ollamaStatus, setOllamaStatus] = useState('')
+  const [isDiscoveringOllama, setIsDiscoveringOllama] = useState(false)
+  const ollamaConfigSignatureRef = useRef(JSON.stringify(config.ollama ?? null))
+  const ollamaAutoSaveReadyRef = useRef(false)
 
   const handleSaveApiKey = useCallback(async () => {
     updateConfig('context7ApiKey', apiKey ?? '')
@@ -52,6 +67,86 @@ function RouteComponent() {
     setCloseToTray(checked)
     await updateConfig('closeToTray', checked)
   }, [])
+
+  const persistOllamaSettings = useCallback(async (trigger: 'auto' | 'manual') => {
+    const nextConfig = {
+      enabled: ollamaEnabled,
+      host: ollamaHost.trim() || 'localhost',
+      port: ollamaPort.trim() || '11434',
+      apiKey: ollamaApiKey.trim(),
+      models: ollamaModels,
+    }
+
+    await updateConfig('ollama', nextConfig)
+
+    if (!nextConfig.enabled) {
+      setOllamaStatus(t('settings.general.ollamaDisabledStatus'))
+      return
+    }
+
+    setIsDiscoveringOllama(true)
+    setOllamaStatus(t('settings.general.ollamaDetectingStatus'))
+
+    try {
+      const result = await discoverProviderModels({
+        apiType: 'ollama',
+        baseUrl: buildOllamaBaseUrl(nextConfig.host, nextConfig.port),
+        apiKey: nextConfig.apiKey,
+      })
+
+      setOllamaModels(result.models)
+      setOllamaStatus(t('settings.general.ollamaReadyStatus', { count: result.models.length }))
+
+      await updateConfig('ollama', {
+        ...nextConfig,
+        models: result.models,
+      })
+
+      if (trigger === 'manual') {
+        toast.success(t('settings.provider.toast.ollamaDetectSuccess', { count: result.models.length }))
+      }
+    }
+    catch (error) {
+      setOllamaStatus(t('settings.general.ollamaErrorStatus', { message: (error as Error).message }))
+      await updateConfig('ollama', {
+        ...nextConfig,
+        models: [],
+      })
+      setOllamaModels([])
+
+      if (trigger === 'manual') {
+        toast.error(t('settings.provider.toast.ollamaDetectError', { message: (error as Error).message }))
+      }
+    }
+    finally {
+      setIsDiscoveringOllama(false)
+    }
+  }, [ollamaApiKey, ollamaEnabled, ollamaHost, ollamaModels, ollamaPort, t])
+
+  useEffect(() => {
+    if (!ollamaAutoSaveReadyRef.current) {
+      ollamaAutoSaveReadyRef.current = true
+      return
+    }
+
+    const signature = JSON.stringify({
+      enabled: ollamaEnabled,
+      host: ollamaHost.trim(),
+      port: ollamaPort.trim(),
+      apiKey: ollamaApiKey.trim(),
+    })
+
+    if (signature === ollamaConfigSignatureRef.current) {
+      return
+    }
+
+    const timeout = window.setTimeout(() => {
+      ollamaConfigSignatureRef.current = signature
+      void persistOllamaSettings('auto')
+    }, 700)
+
+    return () => window.clearTimeout(timeout)
+  }, [ollamaApiKey, ollamaEnabled, ollamaHost, ollamaPort, persistOllamaSettings])
 
   return (
     <div className="p-6">
@@ -223,6 +318,94 @@ function RouteComponent() {
               <p className="text-xs text-muted-foreground mt-1">
                 {t('settings.general.context7ApiKeyDesc')}
               </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold">{t('settings.general.ollama')}</h2>
+          <div className="rounded-lg border p-4 space-y-4">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <Label className="text-base">{t('settings.general.ollamaEnabled')}</Label>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {t('settings.general.ollamaEnabledDesc')}
+                </p>
+              </div>
+              <Switch checked={ollamaEnabled} onCheckedChange={setOllamaEnabled} />
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_180px]">
+              <div className="space-y-2">
+                <Label className="text-base">{t('settings.general.ollamaHost')}</Label>
+                <Input
+                  value={ollamaHost}
+                  onChange={e => setOllamaHost(e.target.value)}
+                  placeholder={t('settings.general.ollamaHostPlaceholder')}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-base">{t('settings.general.ollamaPort')}</Label>
+                <Input
+                  value={ollamaPort}
+                  onChange={e => setOllamaPort(e.target.value)}
+                  placeholder={t('settings.general.ollamaPortPlaceholder')}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-base">{t('settings.general.ollamaApiKey')}</Label>
+              <Input
+                type="password"
+                value={ollamaApiKey}
+                onChange={e => setOllamaApiKey(e.target.value)}
+                placeholder={t('settings.general.ollamaApiKeyPlaceholder')}
+              />
+              <p className="text-xs text-muted-foreground">
+                {t('settings.general.ollamaApiKeyDesc')}
+              </p>
+            </div>
+
+            <div className="rounded-xl border bg-muted/30 p-4 space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <Label className="text-base">{t('settings.general.ollamaDetectedModels')}</Label>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {t('settings.general.ollamaEndpoint', { url: buildOllamaBaseUrl(ollamaHost, ollamaPort) })}
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={isDiscoveringOllama || !ollamaEnabled}
+                  onClick={() => void persistOllamaSettings('manual')}
+                >
+                  {isDiscoveringOllama
+                    ? <LoaderCircle className="mr-2 size-4 animate-spin" />
+                    : <Search className="mr-2 size-4" />}
+                  {t('settings.general.ollamaRefresh')}
+                </Button>
+              </div>
+
+              <p className="text-xs text-muted-foreground">
+                {ollamaStatus || t('settings.general.ollamaIdleStatus')}
+              </p>
+
+              <div className="flex flex-wrap gap-2">
+                {ollamaModels.length > 0
+                  ? ollamaModels.map(model => (
+                      <Badge key={model} variant="outline" className="font-mono text-[11px]">
+                        {model}
+                      </Badge>
+                    ))
+                  : (
+                      <span className="text-xs text-muted-foreground">
+                        {t('settings.general.ollamaNoModels')}
+                      </span>
+                    )}
+              </div>
             </div>
           </div>
         </div>

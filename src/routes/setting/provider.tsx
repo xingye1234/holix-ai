@@ -2,7 +2,7 @@ import type { ProviderType, VendorPreset } from '@/share/models'
 import type { AIProvider } from '@/types/provider'
 import { createFileRoute } from '@tanstack/react-router'
 import { ImagePlus, Pencil, Plus, RotateCcw, Star, Upload } from 'lucide-react'
-import { useCallback, useEffect, useId, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useState, useRef } from 'react'
 import { toast } from 'sonner'
 import { ProviderAvatar, PROVIDER_AVATAR_PRESETS } from '@/components/provider-avatar'
 import { Badge } from '@/components/ui/badge'
@@ -230,7 +230,7 @@ function ProviderFormDialog({
           <div className="space-y-2">
             <Label>{t('settings.provider.vendorPresetLabel')}</Label>
             <div className="flex flex-wrap gap-2">
-              {VENDOR_PRESETS.map(vendor => (
+              {VENDOR_PRESETS.filter(vendor => vendor.id !== 'ollama').map(vendor => (
                 <Button
                   key={vendor.id}
                   type="button"
@@ -380,7 +380,6 @@ function ProviderFormDialog({
               <option value="qwen">{t('settings.provider.apiTypeNames.qwen')}</option>
               <option value="moonshot">{t('settings.provider.apiTypeNames.moonshot')}</option>
               <option value="zhipu">{t('settings.provider.apiTypeNames.zhipu')}</option>
-              <option value="ollama">{t('settings.provider.apiTypeNames.ollama')}</option>
             </select>
             <p className="text-xs text-muted-foreground">
               {t('settings.provider.apiTypeDescription')}

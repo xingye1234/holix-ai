@@ -1,4 +1,5 @@
 import type { AIProvider } from '@/types/provider'
+import type { ProviderType } from '@/share/models'
 import { kyInstance } from './ky'
 
 export async function getProviders() {
@@ -31,4 +32,11 @@ export async function getDefaultProvider() {
 
 export async function setDefaultProvider(name: string) {
   return await kyInstance.post('providers/default', { json: { name } }).json<{ success: boolean }>()
+}
+
+export async function discoverProviderModels(payload: { apiType: ProviderType, baseUrl: string, apiKey?: string }) {
+  return await kyInstance.post('providers/discover-models', { json: payload }).json<{
+    models: string[]
+    normalizedBaseUrl: string
+  }>()
 }

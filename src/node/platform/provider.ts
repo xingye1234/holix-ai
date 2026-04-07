@@ -1,10 +1,32 @@
 import type { HolixProtocolRouter } from '@holix/router'
 import type { AIProvider } from '@/types/provider'
+import { configStore } from './config'
+import { buildOllamaBaseUrl, discoverOllamaModels, normalizeOllamaBaseUrl } from './ollama'
 import { Store } from './store'
 
 export interface ProviderData {
   providers: AIProvider[]
   defaultProvider?: string
+}
+
+const SYNTHETIC_OLLAMA_PROVIDER_NAME = 'Ollama'
+
+function buildSyntheticOllamaProvider(): AIProvider | null {
+  const ollama = configStore.get('ollama')
+
+  if (!ollama?.enabled) {
+    return null
+  }
+
+  return {
+    name: SYNTHETIC_OLLAMA_PROVIDER_NAME,
+    baseUrl: buildOllamaBaseUrl(ollama.host, ollama.port),
+    apiKey: ollama.apiKey || '',
+    apiType: 'ollama',
+    models: ollama.models || [],
+    enabled: true,
+    avatar: '🦙',
+  }
 }
 
 export class ProviderStore extends Store<ProviderData> {
@@ -83,27 +105,41 @@ export class ProviderStore extends Store<ProviderData> {
     })
   }
 
-  list(): AIProvider[] {
+  private rawProviders() {
     return this.get('providers')
   }
 
+  list(): AIProvider[] {
+    const persistedProviders = this.rawProviders().filter(provider => provider.apiType !== 'ollama')
+    const ollamaProvider = buildSyntheticOllamaProvider()
+
+    return ollamaProvider
+      ? [...persistedProviders, ollamaProvider]
+      : persistedProviders
+  }
+
   findByName(name: string): AIProvider | null {
-    return this.list().find(p => p.name === name) ?? null
+    return this.list().find(p => p.name === name)
+      ?? this.rawProviders().find(p => p.name === name)
+      ?? null
   }
 
   async add(provider: AIProvider) {
+    if (provider.apiType === 'ollama') {
+      throw new Error('Ollama is now configured in General Settings')
+    }
     const existing = this.findByName(provider.name)
     if (existing) {
       throw new Error(`Provider with name "${provider.name}" already exists`)
     }
-    const arr = this.list()
+    const arr = this.rawProviders()
     arr.push(provider)
     await this.set('providers', arr)
     return provider
   }
 
   async update(name: string, updates: Partial<AIProvider>) {
-    const arr = this.list()
+    const arr = this.rawProviders()
     const idx = arr.findIndex(p => p.name === name)
     if (idx === -1)
       return null
@@ -113,7 +149,7 @@ export class ProviderStore extends Store<ProviderData> {
   }
 
   async remove(name: string) {
-    const arr = this.list()
+    const arr = this.rawProviders()
     const next = arr.filter(p => p.name !== name)
     await this.set('providers', next)
   }
@@ -192,6 +228,28 @@ export class ProviderStore extends Store<ProviderData> {
       if (!updated)
         return ctx.status(404).json({ error: 'not found' })
       ctx.json(updated)
+    })
+
+    router.post(`${basePath}/discover-models`, async (ctx) => {
+      const body = await ctx.req.json()
+      const apiType = String(body?.apiType || '').toLowerCase()
+      const baseUrl = typeof body?.baseUrl === 'string' ? body.baseUrl : ''
+      const apiKey = typeof body?.apiKey === 'string' ? body.apiKey : ''
+
+      if (apiType !== 'ollama') {
+        return ctx.status(400).json({ error: 'Model discovery is only supported for Ollama right now' })
+      }
+
+      try {
+        const result = await discoverOllamaModels(baseUrl, apiKey)
+        ctx.json(result)
+      }
+      catch (error) {
+        ctx.status(502).json({
+          error: error instanceof Error ? error.message : 'Failed to discover Ollama models',
+          normalizedBaseUrl: normalizeOllamaBaseUrl(baseUrl),
+        })
+      }
     })
   }
 }

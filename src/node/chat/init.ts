@@ -57,14 +57,14 @@ export function initChat() {
     }
 
     // 获取供应商配置
-    const providers = providerStore.get('providers')
+    const providers = providerStore.list()
     const provider = providers.find(p => p.name === chat.provider)
     const model = chat.model.toLowerCase()
     // 应用 Agent 配置
     const systemMessages = chat.prompts || []
     const workspace = updatedChat?.workspace || []
 
-    if (!provider || !provider.apiKey) {
+    if (!provider || (provider.apiType !== 'ollama' && !provider.apiKey)) {
       logger.error(`[Chat] Provider not found or missing API key for chat ${chatId}`)
       return
     }
@@ -129,7 +129,7 @@ async function autoGenerateChatTitle(params: {
   model: string
 }) {
   try {
-    const provider = providerStore.get('providers').find(p => p.name === params.providerName)
+    const provider = providerStore.list().find(p => p.name === params.providerName)
     const generated = await runBuiltinSubAgent('title-from-question', {
       question: params.question,
       modelConfig: provider
