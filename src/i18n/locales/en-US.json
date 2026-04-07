@@ -497,6 +497,7 @@
     "delete": "Delete message",
     "stopGeneration": "Stop generating",
     "deleteFailed": "Failed to delete messages",
+    "noExportableContent": "This message has no exportable content",
     "code": {
       "expand": "Expand",
       "collapse": "Collapse",

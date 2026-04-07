@@ -29,6 +29,7 @@ export interface MessageRenderProps {
   onCancelGeneration: () => void
   onPreview: () => void
   onExport: () => void
+  canExport: boolean
 }
 
 export function ArticleLayout({
@@ -48,6 +49,7 @@ export function ArticleLayout({
   onCancelGeneration,
   onPreview,
   onExport,
+  canExport,
 }: MessageRenderProps) {
   const { t } = useI18n()
   const isSelectionMode = useMessageSelection(s => s.isSelectionMode)
@@ -95,7 +97,7 @@ export function ArticleLayout({
                   </div>
                 </div>
               </div>
-              <MessageFooter hideMetadata content={content} createdAt={message.createdAt} onPreview={onPreview} onExport={onExport} onDelete={onDelete} />
+              <MessageFooter hideMetadata content={content} createdAt={message.createdAt} onPreview={onPreview} onExport={onExport} onDelete={onDelete} exportDisabled={!canExport} />
             </div>
           )
         : (
@@ -154,7 +156,7 @@ export function ArticleLayout({
                 )}
               </div>
 
-              {!generating && <MessageFooter content={content} createdAt={message.createdAt} onPreview={onPreview} onExport={onExport} onDelete={onDelete} />}
+              {!generating && <MessageFooter content={content} createdAt={message.createdAt} onPreview={onPreview} onExport={onExport} onDelete={onDelete} exportDisabled={!canExport} />}
 
               {isStreaming && (
                 <button

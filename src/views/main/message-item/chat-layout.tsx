@@ -28,6 +28,7 @@ export function ChatLayout({
   onCancelGeneration,
   onPreview,
   onExport,
+  canExport,
 }: MessageRenderProps) {
   const { t } = useI18n()
   const isSelectionMode = useMessageSelection(s => s.isSelectionMode)
@@ -148,6 +149,7 @@ export function ChatLayout({
             onPreview={onPreview}
             onExport={onExport}
             onDelete={onDelete}
+            exportDisabled={!canExport}
           />
         )}
 

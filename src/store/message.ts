@@ -31,7 +31,7 @@ interface MessageStore {
   updateMessage: (messageUid: string, patch: Partial<Message>) => void
   removeMessageLocal: (chatUid: string, messageUid: string) => void
   removeMessagesLocal: (chatUid: string, messageUids: string[]) => void
-  deleteMessage: (messageUid: string) => Promise<void>
+  deleteMessage: (messageUid: string) => Promise<boolean>
   deleteMessages: (chatUid: string, messageUids: string[]) => Promise<number>
   deleteMessagesByChatUid: (chatUid: string) => void
 
@@ -224,7 +224,7 @@ export const useMessageStore = create<MessageStore>()(
           }
           catch {
             logger.warn(`MessageStore: deleteMessage - message not found locally or remotely: ${messageUid}`)
-            return
+            return false
           }
         }
 
@@ -233,9 +233,11 @@ export const useMessageStore = create<MessageStore>()(
 
         // 从 store 中移除
         get().removeMessageLocal(msg.chatUid, messageUid)
+        return true
       }
       catch (err) {
         logger.error('MessageStore: deleteMessage failed', err)
+        return false
       }
     },
 

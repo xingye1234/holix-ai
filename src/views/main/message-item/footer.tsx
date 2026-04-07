@@ -18,9 +18,19 @@ interface MessageFooterProps {
   onPreview?: () => void
   onExport?: () => void
   onDelete?: () => void
+  exportDisabled?: boolean
 }
 
-export function MessageFooter({ content, createdAt, className, hideMetadata, onPreview, onExport, onDelete }: MessageFooterProps) {
+export function MessageFooter({
+  content,
+  createdAt,
+  className,
+  hideMetadata,
+  onPreview,
+  onExport,
+  onDelete,
+  exportDisabled = false,
+}: MessageFooterProps) {
   const { t } = useI18n()
   const [copied, setCopied] = useState(false)
   const tokenCount = content ? Math.ceil(content.length / 4) : 0
@@ -89,6 +99,7 @@ export function MessageFooter({ content, createdAt, className, hideMetadata, onP
             size="sm"
             className="h-6 w-6 p-0 opacity-0 group-hover:opacity-50 hover:opacity-100! transition-opacity"
             onClick={onExport}
+            disabled={exportDisabled}
             title={t('message.export')}
           >
             <Download className="w-3 h-3" />

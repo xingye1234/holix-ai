@@ -4,8 +4,9 @@ import { toast } from 'sonner'
 import { useI18n } from '@/i18n/provider'
 import { useMessageById } from '@/hooks/message'
 import { command } from '@/lib/command'
-import { openMessagePreviewWindow, saveMessagesToFile } from '@/lib/message-utils'
+import { hasExportableMessageContent, openMessagePreviewWindow, saveMessagesToFile } from '@/lib/message-utils'
 import { cn } from '@/lib/utils'
+import { useMessageStore } from '@/store/message'
 import useMessageSelection from '@/store/message-selection'
 import useUI from '@/store/ui'
 import { ArticleLayout } from './article-layout'
@@ -15,13 +16,13 @@ import { pairToolCallSegments } from './tool-call-card'
 interface MessageItemProps {
   id: string
   index: number
-  onDelete?: (id: string) => void
 }
 
 // ✅ Telegram 架构：只有该消息更新时才重渲染
-export const MessageItem = memo(({ id, index, onDelete }: MessageItemProps) => {
+export const MessageItem = memo(({ id, index }: MessageItemProps) => {
   const { t } = useI18n()
   const message = useMessageById(id)
+  const deleteMessage = useMessageStore(state => state.deleteMessage)
   const layoutMode = useUI(state => state.layoutMode)
   const isSelectionMode = useMessageSelection(state => state.isSelectionMode)
 
@@ -71,6 +72,8 @@ export const MessageItem = memo(({ id, index, onDelete }: MessageItemProps) => {
     return message.draftContent ? pairToolCallSegments(message.draftContent) : []
   }, [message?.draftContent, message?.toolCalls])
 
+  const canExport = useMemo(() => hasExportableMessageContent(message), [message])
+
   const onCancelGeneration = useCallback(() => {
     if (message?.requestId) {
       command('chat.abort', { requestId: message.requestId })
@@ -82,16 +85,18 @@ export const MessageItem = memo(({ id, index, onDelete }: MessageItemProps) => {
   }, [message?.requestId])
 
   const onPreview = useCallback(() => {
-    if (!message)
+    if (!message || !canExport)
       return
     const win = openMessagePreviewWindow([{ id, role: message.role, content, createdAt: message.createdAt }])
     if (!win)
       toast.error(t('message.previewFailed'))
-  }, [content, id, message?.createdAt, message?.role])
+  }, [canExport, content, id, message?.createdAt, message?.role, t])
 
   const onExport = useCallback(async () => {
-    if (!message)
+    if (!message || !canExport) {
+      toast.error(t('message.noExportableContent'))
       return
+    }
     const result = await saveMessagesToFile({
       messages: [{ id, role: message.role, content, createdAt: message.createdAt }],
       format: 'md',
@@ -101,9 +106,15 @@ export const MessageItem = memo(({ id, index, onDelete }: MessageItemProps) => {
       toast.info(t('preview.exportCanceled'))
     else
       toast.success(t('preview.exportSuccess', { filePath: result.filePath }))
-  }, [content, id, message?.createdAt, message?.role])
+  }, [canExport, content, id, message?.createdAt, message?.role, t])
 
-  const handleDelete = useCallback(() => onDelete?.(id), [onDelete, id])
+  const handleDelete = useCallback(async () => {
+    const deleted = await deleteMessage(id)
+
+    if (!deleted) {
+      toast.error(t('message.deleteFailed'))
+    }
+  }, [deleteMessage, id, t])
 
   if (!message)
     return null
@@ -149,6 +160,7 @@ export const MessageItem = memo(({ id, index, onDelete }: MessageItemProps) => {
     onCancelGeneration,
     onPreview,
     onExport,
+    canExport,
   }
 
   if (layoutMode === 'article') {

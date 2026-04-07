@@ -37,12 +37,28 @@ export function getMessageDisplayContent(message?: Message | null) {
     .join('')
 }
 
+export function normalizeMessageContent(content?: string | null) {
+  return content?.trim() ?? ''
+}
+
+export function hasExportableMessageContent(message?: Message | null) {
+  return normalizeMessageContent(getMessageDisplayContent(message)).length > 0
+}
+
+export function isExportableMessage(message: ExportableMessage) {
+  return normalizeMessageContent(message.content).length > 0
+}
+
+export function filterExportableMessages(messages: ExportableMessage[]) {
+  return messages.filter(isExportableMessage)
+}
+
 export function toExportableMessage(message: Message): ExportableMessage {
   return {
     id: message.uid,
     role: message.role,
     createdAt: message.createdAt,
-    content: getMessageDisplayContent(message) || message.error || '',
+    content: normalizeMessageContent(getMessageDisplayContent(message)),
   }
 }
 

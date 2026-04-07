@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import {
+  filterExportableMessages,
   openMessagePreviewWindow,
   saveMessagesToFile,
   toExportableMessage,
@@ -41,6 +42,8 @@ export function SelectionToolbar({
     .filter(Boolean)
     .map(toExportableMessage)
 
+  const exportableMessages = filterExportableMessages(selectedMessages)
+
   const handleClose = () => {
     disableSelectionMode()
   }
@@ -62,22 +65,26 @@ export function SelectionToolbar({
   }, [disableSelectionMode, onDeleteSelected, selectedCount, selectedMessageIds, t])
 
   const handleCopy = useCallback(async () => {
-    if (selectedCount === 0)
+    if (selectedCount === 0 || exportableMessages.length === 0) {
+      toast.error(t('message.noExportableContent'))
       return
+    }
 
-    const text = selectedMessages.map(msg => msg.content).join('\n\n---\n\n')
+    const text = exportableMessages.map(msg => msg.content).join('\n\n---\n\n')
     await navigator.clipboard.writeText(text)
-    toast.success(t('selection.copied', { count: selectedCount }))
-  }, [selectedCount, selectedMessages, t])
+    toast.success(t('selection.copied', { count: exportableMessages.length }))
+  }, [exportableMessages, selectedCount, t])
 
   const handleExport = useCallback(async (format: MessageExportFormat) => {
-    if (selectedCount === 0)
+    if (selectedCount === 0 || exportableMessages.length === 0) {
+      toast.error(t('message.noExportableContent'))
       return
+    }
 
     onExportSelected?.(Array.from(selectedMessageIds))
 
     const result = await saveMessagesToFile({
-      messages: selectedMessages,
+      messages: exportableMessages,
       format,
       suggestedName: `messages-${Date.now()}.${format}`,
     })
@@ -88,16 +95,18 @@ export function SelectionToolbar({
     }
 
     toast.success(t('preview.exportSuccess', { filePath: result.filePath }))
-  }, [onExportSelected, selectedCount, selectedMessageIds, selectedMessages, t])
+  }, [exportableMessages, onExportSelected, selectedCount, selectedMessageIds, t])
 
   const handlePreview = useCallback(() => {
-    if (selectedCount === 0)
+    if (selectedCount === 0 || exportableMessages.length === 0) {
+      toast.error(t('message.noExportableContent'))
       return
+    }
 
-    const win = openMessagePreviewWindow(selectedMessages)
+    const win = openMessagePreviewWindow(exportableMessages)
     if (!win)
       toast.error(t('message.previewFailed'))
-  }, [selectedCount, selectedMessages, t])
+  }, [exportableMessages, selectedCount, t])
 
   if (selectedCount === 0)
     return null
