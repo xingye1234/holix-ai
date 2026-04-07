@@ -1,5 +1,5 @@
 import { db } from '../../database/connect'
-import { chats, messages } from '../../database/schema/chat'
+import { chats, message } from '../../database/schema/chat'
 import { eq, desc } from 'drizzle-orm'
 import type { AgentContext, AgentHook } from './types'
 
@@ -19,9 +19,9 @@ export class ContextProvider {
     const [chatResult, messagesResult] = await Promise.all([
       db.select().from(chats).where(eq(chats.uid, chatUid)).limit(1),
       db.select()
-        .from(messages)
-        .where(eq(messages.chatUid, chatUid))
-        .orderBy(desc(messages.seq))
+        .from(message)
+        .where(eq(message.chatUid, chatUid))
+        .orderBy(desc(message.seq))
         .limit(10), // Use chat.contextSettings.maxMessages in full implementation
     ])
 
