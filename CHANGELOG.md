@@ -1,3 +1,18 @@
+## [0.1.1-alpha.1](https://github.com/zhaogongchengsi/holix-ai/compare/v0.1.0...v0.1.1-alpha.1) (2026-04-07)
+
+### Features
+
+* add alpha-stage updates for skills import, theme settings, provider avatars, and chat layout refinements
+* unify skills around `metadata.json + SKILL.md` and the Deep Agent runtime path
+* improve sidebar, chat panel, and streaming auto-scroll behavior
+* introduce early lifecycle and session-builder groundwork for agent execution
+
+### Bug Fixes
+
+* fix several layout, navigation, and focus issues across the sidebar and chat shell
+* improve responsive behavior in the main chat footer and panel layout
+* correct skills entry routing and related UI inconsistencies
+
 ## [0.1.0](https://github.com/zhaogongchengsi/holix-ai/compare/v0.0.2...v0.1.0) (2026-03-23)
 
 ### Features
