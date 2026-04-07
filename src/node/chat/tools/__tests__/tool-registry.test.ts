@@ -65,7 +65,7 @@ vi.mock('../../../platform/config', () => ({
 }))
 
 // Mock skill manager
-vi.mock('../../skills/manager', () => ({
+vi.mock('../../../skills/manager', () => ({
   skillManager: mockSkillManager,
 }))
 

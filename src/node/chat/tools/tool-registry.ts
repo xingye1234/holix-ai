@@ -6,7 +6,7 @@
 import type { DynamicStructuredTool } from '@langchain/core/tools'
 import { configStore } from '../../platform/config'
 import { logger } from '../../platform/logger'
-import { skillManager } from '../skills/manager'
+import { skillManager } from '../../skills/manager'
 import { chatKeywordSearchTool, chatTimeSearchTool } from './chat'
 import { context7Tool } from './context7'
 import { systemEnvTool, systemPlatformTool, systemTimeTool, systemTimezoneTool } from './system'

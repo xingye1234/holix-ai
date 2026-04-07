@@ -9,13 +9,11 @@
  * - 为每次会话提供 LangChain tools 和 system prompt 内容
  */
 
-import type { DynamicStructuredTool } from '@langchain/core/tools'
 import type { FSWatcher } from 'node:fs'
 import type { LoadedSkill } from './type'
 import { existsSync, mkdirSync, watch } from 'node:fs'
-import { APP_DATA_PATH, BUILTIN_SKILLS_PATH } from '../../constant'
-import { logger } from '../../platform/logger'
-import { getExternalSkillsDirs } from './external-dirs'
+import { APP_DATA_PATH, BUILTIN_SKILLS_PATH } from '../constant'
+import { logger } from '../platform/logger'
 import { getSkillsDir, scanSkillsDir } from './loader'
 
 class SkillManager {
@@ -60,19 +58,7 @@ class SkillManager {
       logger.debug(`[SkillManager] Built-in skills dir not found (not compiled yet?): ${this.builtinSkillsDir}`)
     }
 
-    // 2. 加载其他产品的 skills（如 ~/.claude/skills）
-    for (const externalDir of getExternalSkillsDirs()) {
-      const externalSkills = scanSkillsDir(externalDir)
-      for (const skill of externalSkills) {
-        if (this.skills.has(skill.name)) {
-          logger.info(`[SkillManager] External skill "${skill.name}" overrides existing skill`)
-        }
-        this.skills.set(skill.name, skill)
-      }
-      logger.info(`[SkillManager] Loaded ${externalSkills.length} external skill(s) from ${externalDir}`)
-    }
-
-    // 3. 加载用户 skills（同名时覆盖外部/内置）
+    // 2. 加载用户 skills（同名时覆盖内置）
     const userSkills = scanSkillsDir(this.skillsDir)
     for (const skill of userSkills) {
       if (this.skills.has(skill.name)) {
@@ -145,13 +131,6 @@ class SkillManager {
    */
   getSkill(name: string): LoadedSkill | undefined {
     return this.skills.get(name)
-  }
-
-  /**
-   * Skills 仅提供 Deep Agent skills 文档，不再直接提供工具实现
-   */
-  getAllTools(): DynamicStructuredTool[] {
-    return []
   }
 
   /**

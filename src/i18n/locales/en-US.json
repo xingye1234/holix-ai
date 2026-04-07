@@ -352,6 +352,20 @@
   "skillsPage": {
     "title": "Skills",
     "description": "Manage installed skills and the skill store in one place.",
+    "importExternal": {
+      "open": "Import External Skills",
+      "title": "Import External Skills",
+      "description": "Copy skills from other AI tools into the current .holixai/skills directory.",
+      "sourceLabel": "External Source",
+      "placeholder": "Select a skills directory to import",
+      "empty": "No external skills directories were detected.",
+      "cancel": "Cancel",
+      "confirm": "Import",
+      "importing": "Importing...",
+      "imported": "Imported {{count}} skill(s).",
+      "importFailed": "Failed to import external skills.",
+      "selectRequired": "Select an external source first."
+    },
     "tabs": {
       "installed": "Installed",
       "store": "Store"

@@ -352,6 +352,20 @@
   "skillsPage": {
     "title": "Skills",
     "description": "统一管理已安装技能与技能商店。",
+    "importExternal": {
+      "open": "导入外部 Skills",
+      "title": "导入外部 Skills",
+      "description": "从其他 AI 工具的 skills 目录复制到当前 .holixai/skills 中。",
+      "sourceLabel": "外部来源",
+      "placeholder": "选择一个可导入的 skills 目录",
+      "empty": "当前没有检测到可导入的外部 skills 目录。",
+      "cancel": "取消",
+      "confirm": "开始导入",
+      "importing": "导入中...",
+      "imported": "已导入 {{count}} 个 skill。",
+      "importFailed": "导入外部 skills 失败。",
+      "selectRequired": "请先选择一个外部来源。"
+    },
     "tabs": {
       "installed": "已安装",
       "store": "商店"

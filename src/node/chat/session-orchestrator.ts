@@ -13,7 +13,7 @@ import type { Message, Workspace } from '../database/schema/chat'
 import { logger } from '../platform/logger'
 import { ChatSession } from './session/chat-session'
 import type { SessionModelConfig } from './session/session-state'
-import { skillManager } from './skills'
+import { skillManager } from '../skills'
 
 /**
  * 会话启动参数

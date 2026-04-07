@@ -9,7 +9,7 @@
 import type { LoadedSkill, StandardSkillMetadata } from './type'
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, normalize } from 'node:path'
-import { logger } from '../../platform/logger'
+import { logger } from '../platform/logger'
 
 function validateMetadata(raw: unknown, source: string): StandardSkillMetadata | null {
   if (!raw || typeof raw !== 'object') {

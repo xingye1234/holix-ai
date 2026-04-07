@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { collectSkillDirs, installSkillsFromGitHub, parseGitHubSource } from '../skill-installer'
+import { collectSkillDirs, importSkillsFromDirectory, installSkillsFromGitHub, parseGitHubSource } from '../skill-installer'
 
 const mocked = vi.hoisted(() => ({
   sourceRepo: '',
@@ -121,5 +121,31 @@ describe('installSkillsFromGitHub', () => {
 
     rmSync(root, { recursive: true, force: true })
     mocked.sourceRepo = ''
+  })
+})
+
+describe('importSkillsFromDirectory', () => {
+  it('copies external skills into the destination without mutating the source', () => {
+    const root = mkdtempSync(join(tmpdir(), 'skill-import-local-'))
+    const source = join(root, 'source')
+    const destination = join(root, 'dest')
+    const externalSkill = join(source, 'react')
+
+    mkdirSync(externalSkill, { recursive: true })
+    mkdirSync(destination, { recursive: true })
+    writeFileSync(join(externalSkill, 'CLAUDE.md'), '# React\n\nUse hooks first.')
+
+    const result = importSkillsFromDirectory({
+      sourceDir: source,
+      destinationDir: destination,
+    })
+
+    expect(result.installed).toEqual(['react'])
+    expect(existsSync(join(destination, 'react', 'metadata.json'))).toBe(true)
+    expect(existsSync(join(destination, 'react', 'SKILL.md'))).toBe(true)
+    expect(existsSync(join(externalSkill, 'metadata.json'))).toBe(false)
+    expect(existsSync(join(externalSkill, 'SKILL.md'))).toBe(false)
+
+    rmSync(root, { recursive: true, force: true })
   })
 })

@@ -20,7 +20,6 @@ const mockSkillManager = vi.hoisted(() => {
     set size(value) { sizeValue = value },
     listSkills: vi.fn(() => []),
     getSkill: vi.fn(() => null),
-    getAllTools: vi.fn(() => []),
     getSystemPrompts: vi.fn(() => []),
     getSkillsSummary: vi.fn(() => []),
   }
@@ -42,7 +41,7 @@ const mockChatSessionCreate = vi.hoisted(() => vi.fn(async () => mockChatSession
 // Module Mocks
 // ============================================
 
-vi.mock('../skills/manager', () => ({
+vi.mock('../../skills/manager', () => ({
   skillManager: mockSkillManager,
 }))
 

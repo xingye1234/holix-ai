@@ -129,6 +129,7 @@ function ConfigForm({
 // ─── Skill 卡片 ──────────────────────────────────────────────────────────────
 
 type Skill = Awaited<ReturnType<typeof trpcClient.skill.list>>[number]
+type ExternalSkillSource = Awaited<ReturnType<typeof trpcClient.skill.externalSources>>[number]
 type ConfigData = Awaited<ReturnType<typeof import('@/lib/config').getConfig>>
 
 function SkillCard({
@@ -314,13 +315,41 @@ function SkillCard({
 
 // ─── 页面 ────────────────────────────────────────────────────────────────────
 
-export function SkillsPage({ skills, config }: { skills: Skill[], config: ConfigData }) {
+export function SkillsPage({
+  skills,
+  externalSources,
+  config,
+}: {
+  skills: Skill[]
+  externalSources: ExternalSkillSource[]
+  config: ConfigData
+}) {
   const { t } = useI18n()
+  const [skillsState, setSkillsState] = useState(skills)
+  const [externalSourcesState, setExternalSourcesState] = useState(externalSources)
   const [contextStrategy, setContextStrategy] = useState<'eager' | 'lazy'>(config.skillsContextStrategy ?? 'eager')
   const [disabledSkills, setDisabledSkills] = useState<string[]>(config.disabledSkills ?? [])
+  const [importDialogOpen, setImportDialogOpen] = useState(false)
+  const [selectedExternalSource, setSelectedExternalSource] = useState(externalSources[0]?.path ?? '')
+  const [isImportingExternal, setIsImportingExternal] = useState(false)
 
-  const builtinSkills = skills.filter(s => s.isBuiltin)
-  const userSkills = skills.filter(s => !s.isBuiltin)
+  const builtinSkills = skillsState.filter(s => s.isBuiltin)
+  const userSkills = skillsState.filter(s => !s.isBuiltin)
+
+  const refreshSkills = useCallback(async () => {
+    const [nextSkills, nextExternalSources] = await Promise.all([
+      trpcClient.skill.list(),
+      trpcClient.skill.externalSources(),
+    ])
+
+    setSkillsState(nextSkills)
+    setExternalSourcesState(nextExternalSources)
+    setSelectedExternalSource((current) => {
+      if (current && nextExternalSources.some(source => source.path === current))
+        return current
+      return nextExternalSources[0]?.path ?? ''
+    })
+  }, [])
 
   const handleContextStrategyChange = useCallback(async (value: 'eager' | 'lazy') => {
     setContextStrategy(value)
@@ -337,6 +366,27 @@ export function SkillsPage({ skills, config }: { skills: Skill[], config: Config
     await updateConfig('disabledSkills', next)
     toast.success(disabled ? `已禁用 ${skillName}` : `已启用 ${skillName}`)
   }, [disabledSkills])
+
+  const handleImportExternalSkills = useCallback(async () => {
+    if (!selectedExternalSource) {
+      toast.error(t('skillsPage.importExternal.selectRequired'))
+      return
+    }
+
+    setIsImportingExternal(true)
+    try {
+      const result = await trpcClient.skill.importFromExternal({ sourcePath: selectedExternalSource })
+      await refreshSkills()
+      setImportDialogOpen(false)
+      toast.success(t('skillsPage.importExternal.imported', { count: result.installed.length }))
+    }
+    catch (error) {
+      toast.error(error instanceof Error ? error.message : t('skillsPage.importExternal.importFailed'))
+    }
+    finally {
+      setIsImportingExternal(false)
+    }
+  }, [refreshSkills, selectedExternalSource, t])
 
   const storeSkills = [
     {
@@ -375,9 +425,9 @@ export function SkillsPage({ skills, config }: { skills: Skill[], config: Config
             <TabsTrigger value="installed" className="gap-2">
               <Package className="h-4 w-4" />
               {t('skillsPage.tabs.installed')}
-              {skills.length > 0 && (
+              {skillsState.length > 0 && (
                 <Badge variant="secondary" className="ml-1 text-xs">
-                  {skills.length}
+                  {skillsState.length}
                 </Badge>
               )}
             </TabsTrigger>
@@ -388,6 +438,58 @@ export function SkillsPage({ skills, config }: { skills: Skill[], config: Config
           </TabsList>
 
           <TabsContent value="installed" className="space-y-6 mt-6">
+            <div className="flex justify-end">
+              <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="gap-2">
+                    <Download className="h-4 w-4" />
+                    {t('skillsPage.importExternal.open')}
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>{t('skillsPage.importExternal.title')}</DialogTitle>
+                    <DialogDescription>{t('skillsPage.importExternal.description')}</DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>{t('skillsPage.importExternal.sourceLabel')}</Label>
+                      <Select value={selectedExternalSource} onValueChange={setSelectedExternalSource}>
+                        <SelectTrigger>
+                          <SelectValue placeholder={t('skillsPage.importExternal.placeholder')} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {externalSourcesState.map(source => (
+                            <SelectItem key={source.path} value={source.path}>
+                              {source.label}
+                              {' '}
+                              (
+                              {source.skillCount}
+                              )
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {externalSourcesState.length === 0 && (
+                      <p className="text-sm text-muted-foreground">{t('skillsPage.importExternal.empty')}</p>
+                    )}
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" onClick={() => setImportDialogOpen(false)}>
+                        {t('skillsPage.importExternal.cancel')}
+                      </Button>
+                      <Button
+                        onClick={handleImportExternalSkills}
+                        disabled={isImportingExternal || externalSourcesState.length === 0}
+                      >
+                        {isImportingExternal ? t('skillsPage.importExternal.importing') : t('skillsPage.importExternal.confirm')}
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+
             {/* Skills 上下文策略配置 */}
             <div className="rounded-xl border bg-gradient-to-br from-primary/5 to-background p-6">
               <div className="flex items-start gap-4">
@@ -463,7 +565,7 @@ export function SkillsPage({ skills, config }: { skills: Skill[], config: Config
             </div>
 
             {/* 技能列表 */}
-            {skills.length === 0
+            {skillsState.length === 0
               ? (
                   <div className="flex flex-col items-center justify-center py-24 text-muted-foreground gap-3 border-2 border-dashed rounded-xl">
                     <Package className="size-16 opacity-20" />

@@ -1,12 +1,13 @@
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
+import { existsSync, readdirSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import process from 'node:process'
 import z from 'zod'
-import { skillManager } from '../chat/skills/manager'
+import { getExternalSkillSources } from '../skills/external-dirs'
+import { skillManager } from '../skills/manager'
 import { BUILTIN_SKILLS_PATH } from '../constant'
 import { deleteSkillConfig, getSkillConfig, setSkillConfigField } from '../database/skill-config'
 import { listSkillInvocationLogs } from '../database/skill-invocation-log'
-import { installSkillsFromGitHub } from './skill-installer'
+import { importSkillsFromDirectory, installSkillsFromGitHub } from './skill-installer'
 import { procedure, router } from './trpc'
 
 function inferSkillSourceLabel(skillDir: string, isBuiltin: boolean): string {
@@ -96,6 +97,29 @@ export const skillRouter = router({
     })
   }),
 
+  externalSources: procedure().query(() => {
+    return getExternalSkillSources().map((source) => {
+      let skillCount = 0
+
+      try {
+        skillCount = readdirSync(source.path)
+          .map(name => join(source.path, name))
+          .filter(path => existsSync(path) && statSync(path).isDirectory())
+          .length
+      }
+      catch {
+        skillCount = 0
+      }
+
+      return {
+        id: source.id,
+        label: source.label,
+        path: source.path,
+        skillCount,
+      }
+    })
+  }),
+
   /** 写入单个配置字段 */
   setConfig: procedure()
     .input(z.object({
@@ -139,6 +163,24 @@ export const skillRouter = router({
         source: input.source,
         path: input.path,
         ref: input.ref,
+        destinationDir: skillManager.getSkillsDir(),
+      })
+      skillManager.reload()
+      return result
+    }),
+
+  importFromExternal: procedure()
+    .input(z.object({
+      sourcePath: z.string().min(1),
+    }))
+    .mutation(({ input }) => {
+      const source = getExternalSkillSources().find(item => item.path === input.sourcePath)
+      if (!source) {
+        throw new Error('外部 skills 来源不存在或当前不可用')
+      }
+
+      const result = importSkillsFromDirectory({
+        sourceDir: source.path,
         destinationDir: skillManager.getSkillsDir(),
       })
       skillManager.reload()

@@ -15,7 +15,7 @@ import { scanSkillsDir } from '../loader'
 
 // mock constant - SkillManager 通过 APP_DATA_PATH 构建技能目录
 // 我们在每个测试中通过 SkillManager 内部的 skillsDir 来控制
-vi.mock('../../../constant', () => ({
+vi.mock('../../constant', () => ({
   APP_DATA_PATH: tmpdir(), // 初始占位，每个测试会使用独立临时目录
   BUILTIN_SKILLS_PATH: tmpdir(), // 内置 skills 目录占位，指向空临时目录
   databaseUrl: ':memory:', // connect.ts 需要此 export
@@ -172,7 +172,6 @@ describe('skillManager 单例（真实实例）', () => {
     expect(typeof skillManager.reload).toBe('function')
     expect(typeof skillManager.listSkills).toBe('function')
     expect(typeof skillManager.getSkill).toBe('function')
-    expect(typeof skillManager.getAllTools).toBe('function')
     expect(typeof skillManager.getSystemPrompts).toBe('function')
     expect(typeof skillManager.watch).toBe('function')
     expect(typeof skillManager.unwatch).toBe('function')
@@ -187,11 +186,6 @@ describe('skillManager 单例（真实实例）', () => {
   it('listSkills 返回数组', async () => {
     const { skillManager } = await import('../manager')
     expect(Array.isArray(skillManager.listSkills())).toBe(true)
-  })
-
-  it('getAllTools 返回数组', async () => {
-    const { skillManager } = await import('../manager')
-    expect(Array.isArray(skillManager.getAllTools())).toBe(true)
   })
 
   it('getSystemPrompts 返回字符串数组', async () => {

@@ -1,4 +1,4 @@
-import type { LoadedSkill } from '../skills/type'
+import type { LoadedSkill } from '../../skills/type'
 import type { Workspace } from '../../database/schema/chat'
 import type { ToolLoadingStrategy } from '../tools/tool-registry'
 import { cpSync, existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'

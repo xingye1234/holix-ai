@@ -2,7 +2,7 @@
  * SessionBuilder 单元测试
  */
 
-import type { LoadedSkill } from '../../skills/type'
+import type { LoadedSkill } from '../../../skills/type'
 import type { SessionModelConfig } from '../session-state'
 import { mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -45,7 +45,7 @@ vi.mock('../../mcp/tools', () => ({
   loadMcpTools: mockLoadMcpTools,
 }))
 
-vi.mock('../../skills', () => ({
+vi.mock('../../../skills', () => ({
   skillManager: {
     listSkills: mockListSkills,
   },

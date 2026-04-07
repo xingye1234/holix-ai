@@ -14,6 +14,11 @@ interface InstallResult {
   installed: string[]
 }
 
+interface InstallFromDirectoryOptions {
+  sourceDir: string
+  destinationDir: string
+}
+
 interface ParsedSource {
   repo: string
   ref?: string
@@ -150,6 +155,34 @@ function ensureSkillManifest(skillDir: string): { name: string } {
   return { name: skillName }
 }
 
+function installSkillDirs(skillDirs: string[], destinationDir: string): InstallResult {
+  const stagingRoot = mkdtempSync(join(tmpdir(), 'holixai-skill-stage-'))
+
+  try {
+    const installed: string[] = []
+
+    for (const dir of skillDirs) {
+      const stagedDir = join(stagingRoot, basename(dir))
+      cpSync(dir, stagedDir, { recursive: true })
+
+      const { name: skillName } = ensureSkillManifest(stagedDir)
+      const dest = join(destinationDir, skillName)
+
+      if (existsSync(dest)) {
+        throw new Error(`Skill 已存在: ${skillName}`)
+      }
+
+      cpSync(stagedDir, dest, { recursive: true })
+      installed.push(skillName)
+    }
+
+    return { installed }
+  }
+  finally {
+    rmSync(stagingRoot, { recursive: true, force: true })
+  }
+}
+
 export function installSkillsFromGitHub(options: InstallOptions): InstallResult {
   const parsed = parseGitHubSource(options.source)
   const ref = options.ref?.trim() || parsed.ref || 'main'
@@ -172,23 +205,22 @@ export function installSkillsFromGitHub(options: InstallOptions): InstallResult 
       throw new Error(`在 ${relativePath} 下未找到可识别的技能目录（metadata.json/SKILL.md/AGENTS.md/CLAUDE.md 等）`)
     }
 
-    const installed: string[] = []
-
-    for (const dir of skillDirs) {
-      const { name: skillName } = ensureSkillManifest(dir)
-      const dest = join(options.destinationDir, skillName)
-
-      if (existsSync(dest)) {
-        throw new Error(`Skill 已存在: ${skillName}`)
-      }
-
-      cpSync(dir, dest, { recursive: true })
-      installed.push(skillName)
-    }
-
-    return { installed }
+    return installSkillDirs(skillDirs, options.destinationDir)
   }
   finally {
     rmSync(tempDir, { recursive: true, force: true })
   }
+}
+
+export function importSkillsFromDirectory(options: InstallFromDirectoryOptions): InstallResult {
+  if (!existsSync(options.sourceDir) || !statSync(options.sourceDir).isDirectory()) {
+    throw new Error(`路径不存在: ${options.sourceDir}`)
+  }
+
+  const skillDirs = collectSkillDirs(options.sourceDir)
+  if (skillDirs.length === 0) {
+    throw new Error(`在 ${options.sourceDir} 下未找到可识别的技能目录（metadata.json/SKILL.md/AGENTS.md/CLAUDE.md 等）`)
+  }
+
+  return installSkillDirs(skillDirs, options.destinationDir)
 }

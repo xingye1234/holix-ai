@@ -7,12 +7,13 @@ export const Route = createFileRoute('/skills')({
   component: RouteComponent,
   loader: async () => {
     const skills = await trpcClient.skill.list()
+    const externalSources = await trpcClient.skill.externalSources()
     const config = await getConfig()
-    return { skills, config }
+    return { skills, externalSources, config }
   },
 })
 
 function RouteComponent() {
-  const { skills, config } = Route.useLoaderData()
-  return <SkillsPage skills={skills} config={config} />
+  const { skills, externalSources, config } = Route.useLoaderData()
+  return <SkillsPage skills={skills} externalSources={externalSources} config={config} />
 }
