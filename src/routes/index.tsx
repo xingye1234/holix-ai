@@ -1,17 +1,17 @@
+import type { EditorHandle } from '@/components/editor/props'
+import type { AIProvider } from '@/types/provider'
 import { debounce } from '@tanstack/pacer/debouncer'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { Coins, Sparkles } from 'lucide-react'
-import { useCallback, useMemo, useState } from 'react'
+import { Bot, Sparkles, Wand2 } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
-import { Editor } from '@/components/editor/editor'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { useI18n } from '@/i18n/provider'
 import { command } from '@/lib/command'
-import { getProvider } from '@/lib/provider'
+import { getDefaultProvider, getProvider, getProviders } from '@/lib/provider'
 import { estimateTokens, formatTokenCount } from '@/share/token'
 import useChat from '@/store/chat'
-import ProviderModelSelector from '@/views/shared/provider-model-selector'
+import { HomePage } from '@/views/home/page'
+import type { HomeMode, HomeModeCopy, HomeStatusBadge, StarterTemplate } from '@/views/home/types'
 
 function generateTitle(text: string) {
   const trimmed = text.trim()
@@ -22,33 +22,169 @@ function generateTitle(text: string) {
   return trimmed.length > 50 ? `${trimmed.substring(0, 50)}...` : trimmed
 }
 
+const starterTemplates: readonly StarterTemplate[] = [
+  {
+    title: '读懂当前仓库',
+    prompt: '帮我梳理这个项目的结构、核心模块和建议的阅读顺序，并指出最值得先看的文件。',
+    summary: '适合第一次把项目交给 Holix，让它先帮你建立上下文。',
+    icon: Sparkles,
+  },
+  {
+    title: '设计下一步功能',
+    prompt: '基于当前产品和代码结构，给出下一步最值得实现的功能设计，包括用户价值、交互流程和技术切入点。',
+    summary: '把产品想法快速转成可讨论、可落地的方案。',
+    icon: Wand2,
+  },
+  {
+    title: '创建专用 Agent',
+    prompt: '为当前项目设计一个常用 Agent，包含职责、提示词、推荐技能和推荐模型组合。',
+    summary: '适合开始沉淀重复工作流，减少每次手动配置。',
+    icon: Bot,
+  },
+]
+
+function isProviderReady(provider: AIProvider) {
+  const hasModels = provider.models.some(model => model.trim().length > 0)
+  const hasCredentials = provider.apiType === 'ollama' || provider.apiKey.trim().length > 0
+  return provider.enabled && hasModels && hasCredentials
+}
+
+function getHomeMode(loadingProviders: boolean, readyProviders: AIProvider[], hasChats: boolean): HomeMode {
+  if (loadingProviders)
+    return 'loading'
+  if (readyProviders.length === 0)
+    return 'needsProvider'
+  if (!hasChats)
+    return 'starter'
+  return 'active'
+}
+
+function getModeCopy(mode: HomeMode): HomeModeCopy {
+  switch (mode) {
+    case 'needsProvider':
+      return {
+        kicker: '先把工作台点亮',
+        title: '先配置一个可用的 Provider，再开始第一轮协作。',
+        subtitle: 'Holix 已经准备好工作流和界面，但现在还缺少真正可调用的模型。连接一个可用 Provider 后，首页会自动切换到可执行状态。',
+      }
+    case 'starter':
+      return {
+        kicker: '工作台已经就绪',
+        title: '从一个清晰任务开始，建立你的第一条工作流。',
+        subtitle: '你已经具备可用模型。现在最重要的不是继续配置，而是启动第一条真实任务，让 Holix 开始理解你的工作方式。',
+      }
+    case 'active':
+      return {
+        kicker: '继续推进你的工作',
+        title: '新的任务可以马上开始，已有会话也能随时接力。',
+        subtitle: 'Holix 已经进入持续协作状态。你可以继续发起新任务，也可以整理你的工作流配置。',
+      }
+    default:
+      return {
+        kicker: '正在准备工作台',
+        title: '正在加载你的首页状态…',
+        subtitle: 'Holix 正在检查可用 Provider 和最近会话。',
+      }
+  }
+}
+
 function Index() {
   const [value, setValue] = useState('')
   const [chatTitle, setChatTitle] = useState('')
-  const [provider, setProvider] = useState<string>('')
-  const [model, setModel] = useState<string>('')
+  const [provider, setProvider] = useState('')
+  const [model, setModel] = useState('')
+  const [providersLoading, setProvidersLoading] = useState(true)
+  const [readyProviders, setReadyProviders] = useState<AIProvider[]>([])
+  const [defaultProviderName, setDefaultProviderName] = useState('')
+
   const chat = useChat()
+  const chats = useChat(state => state.chats)
+  const initialized = useChat(state => state.initialized)
+  const init = useChat(state => state.init)
   const { t } = useI18n()
   const navigate = useNavigate()
+  const editorRef = useRef<EditorHandle>(null)
+
+  useEffect(() => {
+    if (!initialized) {
+      init().catch((error) => {
+        console.error('Failed to init chats:', error)
+      })
+    }
+  }, [init, initialized])
+
+  useEffect(() => {
+    let cancelled = false
+
+    const loadProviderState = async () => {
+      try {
+        setProvidersLoading(true)
+        const [providerList, defaultProvider] = await Promise.all([getProviders(), getDefaultProvider()])
+        if (cancelled)
+          return
+
+        setDefaultProviderName(defaultProvider)
+        setReadyProviders(providerList.filter(isProviderReady))
+      }
+      catch (error) {
+        if (!cancelled) {
+          console.error('Failed to load providers:', error)
+          setReadyProviders([])
+        }
+      }
+      finally {
+        if (!cancelled) {
+          setProvidersLoading(false)
+        }
+      }
+    }
+
+    loadProviderState()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const onTextChange = useCallback(
     debounce(
       (text: string) => {
         setValue(text)
       },
-      {
-        wait: 300,
-      },
+      { wait: 300 },
     ),
     [],
   )
 
   const estimatedTokens = useMemo(() => estimateTokens(value), [value])
-
-  // 只有标题时创建空会话（不发消息），有正文时正常发送
   const hasTitle = chatTitle.trim().length > 0
   const hasContent = value.trim().length > 0
   const canSend = (hasTitle || hasContent) && !!model && !!provider
+  const homeMode = getHomeMode(providersLoading, readyProviders, chats.length > 0)
+  const modeCopy = getModeCopy(homeMode)
+  const readyProviderCount = readyProviders.length
+
+  const statusBadges = useMemo((): HomeStatusBadge[] => {
+    const badgeItems: HomeStatusBadge[] = [
+      {
+        label: readyProviderCount > 0 ? `${readyProviderCount} 个 Provider 已就绪` : '暂无可用 Provider',
+        variant: readyProviderCount > 0 ? 'secondary' : 'outline',
+      },
+      {
+        label: chats.length > 0 ? `${chats.length} 条历史会话` : '还没有历史会话',
+        variant: chats.length > 0 ? 'secondary' : 'outline',
+      },
+    ]
+
+    if (defaultProviderName) {
+      badgeItems.push({
+        label: `默认：${defaultProviderName}`,
+        variant: 'outline',
+      })
+    }
+
+    return badgeItems
+  }, [chats.length, defaultProviderName, readyProviderCount])
 
   const onSend = useCallback(() => {
     if (!canSend)
@@ -56,9 +192,9 @@ function Index() {
 
     const titleToUse = hasTitle
       ? chatTitle.trim()
-      : generateTitle(value);
+      : generateTitle(value)
 
-    (async () => {
+    ;(async () => {
       const providerConfig = await getProvider(provider)
       if (!providerConfig) {
         throw new Error(`Provider ${provider} not found`)
@@ -83,7 +219,6 @@ function Index() {
           to: '/chat/$id',
           params: { id: newChat.uid },
         })
-        // 只有标题时不发消息，有正文时才发消息
         if (hasContent) {
           setTimeout(() => {
             command('chat.message', {
@@ -101,90 +236,42 @@ function Index() {
       .finally(() => {
         setValue('')
         setChatTitle('')
+        editorRef.current?.clear()
       })
-  }, [canSend, hasTitle, hasContent, chatTitle, value, model, provider, chat.createChat, t])
+  }, [canSend, chat, chatTitle, hasContent, hasTitle, model, navigate, provider, t, value])
+
+  const applyTemplate = useCallback((template: StarterTemplate) => {
+    setChatTitle(template.title)
+    setValue(template.prompt)
+    editorRef.current?.setText(template.prompt, { focus: true })
+  }, [])
 
   return (
-    <div className="relative min-h-full overflow-hidden bg-background w-full">
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute left-1/2 top-20 h-72 w-72 -translate-x-1/2 rounded-full bg-primary/7 blur-3xl" />
-        <div className="absolute bottom-10 right-16 h-64 w-64 rounded-full bg-emerald-500/8 blur-3xl" />
-      </div>
-
-      <div className="relative mx-auto flex min-h-full w-full max-w-5xl items-center px-6 py-10 lg:px-10">
-        <section className="mx-auto w-full max-w-3xl">
-          <div className="mb-8 flex flex-col items-center text-center">
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-border/60 bg-card/70 px-3 py-1 text-xs text-muted-foreground shadow-[0_8px_24px_-18px_rgba(0,0,0,0.18)] backdrop-blur-sm">
-              <Sparkles className="h-3.5 w-3.5 text-primary" />
-              {t('home.kicker')}
-            </div>
-            <h1 className="max-w-2xl text-4xl font-semibold tracking-tight text-foreground lg:text-5xl">
-              {t('home.title')}
-            </h1>
-            <p className="mt-3 max-w-xl text-sm leading-7 text-muted-foreground lg:text-base">
-              {t('home.subtitle')}
-            </p>
-          </div>
-
-          <div className="rounded-[30px] border border-border/60 bg-card/78 p-4 shadow-[0_18px_48px_-34px_rgba(0,0,0,0.22)] backdrop-blur-xl sm:p-5">
-            <div className="mb-3 flex items-center justify-between gap-3 px-1">
-              <div className="text-sm font-medium text-foreground">{t('home.panelTitle')}</div>
-              <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/8 px-3 py-1 text-xs font-medium text-primary">
-                <Coins className="h-3.5 w-3.5" />
-                {formatTokenCount(estimatedTokens)}
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <Input
-                value={chatTitle}
-                onChange={e => setChatTitle(e.target.value)}
-                placeholder={t('home.chatTitlePlaceholder')}
-                className="h-12 rounded-2xl border-border/60 bg-background/72 px-4 text-sm shadow-none transition-[color,box-shadow,border-color,background-color] focus-visible:border-primary/40 focus-visible:ring-primary/15 dark:bg-background/60"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey)
-                    onSend()
-                }}
-              />
-
-              <Editor
-                placeholder={t('home.inputPlaceholder')}
-                ariaPlaceholder={t('home.inputPlaceholder')}
-                rootClassName="min-h-[220px] bg-background/72 dark:bg-background/60"
-                wrapperClassName="rounded-[24px]"
-                onError={(err) => {
-                  console.error(`editor:`, err ? err.message : 'unknown error')
-                }}
-                onTextChange={onTextChange}
-                keyboard={{
-                  onEnter: onSend,
-                }}
-              />
-            </div>
-
-            <div className="mt-4 flex flex-col gap-3 border-t border-border/50 pt-4 sm:flex-row sm:items-center">
-              <ProviderModelSelector
-                className="min-w-0 flex-1"
-                triggerOnInitialize
-                onProviderChange={setProvider}
-                onModelChange={setModel}
-              />
-              <Button
-                className="h-11 rounded-2xl px-5 sm:min-w-36"
-                onClick={onSend}
-                disabled={!canSend}
-              >
-                {hasTitle && !hasContent ? t('home.createChat') : t('common.send')}
-              </Button>
-            </div>
-
-            <div className="mt-3 px-1 text-xs leading-6 text-muted-foreground">
-              {t('home.contentTipDesc')}
-            </div>
-          </div>
-        </section>
-      </div>
-    </div>
+    <HomePage
+      canSend={canSend}
+      chatTitle={chatTitle}
+      defaultProviderName={defaultProviderName}
+      editorPlaceholder={t('home.inputPlaceholder')}
+      editorRef={editorRef}
+      estimatedTokensLabel={formatTokenCount(estimatedTokens)}
+      hasContent={hasContent}
+      mode={homeMode}
+      modeCopy={modeCopy}
+      onChatTitleChange={setChatTitle}
+      onModelChange={setModel}
+      onOpenAgents={() => navigate({ to: '/agents' })}
+      onOpenProviders={() => navigate({ to: '/setting/provider' })}
+      onOpenSkills={() => navigate({ to: '/skills' })}
+      onProviderChange={setProvider}
+      onSend={onSend}
+      onTemplateApply={applyTemplate}
+      onTextChange={onTextChange}
+      promptValue={value}
+      readyProviderCount={readyProviderCount}
+      sendLabel={hasTitle && !hasContent ? t('home.createChat') : t('common.send')}
+      starterTemplates={starterTemplates}
+      statusBadges={statusBadges}
+    />
   )
 }
 
