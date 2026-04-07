@@ -1,3 +1,4 @@
+import type { MessageTelemetry } from '@/node/database/schema/chat'
 /**
  * AI 消息底部栏
  * 显示时间、token 估算、复制/导出按钮
@@ -12,6 +13,7 @@ import { cn } from '@/lib/utils'
 interface MessageFooterProps {
   content: string
   createdAt: number
+  telemetry?: MessageTelemetry | null
   className?: string
   /** 隐藏时间/token 元数据，仅显示操作按鈕（用于用户消息） */
   hideMetadata?: boolean
@@ -24,6 +26,7 @@ interface MessageFooterProps {
 export function MessageFooter({
   content,
   createdAt,
+  telemetry,
   className,
   hideMetadata,
   onPreview,
@@ -33,7 +36,9 @@ export function MessageFooter({
 }: MessageFooterProps) {
   const { t } = useI18n()
   const [copied, setCopied] = useState(false)
-  const tokenCount = content ? Math.ceil(content.length / 4) : 0
+  const outputTelemetry = telemetry?.output
+  const tokenCount = outputTelemetry?.estimatedTokens ?? (content ? Math.ceil(content.length / 4) : 0)
+  const charCount = outputTelemetry?.charCount ?? content.length
 
   const handleCopy = () => {
     if (!content)
@@ -58,6 +63,12 @@ export function MessageFooter({
           <span>{formatWithLocalTZ(createdAt, 'HH:mm')}</span>
           {tokenCount > 0 && (
             <>
+              <span>·</span>
+              <span>
+                {charCount}
+                {' '}
+                chars
+              </span>
               <span>·</span>
               <span>
                 {tokenCount}

@@ -97,7 +97,7 @@ export function ArticleLayout({
                   </div>
                 </div>
               </div>
-              <MessageFooter hideMetadata content={content} createdAt={message.createdAt} onPreview={onPreview} onExport={onExport} onDelete={onDelete} exportDisabled={!canExport} />
+              <MessageFooter hideMetadata content={content} createdAt={message.createdAt} telemetry={message.telemetry} onPreview={onPreview} onExport={onExport} onDelete={onDelete} exportDisabled={!canExport} />
             </div>
           )
         : (
@@ -156,7 +156,7 @@ export function ArticleLayout({
                 )}
               </div>
 
-              {!generating && <MessageFooter content={content} createdAt={message.createdAt} onPreview={onPreview} onExport={onExport} onDelete={onDelete} exportDisabled={!canExport} />}
+              {!generating && <MessageFooter content={content} createdAt={message.createdAt} telemetry={message.telemetry} onPreview={onPreview} onExport={onExport} onDelete={onDelete} exportDisabled={!canExport} />}
 
               {isStreaming && (
                 <button

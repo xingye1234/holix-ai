@@ -15,6 +15,13 @@
       "when": 1774169204135,
       "tag": "0001_vengeful_nightcrawler",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1775558400000,
+      "tag": "0002_silent_telemetry",
+      "breakpoints": true
     }
   ]
 }

@@ -146,6 +146,7 @@ export function ChatLayout({
             hideMetadata={isUser}
             content={content}
             createdAt={message.createdAt}
+            telemetry={message.telemetry}
             onPreview={onPreview}
             onExport={onExport}
             onDelete={onDelete}

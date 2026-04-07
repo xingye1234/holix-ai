@@ -12,6 +12,7 @@ import { logger } from '../../platform/logger'
 import { chatEventEmitter } from '../events/chat-event-emitter'
 import { messagePersister } from '../message/message-persister'
 import { StreamProcessor } from '../stream/stream-processor'
+import { LangChainTelemetryHandler } from '../telemetry/langchain-telemetry-handler'
 import { toolCallTracker } from '../tools/tool-call-tracker'
 import { SessionBuilder } from './session-builder'
 
@@ -112,6 +113,10 @@ export class ChatSession {
       const agent = await builder.buildAgent(chatUid)
       const messages = builder.buildMessages(contextMessages, userMessageContent)
       const context = builder.buildContext(chatUid)
+      const telemetryHandler = new LangChainTelemetryHandler({
+        provider: modelConfig.provider,
+        model: modelConfig.model,
+      })
 
       // 创建流处理器
       const streamProcessor = new StreamProcessor({
@@ -128,6 +133,7 @@ export class ChatSession {
           signal: this.abortController.signal,
           streamMode: ['messages', 'updates'],
           context,
+          callbacks: [telemetryHandler],
         },
       )
 
@@ -164,6 +170,7 @@ export class ChatSession {
         content,
         draftSegments,
         toolCalls,
+        telemetryHandler.snapshot(),
       )
 
       this.status = 'completed'
@@ -177,6 +184,7 @@ export class ChatSession {
           content,
           draftContent: draftSegments,
           toolCalls,
+          telemetry: telemetryHandler.snapshot(),
         },
       })
 

@@ -3,7 +3,7 @@
  * 负责消息的数据库操作
  */
 
-import type { DraftContent, Message, ToolCallTrace } from '../../database/schema/chat'
+import type { DraftContent, Message, MessageTelemetry, ToolCallTrace } from '../../database/schema/chat'
 import type { MessageStatus } from './message-types'
 import {
   createMessage,
@@ -28,6 +28,7 @@ export class MessagePersister {
     status?: MessageStatus
     requestId?: string
     streamId?: string
+    telemetry?: MessageTelemetry
   }): Promise<Message> {
     logger.debug(`[MessagePersister] Creating message | chatUid=${params.chatUid} seq=${params.seq}`)
 
@@ -40,6 +41,7 @@ export class MessagePersister {
       status: params.status || 'pending',
       requestId: params.requestId,
       streamId: params.streamId,
+      telemetry: params.telemetry,
     })
   }
 
@@ -76,6 +78,7 @@ export class MessagePersister {
     content: string,
     draftSegments: DraftContent,
     toolCalls: ToolCallTrace[],
+    telemetry?: MessageTelemetry,
   ): Promise<void> {
     logger.info(`[MessagePersister] Finalizing message | messageUid=${messageUid} content_len=${content.length}`)
 
@@ -84,6 +87,7 @@ export class MessagePersister {
       status: 'done',
       draftContent: draftSegments.map(s => ({ ...s, committed: true })),
       toolCalls,
+      telemetry,
     })
   }
 

@@ -78,6 +78,33 @@ export interface ToolCallTrace {
   updatedAt: number
 }
 
+export interface MessageTextTelemetry {
+  charCount: number
+  estimatedTokens: number
+}
+
+export interface MessageExecutionTelemetry {
+  llmRuns: number
+  chainRuns: number
+  toolCalls: number
+  toolNames: string[]
+  startedAt?: number
+  firstTokenAt?: number
+  completedAt?: number
+}
+
+export interface MessageTelemetry {
+  version: 1
+  provider?: string
+  model?: string
+  input?: MessageTextTelemetry
+  output?: MessageTextTelemetry
+  usage?: {
+    totalEstimatedTokens: number
+  }
+  execution?: MessageExecutionTelemetry
+}
+
 export interface Workspace {
   type: 'directory' | 'file'
   value: string
@@ -248,6 +275,7 @@ export const message = sqliteTable(
     /** tool / MCP 信息 */
     toolName: t.text('tool_name'),
     toolPayload: t.text('tool_payload', { mode: 'json' }),
+    telemetry: t.text('telemetry', { mode: 'json' }).$type<MessageTelemetry>(),
 
     /** 错误信息 */
     error: t.text('error'),

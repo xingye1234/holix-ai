@@ -12,6 +12,7 @@ import { logger } from '../platform/logger'
 import { providerStore } from '../platform/provider'
 import { update } from '../platform/update'
 import { sessionOrchestrator } from './session-orchestrator'
+import { buildUserMessageTelemetry } from './telemetry/estimator'
 
 export function initChat() {
   // 监听聊天消息发送
@@ -29,7 +30,15 @@ export function initChat() {
     }
 
     // 创建用户消息
-    const userMessage = await createUserMessage(chatId, content)
+    const userMessage = await createUserMessage(
+      chatId,
+      content,
+      buildUserMessageTelemetry({
+        content,
+        provider: chat.provider,
+        model: chat.model,
+      }),
+    )
 
     // 发送更新事件
     update('message.created', {

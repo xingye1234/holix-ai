@@ -1,4 +1,4 @@
-import type { DraftContent, Message, MessageInsert, ToolCallTrace } from './schema/chat'
+import type { DraftContent, Message, MessageInsert, MessageTelemetry, ToolCallTrace } from './schema/chat'
 import { and, desc, eq, inArray, sql } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import { logger } from '../platform/logger'
@@ -97,6 +97,16 @@ function deserializeMessage(msg: Message): Message {
     }
   }
 
+  if ((msg as any).telemetry && typeof (msg as any).telemetry === 'string') {
+    try {
+      (deserialized as any).telemetry = JSON.parse((msg as any).telemetry)
+    }
+    catch (error) {
+      console.error('Failed to parse telemetry:', error);
+      (deserialized as any).telemetry = null
+    }
+  }
+
   return deserialized
 }
 
@@ -120,6 +130,7 @@ export async function createMessage(params: {
   toolName?: string
   toolPayload?: Record<string, any>
   toolCalls?: ToolCallTrace[]
+  telemetry?: MessageTelemetry
 }): Promise<Message> {
   const db = await getDatabase()
   const uid = nanoid()
@@ -149,6 +160,9 @@ export async function createMessage(params: {
     toolCalls: params.toolCalls
       ? (JSON.stringify(params.toolCalls) as any)
       : null,
+    telemetry: params.telemetry
+      ? (JSON.stringify(params.telemetry) as any)
+      : null,
     error: null,
     createdAt: now,
     updatedAt: now,
@@ -177,6 +191,7 @@ export async function createMessage(params: {
 export async function createUserMessage(
   chatUid: string,
   content: string,
+  telemetry?: MessageTelemetry,
 ): Promise<Message> {
   // 获取下一个序号
   const seq = await getNextSeq(chatUid)
@@ -188,6 +203,7 @@ export async function createUserMessage(
     kind: 'message',
     content,
     status: 'done',
+    telemetry,
   })
 }
 
@@ -435,6 +451,9 @@ export async function updateMessage(
   }
   if ('toolCalls' in updates && (updates as any).toolCalls !== undefined && (updates as any).toolCalls !== null) {
     (serializedUpdates as any).toolCalls = JSON.stringify((updates as any).toolCalls)
+  }
+  if ('telemetry' in updates && (updates as any).telemetry !== undefined && (updates as any).telemetry !== null) {
+    (serializedUpdates as any).telemetry = JSON.stringify((updates as any).telemetry)
   }
 
   await db
