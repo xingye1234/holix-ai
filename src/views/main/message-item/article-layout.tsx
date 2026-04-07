@@ -7,10 +7,10 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { formatWithLocalTZ } from '@/lib/time'
 import { cn } from '@/lib/utils'
 import useMessageSelection from '@/store/message-selection'
+import { BlockRenderer } from './block-renderer'
 import { MessageFooter } from './footer'
 import { GeneratingIndicator } from './generating'
-import { MessageMarkdown } from './markdown'
-import { ToolCallCard } from './tool-call-card'
+import { buildMessageRenderBlocks } from './message-blocks'
 
 export interface MessageRenderProps {
   id: string
@@ -55,14 +55,17 @@ export function ArticleLayout({
   const isSelectionMode = useMessageSelection(s => s.isSelectionMode)
   const isSelected = useMessageSelection(s => s.isMessageSelected(id))
   const toggleMessageSelection = useMessageSelection(s => s.toggleMessageSelection)
-
-  const toolCallList = !isUser && toolCallPairs.length > 0 && (
-    <div className="flex flex-col gap-1.5 mb-2 w-full">
-      {toolCallPairs.map(pair => (
-        <ToolCallCard key={pair.request.id} pair={pair} isStreaming={isStreaming} />
-      ))}
-    </div>
-  )
+  const blocks = buildMessageRenderBlocks({
+    message,
+    content,
+    toolCallPairs,
+    isStreaming,
+    isError,
+    isPending,
+    generating,
+    isToolRunning,
+    runningTools,
+  })
 
   return (
     <div
@@ -115,9 +118,6 @@ export function ArticleLayout({
                 </Avatar>
                 <span className="text-xs font-medium text-muted-foreground">AI</span>
               </div>
-
-              {toolCallList}
-
               <div
                 className={cn(
                   'text-sm leading-relaxed transition-all duration-200',
@@ -142,10 +142,9 @@ export function ArticleLayout({
                       <GeneratingIndicator isPending={isPending} isToolRunning={isToolRunning} runningTools={runningTools} />
                     )
                   : (
-                      <MessageMarkdown
-                        content={content || (isError ? (message.error ?? '') : '')}
-                        isUser={false}
-                        isStreaming={isStreaming && !!content}
+                      <BlockRenderer
+                        blocks={blocks}
+                        isUser={isUser}
                       />
                     )}
 

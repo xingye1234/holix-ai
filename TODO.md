@@ -21,11 +21,11 @@
   - [x] 基于 provider / model 做 token 预估
   - [x] 落库消息级 `telemetry`
   - [x] 在消息 footer 增加透明化入口
-- [ ] 实现消息内容块渲染 v1
-  - [ ] 定义 `MessageRenderBlock` 基础类型
-  - [ ] 实现 `markdown / tool / status / approval / command` 五类 block
-  - [ ] 新增 `message -> blocks[]` 推导 mapper
-  - [ ] 用 `BlockRenderer` 替换当前消息正文的分散渲染
+- [x] 实现消息内容块渲染 v1
+  - [x] 定义 `MessageRenderBlock` 基础类型
+  - [x] 实现 `markdown / tool / status / approval / command` 五类 block
+  - [x] 新增 `message -> blocks[]` 推导 mapper
+  - [x] 用 `BlockRenderer` 替换当前消息正文的分散渲染
 - [ ] 实现消息内审批卡片
   - [ ] 将当前 `tool.approval.request` 状态映射到消息 block
   - [ ] 在消息中提供批准 / 拒绝操作
@@ -50,6 +50,7 @@
 - [x] 2026-04-07：首页重构为三状态工作台，并拆分到 `src/views/home/`
 - [x] 2026-04-07：接入 LangChain 级 telemetry 统计，覆盖输入输出字符数、token 预估、tool / chain / llm runs
 - [x] 2026-04-07：为消息 footer 增加“透明化”入口，支持查看消息级 telemetry 面板
+- [x] 2026-04-07：完成消息内容块渲染 v1，接入 `MessageRenderBlock + BlockRenderer`，并补充渲染映射测试
 
 ### 更新规则
 

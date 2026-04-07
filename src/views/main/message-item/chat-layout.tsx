@@ -6,10 +6,10 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { formatWithLocalTZ } from '@/lib/time'
 import { cn } from '@/lib/utils'
 import useMessageSelection from '@/store/message-selection'
+import { BlockRenderer } from './block-renderer'
 import { MessageFooter } from './footer'
 import { GeneratingIndicator } from './generating'
-import { MessageMarkdown } from './markdown'
-import { ToolCallCard } from './tool-call-card'
+import { buildMessageRenderBlocks } from './message-blocks'
 
 export function ChatLayout({
   id,
@@ -34,14 +34,17 @@ export function ChatLayout({
   const isSelectionMode = useMessageSelection(s => s.isSelectionMode)
   const isSelected = useMessageSelection(s => s.isMessageSelected(id))
   const toggleMessageSelection = useMessageSelection(s => s.toggleMessageSelection)
-
-  const toolCallList = !isUser && toolCallPairs.length > 0 && (
-    <div className="flex flex-col gap-1.5 mb-2 w-full">
-      {toolCallPairs.map(pair => (
-        <ToolCallCard key={pair.request.id} pair={pair} isStreaming={isStreaming} />
-      ))}
-    </div>
-  )
+  const blocks = buildMessageRenderBlocks({
+    message,
+    content,
+    toolCallPairs,
+    isStreaming,
+    isError,
+    isPending,
+    generating,
+    isToolRunning,
+    runningTools,
+  })
 
   return (
     <div
@@ -87,8 +90,6 @@ export function ChatLayout({
 
       {/* 气泡 + 取消按钮 */}
       <div className={cn('flex flex-col gap-1.5 max-w-[85%]', isUser ? 'items-end' : 'items-start')}>
-        {toolCallList}
-
         <div
           className={cn(
             'relative min-w-16 max-w-full rounded-2xl px-4 py-3 text-sm transition-all duration-200',
@@ -116,17 +117,12 @@ export function ChatLayout({
             ? (
                 <GeneratingIndicator isPending={isPending} isToolRunning={isToolRunning} runningTools={runningTools} />
               )
-            : isUser
-              ? (
-                  <p className="text-sm leading-relaxed whitespace-pre-wrap wrap-break-word">{content}</p>
-                )
-              : (
-                  <MessageMarkdown
-                    content={content || (isError ? (message.error ?? '') : '')}
-                    isUser={false}
-                    isStreaming={isStreaming && !!content}
-                  />
-                )}
+            : (
+                <BlockRenderer
+                  blocks={blocks}
+                  isUser={isUser}
+                />
+              )}
 
           {isError && message.error && (
             <div className="mt-2 text-xs opacity-70 border-t border-destructive/20 pt-2">
