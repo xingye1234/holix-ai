@@ -27,11 +27,7 @@ const mockChatEventEmitter = vi.hoisted(() => ({
 }))
 
 const mockConfigStore = vi.hoisted(() => ({
-  get: vi.fn((key: string) => {
-    if (key === 'skillsContextStrategy')
-      return 'eager'
-    return null
-  }),
+  get: vi.fn(() => null),
 }))
 
 const mockToolCallTracker = vi.hoisted(() => ({

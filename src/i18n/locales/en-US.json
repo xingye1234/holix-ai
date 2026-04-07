@@ -85,11 +85,7 @@
       "clearCacheDesc": "Clear app cache to free disk space",
       "resetApp": "Reset app",
       "resetAppDesc": "Restore all settings to default. This action cannot be undone",
-      "resetSettings": "Reset settings",
-      "skillsContextStrategy": "Skills Loading Strategy",
-      "skillsContextStrategyDesc": "Choose how AI perceives Skills",
-      "eager": "Eager Loading",
-      "lazy": "Lazy Loading"
+      "resetSettings": "Reset settings"
     },
     "provider": {
       "title": "AI Provider Configuration",
@@ -369,18 +365,6 @@
     "tabs": {
       "installed": "Installed",
       "store": "Store"
-    },
-    "context": {
-      "title": "Skills Context Strategy",
-      "description": "Control how the AI perceives skills in chat.",
-      "modeLabel": "Mode",
-      "eagerTitle": "Eager Loading",
-      "eagerDesc": "AI can directly see full details of all skills",
-      "eagerTip": "AI sees full skill prompts at chat start and can use them directly",
-      "lazyTitle": "Progressive Loading",
-      "lazyDesc": "AI sees summaries first and loads details when needed",
-      "lazyTip": "AI only sees skill names and descriptions first, saving tokens",
-      "toastUpdated": "Skills context strategy updated and will take effect in the next conversation"
     },
     "store": {
       "title": "Skill Store",

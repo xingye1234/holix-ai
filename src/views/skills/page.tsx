@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, Download, FolderTree, Info, Package, Settings2, Sparkles, Star, Wrench, Zap } from 'lucide-react'
+import { ChevronDown, ChevronRight, Download, FolderTree, Info, Package, Settings2, Sparkles, Star, Wrench } from 'lucide-react'
 import { useCallback, useState } from 'react'
 import { toast } from 'sonner'
 import { MarkdownRenderer } from '@/components/markdown/markdown-renderer'
@@ -327,7 +327,6 @@ export function SkillsPage({
   const { t } = useI18n()
   const [skillsState, setSkillsState] = useState(skills)
   const [externalSourcesState, setExternalSourcesState] = useState(externalSources)
-  const [contextStrategy, setContextStrategy] = useState<'eager' | 'lazy'>(config.skillsContextStrategy ?? 'eager')
   const [disabledSkills, setDisabledSkills] = useState<string[]>(config.disabledSkills ?? [])
   const [importDialogOpen, setImportDialogOpen] = useState(false)
   const [selectedExternalSource, setSelectedExternalSource] = useState(externalSources[0]?.path ?? '')
@@ -350,12 +349,6 @@ export function SkillsPage({
       return nextExternalSources[0]?.path ?? ''
     })
   }, [])
-
-  const handleContextStrategyChange = useCallback(async (value: 'eager' | 'lazy') => {
-    setContextStrategy(value)
-    await updateConfig('skillsContextStrategy', value)
-    toast.success(t('skillsPage.context.toastUpdated'))
-  }, [t])
 
   const handleToggleSkillDisabled = useCallback(async (skillName: string, disabled: boolean) => {
     const next = disabled
@@ -488,80 +481,6 @@ export function SkillsPage({
                   </div>
                 </DialogContent>
               </Dialog>
-            </div>
-
-            {/* Skills 上下文策略配置 */}
-            <div className="rounded-xl border bg-gradient-to-br from-primary/5 to-background p-6">
-              <div className="flex items-start gap-4">
-                <div className="shrink-0 rounded-lg border bg-background p-3 shadow-sm">
-                  <Zap className="size-5 text-primary" />
-                </div>
-                <div className="flex-1 space-y-4">
-                  <div>
-                    <h2 className="text-lg font-semibold">{t('skillsPage.context.title')}</h2>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {t('skillsPage.context.description')}
-                    </p>
-                  </div>
-
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <Label className="text-sm font-medium min-w-20">{t('skillsPage.context.modeLabel')}</Label>
-                      <Select value={contextStrategy} onValueChange={handleContextStrategyChange}>
-                        <SelectTrigger className="w-100">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="w-full">
-                          <SelectItem value="eager">
-                            <div className="flex flex-col gap-1 py-1 w-full">
-                              <div className="flex items-center gap-2">
-                                <Zap className="h-3.5 w-3.5" />
-                                <span className="font-medium">{t('skillsPage.context.eagerTitle')}</span>
-                                <span className="text-xs text-muted-foreground">{t('skillsPage.context.eagerDesc')}</span>
-                              </div>
-
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="lazy">
-                            <div className="flex flex-col gap-1 py-1 w-full">
-                              <div className="flex items-center gap-2">
-                                <Clock className="h-3.5 w-3.5" />
-                                <span className="font-medium">{t('skillsPage.context.lazyTitle')}</span>
-                                <span className="text-xs text-muted-foreground">{t('skillsPage.context.lazyDesc')}</span>
-                              </div>
-                            </div>
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="rounded-lg bg-background/60 border p-4 text-sm space-y-2">
-                      <div className="flex gap-2">
-                        <div className="rounded-md bg-primary/10 p-1.5 mt-0.5">
-                          <Zap className="h-3 w-3 text-primary" />
-                        </div>
-                        <div>
-                          <p className="font-medium">{t('skillsPage.context.eagerTitle')}</p>
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            {t('skillsPage.context.eagerTip')}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <div className="rounded-md bg-muted p-1.5 mt-0.5">
-                          <Clock className="h-3 w-3" />
-                        </div>
-                        <div>
-                          <p className="font-medium">{t('skillsPage.context.lazyTitle')}</p>
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            {t('skillsPage.context.lazyTip')}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
             </div>
 
             {/* 技能列表 */}

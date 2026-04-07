@@ -5,8 +5,8 @@
  * - 启动时扫描 .holixai/skills/ 目录
  * - 缓存已加载的 skills
  * - 提供热重载（reload）能力
- * - 监听目录变更（可选，按需加载）
- * - 为每次会话提供 LangChain tools 和 system prompt 内容
+ * - 监听目录变更（可选）
+ * - 为每次会话提供可用 skills 元数据和 prompt 内容
  */
 
 import type { FSWatcher } from 'node:fs'
@@ -145,7 +145,6 @@ class SkillManager {
 
   /**
    * 获取所有 skills 的基本信息（仅 name 和 description）
-   * 用于 lazy 模式，让 AI 知道有哪些 skills 可用，但不包含完整的 prompt
    */
   getSkillsSummary(): Array<{ name: string, description: string }> {
     return Array.from(this.skills.values()).map(s => ({

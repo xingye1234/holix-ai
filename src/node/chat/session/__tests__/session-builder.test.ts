@@ -214,8 +214,6 @@ describe('SessionBuilder', () => {
           { type: 'directory', value: '/path/to/dir' },
           { type: 'file', value: '/path/to/file.ts' },
         ] as any,
-        toolLoadingStrategy: 'smart',
-        coreSkills: ['skill1'],
       })
 
       expect(builder).toBeInstanceOf(SessionBuilder)
@@ -360,7 +358,6 @@ describe('SessionBuilder', () => {
 
       const builder = new SessionBuilder({
         modelConfig: createModelConfig(),
-        toolLoadingStrategy: 'lazy',
       })
 
       await builder.buildAgent('chat-runtime-skills')
@@ -371,7 +368,7 @@ describe('SessionBuilder', () => {
       expect(mockCreateDeepAgent).toHaveBeenCalledWith(
         expect.objectContaining({
           skills: [generatedSkillsRoot],
-          memory: undefined,
+          memory: [join(tempRoot, 'deepagents', 'sessions', 'chat-runtime-skills', 'AGENTS.md')],
         }),
       )
       expect(generatedSkillMd).toContain('name: custom_skill')
@@ -402,19 +399,18 @@ describe('SessionBuilder', () => {
       expect(generatedSkillMd).not.toContain('allowed-tools:')
     })
 
-    it('should generate AGENTS.md for eager strategy with all enabled skills', async () => {
+    it('should generate AGENTS.md for all enabled skills', async () => {
       const alphaSkill = createLoadedSkill({ name: 'alpha', prompt: 'Alpha instructions' })
       const betaSkill = createLoadedSkill({ name: 'beta', prompt: 'Beta instructions' })
       mockListSkills.mockReturnValue([alphaSkill, betaSkill])
 
       const builder = new SessionBuilder({
         modelConfig: createModelConfig(),
-        toolLoadingStrategy: 'eager',
       })
 
-      await builder.buildAgent('chat-eager-memory')
+      await builder.buildAgent('chat-all-memory')
 
-      const memoryPath = join(tempRoot, 'deepagents', 'sessions', 'chat-eager-memory', 'AGENTS.md')
+      const memoryPath = join(tempRoot, 'deepagents', 'sessions', 'chat-all-memory', 'AGENTS.md')
       const memoryContent = readFileSync(memoryPath, 'utf-8')
 
       expect(mockCreateDeepAgent).toHaveBeenCalledWith(
@@ -426,24 +422,29 @@ describe('SessionBuilder', () => {
       expect(memoryContent).toContain('## beta')
     })
 
-    it('should only preload core skills for smart strategy', async () => {
+    it('should generate AGENTS.md with fallback content for enabled skills', async () => {
       const alphaSkill = createLoadedSkill({ name: 'alpha', prompt: 'Alpha instructions' })
-      const betaSkill = createLoadedSkill({ name: 'beta', prompt: 'Beta instructions' })
+      const betaSkill = createLoadedSkill({ name: 'beta' })
       mockListSkills.mockReturnValue([alphaSkill, betaSkill])
 
       const builder = new SessionBuilder({
         modelConfig: createModelConfig(),
-        toolLoadingStrategy: 'smart',
-        coreSkills: ['beta'],
       })
 
-      await builder.buildAgent('chat-smart-memory')
+      await builder.buildAgent('chat-fallback-memory')
 
-      const memoryPath = join(tempRoot, 'deepagents', 'sessions', 'chat-smart-memory', 'AGENTS.md')
+      const memoryPath = join(tempRoot, 'deepagents', 'sessions', 'chat-fallback-memory', 'AGENTS.md')
       const memoryContent = readFileSync(memoryPath, 'utf-8')
 
-      expect(memoryContent).not.toContain('## alpha')
+      expect(memoryContent).toContain('## alpha')
+      expect(memoryContent).toContain('Alpha instructions')
       expect(memoryContent).toContain('## beta')
+      expect(memoryContent).toContain('beta description')
+      expect(mockCreateDeepAgent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          memory: [memoryPath],
+        }),
+      )
     })
 
     it('should compose tools from base tools and mcp tools', async () => {

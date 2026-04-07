@@ -85,11 +85,7 @@
       "clearCacheDesc": "清除应用缓存数据以释放磁盘空间",
       "resetApp": "重置应用",
       "resetAppDesc": "恢复所有设置到默认状态，此操作不可撤销",
-      "resetSettings": "重置设置",
-      "skillsContextStrategy": "Skills 加载策略",
-      "skillsContextStrategyDesc": "选择 AI 对 Skills 的感知方式",
-      "eager": "全量加载",
-      "lazy": "渐进式加载"
+      "resetSettings": "重置设置"
     },
     "provider": {
       "title": "AI 供应商配置",
@@ -369,18 +365,6 @@
     "tabs": {
       "installed": "已安装",
       "store": "商店"
-    },
-    "context": {
-      "title": "Skills 上下文策略",
-      "description": "控制 AI 在聊天时如何感知 skills 信息",
-      "modeLabel": "加载方式",
-      "eagerTitle": "急迫加载",
-      "eagerDesc": "AI 直接看到所有 skills 的完整信息",
-      "eagerTip": "AI 在聊天开始时就能看到所有 skills 的完整提示词，可以直接使用",
-      "lazyTitle": "渐进式加载",
-      "lazyDesc": "AI 先看摘要，需要时再查看详情",
-      "lazyTip": "AI 只看到 skills 的名称和描述，需要时通过工具查看详情，节省 token",
-      "toastUpdated": "Skills 上下文策略已更新，将在下次对话时生效"
     },
     "store": {
       "title": "技能商店",

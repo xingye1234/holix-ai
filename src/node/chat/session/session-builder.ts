@@ -4,7 +4,6 @@
  */
 
 import type { Message, Workspace } from '../../database/schema/chat'
-import type { ToolLoadingStrategy } from '../tools/tool-registry'
 import type { SessionModelConfig } from './session-state'
 import {
   AIMessage,
@@ -34,11 +33,6 @@ export interface SessionBuilderConfig {
   /** 工作区 */
   workspace?: Workspace[]
 
-  /** 工具加载策略 */
-  toolLoadingStrategy?: ToolLoadingStrategy
-
-  /** 核心 Skills（仅在 smart 策略下使用） */
-  coreSkills?: string[]
 }
 
 /**
@@ -59,8 +53,6 @@ export class SessionBuilder {
     const runtimeSkillBundle = materializeRuntimeSkills({
       chatUid,
       enabledSkills,
-      toolLoadingStrategy: this.config.toolLoadingStrategy,
-      coreSkills: this.config.coreSkills,
     })
     const tools = await buildSessionTools(enabledSkills)
     const systemPrompt = buildSessionSystemPrompt({
@@ -83,7 +75,7 @@ export class SessionBuilder {
     })
 
     logger.info(
-      `[SessionBuilder] DeepAgent created | provider=${this.config.modelConfig.provider} model=${this.config.modelConfig.model} tools=${tools.length} skills=${enabledSkills.length} strategy=${this.config.toolLoadingStrategy || 'eager'} backendRoot=${backendRoot}`,
+      `[SessionBuilder] DeepAgent created | provider=${this.config.modelConfig.provider} model=${this.config.modelConfig.model} tools=${tools.length} skills=${enabledSkills.length} backendRoot=${backendRoot}`,
     )
 
     return agent

@@ -1,6 +1,5 @@
 import type { LoadedSkill } from '../../skills/type'
 import type { Workspace } from '../../database/schema/chat'
-import type { ToolLoadingStrategy } from '../tools/tool-registry'
 import { cpSync, existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import process from 'node:process'
@@ -10,8 +9,6 @@ import { DEEP_AGENT_BUILTIN_TOOL_NAMES } from './session-builder-tools'
 interface MaterializeRuntimeSkillsOptions {
   chatUid: string
   enabledSkills: LoadedSkill[]
-  toolLoadingStrategy?: ToolLoadingStrategy
-  coreSkills?: string[]
 }
 
 export function materializeRuntimeSkills(
@@ -41,7 +38,7 @@ export function materializeRuntimeSkills(
     }
   }
 
-  const memorySources = materializeStrategyMemory(sessionRoot, enabledSkills, options)
+  const memorySources = materializeMemory(sessionRoot, enabledSkills)
 
   return {
     skillSources: [skillsRoot],
@@ -71,23 +68,11 @@ export function resolveBackendRoot(workspace?: Workspace[]) {
   return findCommonPath(candidates)
 }
 
-function materializeStrategyMemory(
+function materializeMemory(
   sessionRoot: string,
   enabledSkills: LoadedSkill[],
-  options: MaterializeRuntimeSkillsOptions,
 ) {
-  const strategy = options.toolLoadingStrategy || 'eager'
-  let alwaysLoadedSkills: LoadedSkill[] = []
-
-  if (strategy === 'eager') {
-    alwaysLoadedSkills = enabledSkills
-  }
-  else if (strategy === 'smart') {
-    const coreSkills = new Set(options.coreSkills || [])
-    alwaysLoadedSkills = enabledSkills.filter(skill => coreSkills.has(skill.name))
-  }
-
-  if (alwaysLoadedSkills.length === 0) {
+  if (enabledSkills.length === 0) {
     return undefined
   }
 
@@ -98,7 +83,7 @@ function materializeStrategyMemory(
     '',
     'The following skill instructions are always relevant in this conversation.',
     '',
-    ...alwaysLoadedSkills.flatMap((skill) => {
+    ...enabledSkills.flatMap((skill) => {
       const promptBody = buildSkillBody(skill)
       return [
         `## ${skill.name}`,
