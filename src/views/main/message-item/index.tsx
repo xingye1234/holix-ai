@@ -8,6 +8,7 @@ import { hasExportableMessageContent, openMessagePreviewWindow, saveMessagesToFi
 import { cn } from '@/lib/utils'
 import { useMessageStore } from '@/store/message'
 import useMessageSelection from '@/store/message-selection'
+import { useToolApprovalStore } from '@/store/tool-approval'
 import useUI from '@/store/ui'
 import { ArticleLayout } from './article-layout'
 import { ChatLayout } from './chat-layout'
@@ -25,6 +26,7 @@ export const MessageItem = memo(({ id, index }: MessageItemProps) => {
   const deleteMessage = useMessageStore(state => state.deleteMessage)
   const layoutMode = useUI(state => state.layoutMode)
   const isSelectionMode = useMessageSelection(state => state.isSelectionMode)
+  const pendingApprovalRequest = useToolApprovalStore(state => state.pendingRequest)
 
   const content = useMemo(() => {
     if (!message)
@@ -156,6 +158,7 @@ export const MessageItem = memo(({ id, index }: MessageItemProps) => {
     generating,
     isToolRunning,
     runningTools,
+    pendingApprovalRequest: generating ? pendingApprovalRequest : null,
     onDelete: handleDelete,
     onCancelGeneration,
     onPreview,

@@ -24,6 +24,7 @@ export function ChatLayout({
   generating,
   isToolRunning,
   runningTools,
+  pendingApprovalRequest,
   onDelete,
   onCancelGeneration,
   onPreview,
@@ -44,6 +45,7 @@ export function ChatLayout({
     generating,
     isToolRunning,
     runningTools,
+    pendingApprovalRequest,
   })
 
   return (
@@ -113,7 +115,7 @@ export function ChatLayout({
             </div>
           )}
 
-          {generating && !content
+          {generating && !content && blocks.length === 0
             ? (
                 <GeneratingIndicator isPending={isPending} isToolRunning={isToolRunning} runningTools={runningTools} />
               )

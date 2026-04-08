@@ -3,6 +3,7 @@ import { ApprovalBlockCard } from './approval-block-card'
 import { CommandBlockCard } from './command-block-card'
 import { MessageMarkdown } from './markdown'
 import { StatusBlockRow } from './status-block-row'
+import { TimelineBlockCard } from './timeline-block-card'
 import { ToolCallCard } from './tool-call-card'
 
 interface BlockRendererProps {
@@ -49,6 +50,10 @@ export function BlockRenderer({ blocks, isUser }: BlockRendererProps) {
 
         if (block.type === 'command') {
           return <CommandBlockCard key={block.id} block={block} />
+        }
+
+        if (block.type === 'timeline') {
+          return <TimelineBlockCard key={block.id} block={block} />
         }
 
         return <StatusBlockRow key={block.id} block={block} />

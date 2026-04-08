@@ -1,4 +1,5 @@
 import type { Message } from '@/node/database/schema/chat'
+import type { ToolApprovalRequest } from '@/store/tool-approval'
 import type { ToolCallPair } from './tool-call-card'
 import { AlertCircle, Bot, OctagonX } from 'lucide-react'
 import { useI18n } from '@/i18n/provider'
@@ -25,6 +26,7 @@ export interface MessageRenderProps {
   generating: boolean
   isToolRunning: boolean
   runningTools: string[]
+  pendingApprovalRequest?: ToolApprovalRequest | null
   onDelete: () => void
   onCancelGeneration: () => void
   onPreview: () => void
@@ -45,6 +47,7 @@ export function ArticleLayout({
   generating,
   isToolRunning,
   runningTools,
+  pendingApprovalRequest,
   onDelete,
   onCancelGeneration,
   onPreview,
@@ -65,6 +68,7 @@ export function ArticleLayout({
     generating,
     isToolRunning,
     runningTools,
+    pendingApprovalRequest,
   })
 
   return (
@@ -137,7 +141,7 @@ export function ArticleLayout({
                   </div>
                 )}
 
-                {generating && !content
+                {generating && !content && blocks.length === 0
                   ? (
                       <GeneratingIndicator isPending={isPending} isToolRunning={isToolRunning} runningTools={runningTools} />
                     )

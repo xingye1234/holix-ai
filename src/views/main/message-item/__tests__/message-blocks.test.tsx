@@ -80,7 +80,7 @@ describe('buildMessageRenderBlocks', () => {
       runningTools: [],
     })
 
-    expect(blocks.map(block => block.type)).toEqual(['tool', 'markdown'])
+    expect(blocks.map(block => block.type)).toEqual(['timeline', 'tool', 'markdown'])
   })
 
   it('maps pending approval tool calls to approval blocks', () => {
@@ -107,8 +107,8 @@ describe('buildMessageRenderBlocks', () => {
       runningTools: [],
     })
 
-    expect(blocks).toHaveLength(1)
-    expect(blocks[0]).toMatchObject({
+    expect(blocks).toHaveLength(2)
+    expect(blocks[1]).toMatchObject({
       type: 'approval',
       status: 'pending',
       command: 'rg --files',
@@ -128,7 +128,7 @@ describe('buildMessageRenderBlocks', () => {
           },
           result: {
             ...makeToolPair().result!,
-            content: 'All good',
+            content: JSON.stringify({ exitCode: 1, stdout: 'lint failed', stderr: 'error details' }),
           },
         }),
       ],
@@ -140,11 +140,13 @@ describe('buildMessageRenderBlocks', () => {
       runningTools: [],
     })
 
-    expect(blocks.map(block => block.type)).toEqual(['command', 'markdown'])
-    expect(blocks[0]).toMatchObject({
+    expect(blocks.map(block => block.type)).toEqual(['timeline', 'command', 'markdown'])
+    expect(blocks[1]).toMatchObject({
       type: 'command',
       command: 'pnpm type-check',
-      output: 'All good',
+      status: 'error',
+      exitCode: 1,
+      output: 'lint failed\nerror details',
     })
   })
 
@@ -167,6 +169,38 @@ describe('buildMessageRenderBlocks', () => {
       status: 'running',
       title: '正在执行工具',
       description: 'read_file、search_code',
+    })
+  })
+
+  it('maps live tool approval request to approval block', () => {
+    const blocks = buildMessageRenderBlocks({
+      message: makeMessage({ status: 'streaming' }),
+      content: '',
+      toolCallPairs: [],
+      isStreaming: true,
+      isError: false,
+      isPending: false,
+      generating: true,
+      isToolRunning: false,
+      runningTools: [],
+      pendingApprovalRequest: {
+        callbackId: 'cb-1',
+        toolName: 'exec_command',
+        skillName: 'shell',
+        description: 'run command',
+        args: { cmd: 'pnpm test' },
+        resolve: vi.fn(),
+      },
+    })
+
+    const approvalBlock = blocks.find(block => block.type === 'approval')
+    expect(approvalBlock).toMatchObject({
+      type: 'approval',
+      status: 'pending',
+      toolName: 'exec_command',
+      skillName: 'shell',
+      command: 'pnpm test',
+      isLiveRequest: true,
     })
   })
 })

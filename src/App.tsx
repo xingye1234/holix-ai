@@ -32,6 +32,7 @@ export default function App() {
           skillName: request.skillName,
           description: request.description,
           args: request.args,
+          messageUid: request.messageUid,
           resolve,
         })
       })

@@ -17,9 +17,15 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { useToolApprovalStore } from '@/store/tool-approval'
+import { useMessageStore } from '@/store/message'
 
 export function ToolApprovalModal() {
   const { pendingRequest, approve, deny, approveAlwaysForSkill, approveAllForSession } = useToolApprovalStore()
+  const hasActiveAssistantMessage = useMessageStore((state) => {
+    return Object.values(state.messages).some(
+      msg => msg.role === 'assistant' && (msg.status === 'streaming' || msg.status === 'pending'),
+    )
+  })
 
   const handleApprove = useCallback(() => {
     approve()
@@ -37,7 +43,8 @@ export function ToolApprovalModal() {
     approveAllForSession()
   }, [approveAllForSession])
 
-  if (!pendingRequest)
+  // 仅作为兜底：当消息列表中可承载审批卡片时，不主动弹窗
+  if (!pendingRequest || hasActiveAssistantMessage)
     return null
 
   const argsStr = Object.keys(pendingRequest.args).length > 0

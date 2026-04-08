@@ -22,6 +22,8 @@ export interface ToolApprovalRequest {
   skillName: string
   /** 工具描述 */
   description: string
+  /** 所属消息 uid（可选，用于消息内审批卡片精准挂载） */
+  messageUid?: string
   /** 本次调用的具体参数 */
   args: Record<string, unknown>
   /** resolve 函数，批准时调用 true，拒绝时调用 false */
