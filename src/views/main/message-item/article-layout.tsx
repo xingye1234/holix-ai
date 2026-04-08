@@ -83,7 +83,7 @@ export function ArticleLayout({
     >
       {isUser
         ? (
-            /* 用户消息：右对齐气泡 */
+          /* 用户消息：右对齐气泡 */
             <div className="flex flex-col items-end gap-0.5">
               <div className="flex justify-end items-start gap-2">
                 {isSelectionMode && (
@@ -108,7 +108,7 @@ export function ArticleLayout({
             </div>
           )
         : (
-            /* AI 消息：全宽文章式 */
+          /* AI 消息：全宽文章式 */
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-2 mb-1">
                 {isSelectionMode && (
