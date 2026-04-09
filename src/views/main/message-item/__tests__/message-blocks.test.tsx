@@ -150,6 +150,126 @@ describe('buildMessageRenderBlocks', () => {
     })
   })
 
+  it('renders assistant markdown and command blocks in draft stream order', () => {
+    const blocks = buildMessageRenderBlocks({
+      message: makeMessage({
+        status: 'streaming',
+        draftContent: [
+          {
+            id: 'seg-1',
+            content: '先检查一下环境。\n',
+            phase: 'answer',
+            source: 'model',
+            createdAt: 1,
+          },
+          {
+            id: 'seg-2',
+            content: '{"name":"exec_command"}',
+            phase: 'tool',
+            source: 'model',
+            createdAt: 2,
+            toolCallId: 'call-2',
+            toolName: 'exec_command',
+            toolArgs: { cmd: 'pnpm type-check' },
+          },
+          {
+            id: 'seg-3',
+            content: '检查完成，接下来我会修复类型问题。',
+            phase: 'answer',
+            source: 'model',
+            createdAt: 3,
+          },
+        ],
+      }),
+      content: '先检查一下环境。\n检查完成，接下来我会修复类型问题。',
+      toolCallPairs: [
+        makeToolPair({
+          request: {
+            ...makeToolPair().request,
+            id: 'tool-2',
+            toolCallId: 'call-2',
+            toolName: 'exec_command',
+            toolArgs: { cmd: 'pnpm type-check' },
+            createdAt: 2,
+          },
+          result: {
+            ...makeToolPair().result!,
+            toolCallId: 'call-2',
+            content: JSON.stringify({ exitCode: 0, stdout: 'all good' }),
+            createdAt: 4,
+          },
+        }),
+      ],
+      isStreaming: true,
+      isError: false,
+      isPending: false,
+      generating: true,
+      isToolRunning: false,
+      runningTools: [],
+    })
+
+    expect(blocks.map(block => block.type)).toEqual(['timeline', 'markdown', 'command', 'markdown'])
+    expect(blocks[1]).toMatchObject({
+      type: 'markdown',
+      content: '先检查一下环境。\n',
+    })
+    expect(blocks[2]).toMatchObject({
+      type: 'command',
+      command: 'pnpm type-check',
+    })
+    expect(blocks[3]).toMatchObject({
+      type: 'markdown',
+      content: '检查完成，接下来我会修复类型问题。',
+      isStreaming: true,
+    })
+  })
+
+  it('renders assistant markdown and live approval blocks in draft stream order', () => {
+    const blocks = buildMessageRenderBlocks({
+      message: makeMessage({
+        status: 'streaming',
+        draftContent: [
+          {
+            id: 'seg-1',
+            content: '我准备执行一个命令来确认当前状态。\n',
+            phase: 'answer',
+            source: 'model',
+            createdAt: 1,
+          },
+        ],
+      }),
+      content: '我准备执行一个命令来确认当前状态。\n',
+      toolCallPairs: [],
+      isStreaming: true,
+      isError: false,
+      isPending: false,
+      generating: true,
+      isToolRunning: false,
+      runningTools: [],
+      pendingApprovalRequest: {
+        callbackId: 'cb-1',
+        toolName: 'exec_command',
+        skillName: 'shell',
+        description: 'run command',
+        messageUid: 'msg-1',
+        args: { cmd: 'pnpm test' },
+        resolve: vi.fn(),
+      },
+    })
+
+    expect(blocks.map(block => block.type)).toEqual(['timeline', 'markdown', 'approval'])
+    expect(blocks[1]).toMatchObject({
+      type: 'markdown',
+      content: '我准备执行一个命令来确认当前状态。\n',
+    })
+    expect(blocks[2]).toMatchObject({
+      type: 'approval',
+      status: 'pending',
+      command: 'pnpm test',
+      isLiveRequest: true,
+    })
+  })
+
   it('prepends status blocks when tools are running', () => {
     const blocks = buildMessageRenderBlocks({
       message: makeMessage({ status: 'streaming' }),

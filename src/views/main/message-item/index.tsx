@@ -145,6 +145,12 @@ export const MessageItem = memo(({ id, index }: MessageItemProps) => {
     )
   }
 
+  const matchedPendingApprovalRequest = generating && pendingApprovalRequest
+    ? (!pendingApprovalRequest.messageUid || pendingApprovalRequest.messageUid === message.uid
+        ? pendingApprovalRequest
+        : null)
+    : null
+
   const layoutProps = {
     id,
     index,
@@ -158,7 +164,7 @@ export const MessageItem = memo(({ id, index }: MessageItemProps) => {
     generating,
     isToolRunning,
     runningTools,
-    pendingApprovalRequest: generating ? pendingApprovalRequest : null,
+    pendingApprovalRequest: matchedPendingApprovalRequest,
     onDelete: handleDelete,
     onCancelGeneration,
     onPreview,

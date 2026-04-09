@@ -233,6 +233,87 @@ function buildToolLikeBlocks(pair: ToolCallPair, isStreaming: boolean): MessageR
   ]
 }
 
+function makeMarkdownBlock(id: string, content: string, isStreaming?: boolean): MarkdownBlock | null {
+  if (!content)
+    return null
+
+  return {
+    id,
+    type: 'markdown',
+    content,
+    isStreaming,
+  }
+}
+
+function buildOrderedContentBlocks({
+  message,
+  toolCallPairs,
+  isStreaming,
+}: Pick<BuildMessageBlocksOptions, 'message' | 'toolCallPairs' | 'isStreaming'>): MessageRenderBlock[] {
+  if (!message.draftContent?.length)
+    return []
+
+  const blocks: MessageRenderBlock[] = []
+  const segments = [...message.draftContent].sort((a, b) => a.createdAt - b.createdAt)
+  const toolPairsById = new Map(
+    toolCallPairs
+      .map(pair => [pair.request.toolCallId, pair] as const)
+      .filter((entry): entry is [string, ToolCallPair] => Boolean(entry[0])),
+  )
+
+  let markdownBuffer = ''
+  let markdownIndex = 0
+  const renderedToolCallIds = new Set<string>()
+
+  const flushMarkdown = (streaming = false) => {
+    const block = makeMarkdownBlock(
+      `${message.uid}-markdown-${markdownIndex++}`,
+      markdownBuffer,
+      streaming && Boolean(markdownBuffer),
+    )
+    if (block) {
+      blocks.push(block)
+      markdownBuffer = ''
+    }
+  }
+
+  for (const segment of segments) {
+    if ((segment.phase === 'answer' || segment.phase === 'partial') && segment.source !== 'tool') {
+      markdownBuffer += segment.content
+      continue
+    }
+
+    if (segment.phase !== 'tool' || segment.source !== 'model')
+      continue
+
+    flushMarkdown(false)
+
+    if (segment.toolCallId && renderedToolCallIds.has(segment.toolCallId))
+      continue
+
+    const pair = segment.toolCallId ? toolPairsById.get(segment.toolCallId) : undefined
+    if (pair) {
+      blocks.push(...buildToolLikeBlocks(pair, isStreaming))
+      if (segment.toolCallId)
+        renderedToolCallIds.add(segment.toolCallId)
+      continue
+    }
+
+    blocks.push({
+      id: `${segment.id}-tool`,
+      type: 'tool',
+      status: !isStreaming ? 'done' : 'running',
+      pair: {
+        request: segment,
+      },
+    })
+  }
+
+  flushMarkdown(isStreaming)
+
+  return blocks
+}
+
 function buildTimelineBlock({
   message,
   toolCallPairs,
@@ -385,19 +466,29 @@ export function buildMessageRenderBlocks({
     }]
   }
 
+  const timeline = buildTimelineBlock({ message, toolCallPairs, pendingApprovalRequest, content })
+  const orderedContentBlocks = buildOrderedContentBlocks({
+    message,
+    toolCallPairs,
+    isStreaming,
+  })
+  const fallbackBlocks = orderedContentBlocks.length > 0
+    ? []
+    : [
+        ...buildAssistantStatusBlocks({
+          message,
+          generating,
+          isPending,
+          isToolRunning,
+          runningTools,
+        }),
+        ...toolCallPairs.flatMap(pair => buildToolLikeBlocks(pair, isStreaming)),
+      ]
+
   const blocks: MessageRenderBlock[] = [
-    ...(() => {
-      const timeline = buildTimelineBlock({ message, toolCallPairs, pendingApprovalRequest, content })
-      return timeline ? [timeline] : []
-    })(),
-    ...buildAssistantStatusBlocks({
-      message,
-      generating,
-      isPending,
-      isToolRunning,
-      runningTools,
-    }),
-    ...toolCallPairs.flatMap(pair => buildToolLikeBlocks(pair, isStreaming)),
+    ...(timeline ? [timeline] : []),
+    ...fallbackBlocks,
+    ...orderedContentBlocks,
   ]
 
   if (pendingApprovalRequest) {
@@ -407,7 +498,7 @@ export function buildMessageRenderBlocks({
     )
 
     if (!hasPendingApproval) {
-      blocks.unshift({
+      const approvalBlock: ApprovalBlock = {
         id: `live-approval-${pendingApprovalRequest.toolName}`,
         type: 'approval',
         status: 'pending',
@@ -418,18 +509,27 @@ export function buildMessageRenderBlocks({
         args: pendingApprovalRequest.args,
         reason: pendingApprovalRequest.description,
         isLiveRequest: true,
-      })
+      }
+
+      if (orderedContentBlocks.length > 0) {
+        blocks.push(approvalBlock)
+      }
+      else {
+        blocks.unshift(approvalBlock)
+      }
     }
   }
 
+  const hasMarkdownBlock = blocks.some(block => block.type === 'markdown')
   const markdownContent = content || (isError ? (message.error ?? '') : '')
-  if (markdownContent) {
-    blocks.push({
-      id: `${message.uid}-markdown`,
-      type: 'markdown',
-      content: markdownContent,
-      isStreaming: isStreaming && !!content,
-    })
+  if (markdownContent && !hasMarkdownBlock) {
+    const markdownBlock = makeMarkdownBlock(
+      `${message.uid}-markdown`,
+      markdownContent,
+      isStreaming && !!content,
+    )
+    if (markdownBlock)
+      blocks.push(markdownBlock)
   }
 
   return blocks
