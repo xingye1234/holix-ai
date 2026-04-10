@@ -1,4 +1,4 @@
-import { createRootRoute, Outlet, redirect, useRouterState } from '@tanstack/react-router'
+import { createRootRoute, Outlet, useRouterState } from '@tanstack/react-router'
 import { useEffect, useMemo, useState } from 'react'
 import AppMain from '@/components/app/app-main'
 import AppSetting from '@/components/app/app-setting'
@@ -63,9 +63,4 @@ function RootLayout() {
 
 export const Route = createRootRoute({
   component: RootLayout,
-  beforeLoad: ({ location }) => {
-    if (!localStorage.getItem('holix-welcomed') && location.pathname !== '/welcome') {
-      throw redirect({ to: '/welcome' })
-    }
-  },
 })

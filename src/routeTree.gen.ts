@@ -9,7 +9,6 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as WelcomeRouteImport } from './routes/welcome'
 import { Route as SkillsRouteImport } from './routes/skills'
 import { Route as SettingRouteImport } from './routes/setting'
 import { Route as PreviewRouteImport } from './routes/preview'
@@ -21,11 +20,6 @@ import { Route as SettingHelpRouteImport } from './routes/setting/help'
 import { Route as SettingGeneralRouteImport } from './routes/setting/general'
 import { Route as ChatIdRouteImport } from './routes/chat/$id'
 
-const WelcomeRoute = WelcomeRouteImport.update({
-  id: '/welcome',
-  path: '/welcome',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const SkillsRoute = SkillsRouteImport.update({
   id: '/skills',
   path: '/skills',
@@ -83,7 +77,6 @@ export interface FileRoutesByFullPath {
   '/preview': typeof PreviewRoute
   '/setting': typeof SettingRouteWithChildren
   '/skills': typeof SkillsRoute
-  '/welcome': typeof WelcomeRoute
   '/chat/$id': typeof ChatIdRoute
   '/setting/general': typeof SettingGeneralRoute
   '/setting/help': typeof SettingHelpRoute
@@ -96,7 +89,6 @@ export interface FileRoutesByTo {
   '/preview': typeof PreviewRoute
   '/setting': typeof SettingRouteWithChildren
   '/skills': typeof SkillsRoute
-  '/welcome': typeof WelcomeRoute
   '/chat/$id': typeof ChatIdRoute
   '/setting/general': typeof SettingGeneralRoute
   '/setting/help': typeof SettingHelpRoute
@@ -110,7 +102,6 @@ export interface FileRoutesById {
   '/preview': typeof PreviewRoute
   '/setting': typeof SettingRouteWithChildren
   '/skills': typeof SkillsRoute
-  '/welcome': typeof WelcomeRoute
   '/chat/$id': typeof ChatIdRoute
   '/setting/general': typeof SettingGeneralRoute
   '/setting/help': typeof SettingHelpRoute
@@ -125,7 +116,6 @@ export interface FileRouteTypes {
     | '/preview'
     | '/setting'
     | '/skills'
-    | '/welcome'
     | '/chat/$id'
     | '/setting/general'
     | '/setting/help'
@@ -138,7 +128,6 @@ export interface FileRouteTypes {
     | '/preview'
     | '/setting'
     | '/skills'
-    | '/welcome'
     | '/chat/$id'
     | '/setting/general'
     | '/setting/help'
@@ -151,7 +140,6 @@ export interface FileRouteTypes {
     | '/preview'
     | '/setting'
     | '/skills'
-    | '/welcome'
     | '/chat/$id'
     | '/setting/general'
     | '/setting/help'
@@ -165,19 +153,11 @@ export interface RootRouteChildren {
   PreviewRoute: typeof PreviewRoute
   SettingRoute: typeof SettingRouteWithChildren
   SkillsRoute: typeof SkillsRoute
-  WelcomeRoute: typeof WelcomeRoute
   ChatIdRoute: typeof ChatIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/welcome': {
-      id: '/welcome'
-      path: '/welcome'
-      fullPath: '/welcome'
-      preLoaderRoute: typeof WelcomeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/skills': {
       id: '/skills'
       path: '/skills'
@@ -274,7 +254,6 @@ const rootRouteChildren: RootRouteChildren = {
   PreviewRoute: PreviewRoute,
   SettingRoute: SettingRouteWithChildren,
   SkillsRoute: SkillsRoute,
-  WelcomeRoute: WelcomeRoute,
   ChatIdRoute: ChatIdRoute,
 }
 export const routeTree = rootRouteImport
