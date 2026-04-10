@@ -7,6 +7,7 @@
 
 import { AlertTriangle, ShieldAlert, ShieldCheck, Zap } from 'lucide-react'
 import { useCallback } from 'react'
+import { useRouterState } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -21,10 +22,11 @@ import { useMessageStore } from '@/store/message'
 
 export function ToolApprovalModal() {
   const { pendingRequest, approve, deny, approveAlwaysForSkill, approveAllForSession } = useToolApprovalStore()
-  const hasActiveAssistantMessage = useMessageStore((state) => {
-    return Object.values(state.messages).some(
-      msg => msg.role === 'assistant' && (msg.status === 'streaming' || msg.status === 'pending'),
-    )
+  const pathname = useRouterState({ select: state => state.location.pathname })
+  const pendingMessage = useMessageStore((state) => {
+    if (!pendingRequest?.messageUid)
+      return null
+    return state.messages[pendingRequest.messageUid] ?? null
   })
 
   const handleApprove = useCallback(() => {
@@ -43,8 +45,14 @@ export function ToolApprovalModal() {
     approveAllForSession()
   }, [approveAllForSession])
 
-  // 仅作为兜底：当消息列表中可承载审批卡片时，不主动弹窗
-  if (!pendingRequest || hasActiveAssistantMessage)
+  const isPendingMessageVisible = pendingRequest && pendingMessage
+    ? pathname === `/chat/${pendingMessage.chatUid}`
+      && pendingMessage.role === 'assistant'
+      && (pendingMessage.status === 'streaming' || pendingMessage.status === 'pending')
+    : false
+
+  // 仅作为兜底：只有当前审批请求已挂到当前可见消息中时，才让位给消息内审批卡片
+  if (!pendingRequest || isPendingMessageVisible)
     return null
 
   const argsStr = Object.keys(pendingRequest.args).length > 0

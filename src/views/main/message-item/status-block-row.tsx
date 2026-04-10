@@ -16,7 +16,10 @@ export function StatusBlockRow({ block }: StatusBlockRowProps) {
         : Sparkles
 
   return (
-    <div className="flex items-start gap-2 rounded-lg border border-border/40 bg-muted/15 px-3 py-2 text-xs text-muted-foreground">
+    <div className="flex items-start gap-2 rounded-lg border border-border/35 bg-muted/8 px-3 py-2 text-xs text-muted-foreground">
+      <span className="rounded-full border border-border/50 bg-background/80 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+        Status
+      </span>
       <Icon className={cn('mt-0.5 h-3.5 w-3.5 shrink-0', block.status === 'running' && 'animate-spin')} />
       <div className="min-w-0">
         <p className="font-medium text-foreground">{block.title}</p>

@@ -18,13 +18,16 @@ export function CommandBlockCard({ block }: CommandBlockCardProps) {
   return (
     <div
       className={cn(
-        'rounded-xl border border-border/50 bg-muted/20 px-3 py-2.5 text-xs',
-        block.status === 'error' && 'border-destructive/25 bg-destructive/8',
+        'rounded-lg border border-border/40 bg-muted/10 px-3 py-2 text-xs',
+        block.status === 'error' && 'border-destructive/25 bg-destructive/6',
       )}
     >
       <div className="flex items-center gap-2">
+        <span className="rounded-full border border-border/50 bg-background/80 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+          Command
+        </span>
         <TerminalSquare className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-        <span className="font-medium">{block.toolName}</span>
+        <span className="font-medium font-mono">{block.toolName}</span>
         <span className="ml-auto">
           <StatusIcon className={cn('h-3.5 w-3.5 shrink-0', block.status === 'running' && 'animate-spin')} />
         </span>

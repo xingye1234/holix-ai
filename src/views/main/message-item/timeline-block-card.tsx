@@ -1,5 +1,6 @@
 import type { TimelineBlock } from './message-blocks'
-import { CheckCircle2, Clock3, Loader2, XCircle } from 'lucide-react'
+import { CheckCircle2, ChevronDown, ChevronRight, Clock3, Loader2, XCircle } from 'lucide-react'
+import { useMemo, useState } from 'react'
 import { formatWithLocalTZ } from '@/lib/time'
 import { cn } from '@/lib/utils'
 
@@ -16,17 +17,38 @@ function TimelineStatusIcon({ status }: { status: 'running' | 'done' | 'error' }
 }
 
 export function TimelineBlockCard({ block }: TimelineBlockCardProps) {
+  const [expanded, setExpanded] = useState(false)
+  const statusSummary = useMemo(() => {
+    const hasRunning = block.items.some(item => item.status === 'running')
+    const hasError = block.items.some(item => item.status === 'error')
+    if (hasRunning)
+      return '进行中'
+    if (hasError)
+      return '有异常'
+    return '已完成'
+  }, [block.items])
+
   return (
-    <div className="rounded-xl border border-border/50 bg-muted/20 px-3 py-2.5 text-xs">
-      <div className="flex items-center justify-between">
+    <div className="rounded-xl border border-border/40 bg-muted/10 px-3 py-2 text-xs">
+      <button
+        type="button"
+        className="flex w-full items-center gap-2 text-left"
+        onClick={() => setExpanded(prev => !prev)}
+      >
+        {expanded ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />}
         <div className="font-medium">执行时间线</div>
-        <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+        <span className="rounded-full border border-border/50 bg-background/70 px-2 py-0.5 text-[10px] text-muted-foreground">
+          {statusSummary}
+        </span>
+        <div className="ml-auto flex items-center gap-2 text-[11px] text-muted-foreground">
+          <span>{block.items.length} steps</span>
           {typeof block.totalEstimatedTokens === 'number' && <span>{block.totalEstimatedTokens} tokens</span>}
           {typeof block.totalDurationMs === 'number' && <span>{block.totalDurationMs} ms</span>}
         </div>
-      </div>
+      </button>
 
-      <div className="mt-2 space-y-1.5">
+      {expanded && (
+        <div className="mt-2 space-y-1.5 border-t border-border/30 pt-2">
         {block.items.map(item => (
           <div
             key={item.id}
@@ -50,7 +72,8 @@ export function TimelineBlockCard({ block }: TimelineBlockCardProps) {
             </div>
           </div>
         ))}
-      </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -67,13 +67,20 @@ It's not a one-time web chat tool, but a productivity-focused **AI client infras
 - Support for "allow for this session only" and "always allow" policies
 - Rejected invocations are explicitly recorded and reported, improving auditability
 
-### 5) Complete Desktop Experience
+### 5) Message-Level Execution Transparency
+
+- Assistant replies can be rendered as structured blocks instead of a single flat paragraph
+- Built-in execution timeline for model start, tool calls, approval waiting, command completion, and final answer
+- Per-message telemetry panel showing provider, model, estimated tokens, and execution stats
+- Approval requests and command results are surfaced inline in the chat, with modal fallback only when the message cannot host the action
+
+### 6) Complete Desktop Experience
 
 - System tray, window lifecycle management, single-instance execution
 - Production auto-update capability (electron-updater)
 - i18n multi-language support (including Chinese)
 
-### 6) Engineering & Maintainability
+### 7) Engineering & Maintainability
 
 - Frontend: React + TanStack Router + component-based UI
 - Backend (main process): modular services, routing, and tRPC
@@ -84,6 +91,7 @@ It's not a one-time web chat tool, but a productivity-focused **AI client infras
 - **Strong local control**: Data, configurations, and skills are all controllable on your machine
 - **High extensibility**: Inject new capabilities through Skills without waiting for official feature releases
 - **Clear security boundaries**: High-risk tool approval + invocation records, suitable for real production environments
+- **Transparent execution flow**: You can inspect what the model, tools, approvals, and commands did inside each reply
 - **Model-agnostic**: Not tied to a single LLM provider, facilitating strategy switching and cost optimization
 - **Stable desktop experience**: Better suited for long-term workflows than browser-based short sessions
 

@@ -486,7 +486,6 @@ export function buildMessageRenderBlocks({
       ]
 
   const blocks: MessageRenderBlock[] = [
-    ...(timeline ? [timeline] : []),
     ...fallbackBlocks,
     ...orderedContentBlocks,
   ]
@@ -530,6 +529,10 @@ export function buildMessageRenderBlocks({
     )
     if (markdownBlock)
       blocks.push(markdownBlock)
+  }
+
+  if (timeline) {
+    blocks.push(timeline)
   }
 
   return blocks

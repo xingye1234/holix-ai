@@ -30,13 +30,16 @@ export function ApprovalBlockCard({ block }: ApprovalBlockCardProps) {
   return (
     <div
       className={cn(
-        'rounded-xl border px-3 py-2.5 text-xs',
-        block.status === 'pending' && 'border-amber-500/30 bg-amber-500/8',
-        block.status === 'approved' && 'border-emerald-500/25 bg-emerald-500/8',
-        block.status === 'denied' && 'border-destructive/25 bg-destructive/8',
+        'rounded-lg border px-3 py-2 text-xs',
+        block.status === 'pending' && 'border-amber-500/25 bg-amber-500/6',
+        block.status === 'approved' && 'border-emerald-500/20 bg-emerald-500/6',
+        block.status === 'denied' && 'border-destructive/25 bg-destructive/6',
       )}
     >
       <div className="flex items-center gap-2 font-medium">
+        <span className="rounded-full border border-border/50 bg-background/80 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+          Approval
+        </span>
         <Icon className="h-3.5 w-3.5 shrink-0" />
         <span>{block.title}</span>
         {block.toolName && (

@@ -85,12 +85,15 @@ export const ToolCallCard = memo(({ pair, isStreaming }: ToolCallCardProps) => {
   return (
     <div
       className={cn(
-        'rounded-lg border border-border/50 bg-muted/30 text-xs overflow-hidden',
-        isDenied && 'border-destructive/30 bg-destructive/5',
+        'rounded-lg border border-border/40 bg-muted/10 text-xs overflow-hidden',
+        isDenied && 'border-destructive/30 bg-destructive/6',
       )}
     >
       {/* 头部：工具名 + 状态 */}
       <div className="flex items-center gap-1.5 px-3 py-2">
+        <span className="rounded-full border border-border/50 bg-background/80 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+          Tool
+        </span>
         <Terminal className="w-3 h-3 text-muted-foreground shrink-0" />
         <span className="font-medium font-mono">{toolName}</span>
         <span className="ml-auto">{statusIcon}</span>

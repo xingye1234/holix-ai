@@ -80,7 +80,7 @@ describe('buildMessageRenderBlocks', () => {
       runningTools: [],
     })
 
-    expect(blocks.map(block => block.type)).toEqual(['timeline', 'tool', 'markdown'])
+    expect(blocks.map(block => block.type)).toEqual(['tool', 'markdown', 'timeline'])
   })
 
   it('maps pending approval tool calls to approval blocks', () => {
@@ -108,7 +108,7 @@ describe('buildMessageRenderBlocks', () => {
     })
 
     expect(blocks).toHaveLength(2)
-    expect(blocks[1]).toMatchObject({
+    expect(blocks[0]).toMatchObject({
       type: 'approval',
       status: 'pending',
       command: 'rg --files',
@@ -140,8 +140,8 @@ describe('buildMessageRenderBlocks', () => {
       runningTools: [],
     })
 
-    expect(blocks.map(block => block.type)).toEqual(['timeline', 'command', 'markdown'])
-    expect(blocks[1]).toMatchObject({
+    expect(blocks.map(block => block.type)).toEqual(['command', 'markdown', 'timeline'])
+    expect(blocks[0]).toMatchObject({
       type: 'command',
       command: 'pnpm type-check',
       status: 'error',
@@ -208,16 +208,16 @@ describe('buildMessageRenderBlocks', () => {
       runningTools: [],
     })
 
-    expect(blocks.map(block => block.type)).toEqual(['timeline', 'markdown', 'command', 'markdown'])
-    expect(blocks[1]).toMatchObject({
+    expect(blocks.map(block => block.type)).toEqual(['markdown', 'command', 'markdown', 'timeline'])
+    expect(blocks[0]).toMatchObject({
       type: 'markdown',
       content: '先检查一下环境。\n',
     })
-    expect(blocks[2]).toMatchObject({
+    expect(blocks[1]).toMatchObject({
       type: 'command',
       command: 'pnpm type-check',
     })
-    expect(blocks[3]).toMatchObject({
+    expect(blocks[2]).toMatchObject({
       type: 'markdown',
       content: '检查完成，接下来我会修复类型问题。',
       isStreaming: true,
@@ -257,12 +257,12 @@ describe('buildMessageRenderBlocks', () => {
       },
     })
 
-    expect(blocks.map(block => block.type)).toEqual(['timeline', 'markdown', 'approval'])
-    expect(blocks[1]).toMatchObject({
+    expect(blocks.map(block => block.type)).toEqual(['markdown', 'approval', 'timeline'])
+    expect(blocks[0]).toMatchObject({
       type: 'markdown',
       content: '我准备执行一个命令来确认当前状态。\n',
     })
-    expect(blocks[2]).toMatchObject({
+    expect(blocks[1]).toMatchObject({
       type: 'approval',
       status: 'pending',
       command: 'pnpm test',
