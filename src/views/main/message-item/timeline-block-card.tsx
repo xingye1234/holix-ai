@@ -49,29 +49,29 @@ export function TimelineBlockCard({ block }: TimelineBlockCardProps) {
 
       {expanded && (
         <div className="mt-2 space-y-1.5 border-t border-border/30 pt-2">
-        {block.items.map(item => (
-          <div
-            key={item.id}
-            className={cn(
-              'flex items-start gap-2 rounded-md border border-border/40 bg-background/60 px-2 py-1.5',
-              item.status === 'error' && 'border-destructive/30 bg-destructive/5',
-            )}
-          >
-            <TimelineStatusIcon status={item.status} />
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <span className="font-medium">{item.title}</span>
-                {item.at && (
-                  <span className="text-[10px] text-muted-foreground inline-flex items-center gap-1">
-                    <Clock3 className="h-2.5 w-2.5" />
-                    {formatWithLocalTZ(item.at, 'HH:mm:ss')}
-                  </span>
-                )}
+          {block.items.map(item => (
+            <div
+              key={item.id}
+              className={cn(
+                'flex items-start gap-2 rounded-md border border-border/40 bg-background/60 px-2 py-1.5',
+                item.status === 'error' && 'border-destructive/30 bg-destructive/5',
+              )}
+            >
+              <TimelineStatusIcon status={item.status} />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">{item.title}</span>
+                  {item.at && (
+                    <span className="text-[10px] text-muted-foreground inline-flex items-center gap-1">
+                      <Clock3 className="h-2.5 w-2.5" />
+                      {formatWithLocalTZ(item.at, 'HH:mm:ss')}
+                    </span>
+                  )}
+                </div>
+                {item.description && <div className="mt-0.5 text-[11px] text-muted-foreground break-all">{item.description}</div>}
               </div>
-              {item.description && <div className="mt-0.5 text-[11px] text-muted-foreground break-all">{item.description}</div>}
             </div>
-          </div>
-        ))}
+          ))}
         </div>
       )}
     </div>

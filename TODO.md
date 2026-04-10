@@ -41,7 +41,7 @@
 #### P1 - Agent Loop 透明化基础
 
 - [ ] 梳理 Holix 的 loop state 适配层
-- [ ] 统一 tool / command / approval / agent 的事件映射
+- [x] 统一 tool / command / approval / agent 的事件映射
 - [ ] 为后续 sub-agent 时间线预留消息结构
 
 ### 完成记录
@@ -54,6 +54,7 @@
 - [x] 2026-04-08：完成命令执行结果内容化展示，支持 exit code / 摘要 / 展开查看
 - [x] 2026-04-08：完成第一版消息内执行时间线，统一展示模型、工具、审批、命令与最终回答，并挂载 telemetry 摘要
 - [x] 2026-04-10：完成消息内审批主交互收口，优先在当前消息内展示审批卡片，仅在消息不可见或无法挂载时回退全局弹窗，并补充兜底测试
+- [x] 2026-04-10：将 lifecycle agent 执行接入真实聊天主流程，统一写入消息透明化 blocks 与时间线，形成 tool / command / approval / agent 同层表达
 
 ### 更新规则
 

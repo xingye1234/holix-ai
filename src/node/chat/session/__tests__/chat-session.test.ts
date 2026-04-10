@@ -24,6 +24,8 @@ const mockMessagePersister = vi.hoisted(() => ({
 const mockChatEventEmitter = vi.hoisted(() => ({
   emitMessageCreated: vi.fn(),
   emitMessageUpdated: vi.fn(),
+  emitMessageStreaming: vi.fn(),
+  emitChatUpdated: vi.fn(),
 }))
 
 const mockConfigStore = vi.hoisted(() => ({
@@ -32,6 +34,10 @@ const mockConfigStore = vi.hoisted(() => ({
 
 const mockToolCallTracker = vi.hoisted(() => ({
   buildToolCallTraces: vi.fn(() => []),
+}))
+
+const mockOrchestrator = vi.hoisted(() => ({
+  triggerHook: vi.fn(async () => []),
 }))
 
 // ============================================
@@ -59,6 +65,10 @@ vi.mock('../../../constant', () => ({
 
 vi.mock('../tools/tool-call-tracker', () => ({
   toolCallTracker: mockToolCallTracker,
+}))
+
+vi.mock('../../../agents/lifecycle', () => ({
+  getOrchestrator: vi.fn(() => mockOrchestrator),
 }))
 
 const mockSessionBuilderConstructor = vi.hoisted(() => vi.fn())
@@ -117,6 +127,12 @@ describe('ChatSession', () => {
       streamId: 'stream-123',
       createdAt: Date.now(),
     })
+    mockMessagePersister.updateStatus.mockResolvedValue(undefined)
+    mockMessagePersister.updateContentAndDraft.mockResolvedValue(undefined)
+    mockMessagePersister.finalizeMessage.mockResolvedValue(undefined)
+    mockMessagePersister.markAsAborted.mockResolvedValue(undefined)
+    mockMessagePersister.markAsError.mockResolvedValue(undefined)
+    mockOrchestrator.triggerHook.mockResolvedValue([])
 
     sessionConfig = {
       chatUid: 'chat-123',
@@ -244,6 +260,7 @@ describe('ChatSession', () => {
       await session.run('Hello', [])
 
       expect(mockMessagePersister.updateStatus).toHaveBeenCalled()
+      expect(mockOrchestrator.triggerHook).toHaveBeenCalledWith('onMessageCompleted', 'chat-123', undefined)
     }, 10000)
 
     it('should update status to streaming on start', async () => {
@@ -280,6 +297,23 @@ describe('ChatSession', () => {
       await expect(session.run('Test', [])).resolves.toBeUndefined()
 
       expect(session.getStatus()).toBe('error')
+      expect(mockOrchestrator.triggerHook).toHaveBeenCalledWith('onMessageError', 'chat-123', { error: 'Database error' })
+    }, 10000)
+
+    it('should include lifecycle hook execution in the completed path', async () => {
+      const session = new ChatSession(sessionConfig)
+
+      mockOrchestrator.triggerHook.mockResolvedValue([
+        {
+          agentId: 'builtin:title-generator',
+          status: 'success',
+        },
+      ])
+
+      await session.run('Test', [])
+
+      expect(mockOrchestrator.triggerHook).toHaveBeenCalledWith('onMessageCompleted', 'chat-123', undefined)
+      expect(mockMessagePersister.finalizeMessage).toHaveBeenCalled()
     }, 10000)
   })
 })

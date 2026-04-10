@@ -270,6 +270,56 @@ describe('buildMessageRenderBlocks', () => {
     })
   })
 
+  it('renders lifecycle agent segments as agent blocks and timeline items', () => {
+    const blocks = buildMessageRenderBlocks({
+      message: makeMessage({
+        status: 'done',
+        draftContent: [
+          {
+            id: 'seg-agent-1',
+            content: 'Title Generator: 建议将标题更新为「梳理仓库结构」',
+            phase: 'agent',
+            source: 'system',
+            createdAt: 5,
+            agentId: 'builtin:title-generator',
+            agentName: 'Title Generator',
+            agentHook: 'onMessageCompleted',
+            agentStatus: 'suggest',
+            agentSuggestionType: 'title',
+            agentSuggestionContent: '梳理仓库结构',
+          },
+        ],
+      }),
+      content: 'final answer',
+      toolCallPairs: [],
+      isStreaming: false,
+      isError: false,
+      isPending: false,
+      generating: false,
+      isToolRunning: false,
+      runningTools: [],
+    })
+
+    expect(blocks.map(block => block.type)).toEqual(['agent', 'markdown', 'timeline'])
+    expect(blocks[0]).toMatchObject({
+      type: 'agent',
+      status: 'suggest',
+      agentName: 'Title Generator',
+      hook: 'onMessageCompleted',
+    })
+
+    const timeline = blocks.find(block => block.type === 'timeline')
+    expect(timeline).toMatchObject({
+      type: 'timeline',
+      items: expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'agent_run',
+          title: 'Agent 执行：Title Generator',
+        }),
+      ]),
+    })
+  })
+
   it('prepends status blocks when tools are running', () => {
     const blocks = buildMessageRenderBlocks({
       message: makeMessage({ status: 'streaming' }),

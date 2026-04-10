@@ -4,10 +4,12 @@
  */
 
 import type { Message, Workspace } from '../../database/schema/chat'
+import type { AgentHook, AgentResult } from '../../agents/lifecycle'
 import type { SessionConfig, SessionModelConfig, SessionStatus } from './session-state'
 import { AsyncBatcher } from '@tanstack/pacer'
 import { nanoid } from 'nanoid'
-import { configStore } from '../../platform/config'
+import { getOrchestrator } from '../../agents/lifecycle'
+import { updateChatTitle } from '../../database/chat-operations'
 import { logger } from '../../platform/logger'
 import { chatEventEmitter } from '../events/chat-event-emitter'
 import { messagePersister } from '../message/message-persister'
@@ -92,6 +94,7 @@ export class ChatSession {
 
     // 创建节流的数据库更新器
     const throttledDbUpdate = this.createThrottledDbUpdater()
+    let streamProcessor: StreamProcessor | null = null
 
     try {
       // 更新状态为 streaming
@@ -119,7 +122,7 @@ export class ChatSession {
       })
 
       // 创建流处理器
-      const streamProcessor = new StreamProcessor({
+      streamProcessor = new StreamProcessor({
         chatUid,
         requestId,
         assistantMessageUid,
@@ -163,6 +166,14 @@ export class ChatSession {
 
       // 构建工具调用轨迹
       const toolCalls = toolCallTracker.buildToolCallTraces(draftSegments)
+      const lifecycleResults = await this.runLifecycleHook('onMessageCompleted')
+      const lifecycleSegments = this.buildLifecycleDraftSegments(lifecycleResults, 'onMessageCompleted')
+
+      if (lifecycleSegments.length > 0) {
+        draftSegments.push(...lifecycleSegments)
+      }
+
+      await this.applyLifecycleSuggestions(lifecycleResults)
 
       // 最终化消息
       await messagePersister.finalizeMessage(
@@ -193,7 +204,7 @@ export class ChatSession {
       )
     }
     catch (error: any) {
-      await this.handleError(error, throttledDbUpdate)
+      await this.handleError(error, throttledDbUpdate, streamProcessor)
     }
   }
 
@@ -251,7 +262,7 @@ export class ChatSession {
   /**
    * 处理错误
    */
-  private async handleError(error: any, throttledDbUpdate: any): Promise<void> {
+  private async handleError(error: any, throttledDbUpdate: any, streamProcessor?: StreamProcessor | null): Promise<void> {
     const { chatUid, requestId, assistantMessageUid } = this.config
 
     // 取消节流队列
@@ -289,14 +300,100 @@ export class ChatSession {
 
     // 真实错误处理
     const errMsg = error?.message ?? String(error ?? 'Unknown error')
+    const draftSegments = streamProcessor?.getFinalState().draftSegments ?? []
+    const lifecycleResults = await this.runLifecycleHook('onMessageError', { error: errMsg })
+    const lifecycleSegments = this.buildLifecycleDraftSegments(lifecycleResults, 'onMessageError')
+    const nextDraftSegments = lifecycleSegments.length > 0 ? [...draftSegments, ...lifecycleSegments] : draftSegments
+
+    if (nextDraftSegments.length > 0) {
+      await messagePersister.updateContentAndDraft(assistantMessageUid, '', nextDraftSegments)
+    }
+
     await messagePersister.markAsError(assistantMessageUid, errMsg)
     this.status = 'error'
     chatEventEmitter.emitMessageUpdated({
       chatUid,
       messageUid: assistantMessageUid,
-      updates: { status: 'error', error: errMsg },
+      updates: {
+        status: 'error',
+        error: errMsg,
+        draftContent: nextDraftSegments.length > 0 ? nextDraftSegments : undefined,
+      },
     })
 
     logger.error(`[ChatSession] Session ${requestId} encountered error:`, error)
   }
+
+  private async runLifecycleHook(hook: AgentHook, data?: unknown) {
+    const orchestrator = getOrchestrator()
+    if (!orchestrator)
+      return []
+
+    try {
+      return await orchestrator.triggerHook(hook, this.config.chatUid, data)
+    }
+    catch (error) {
+      logger.warn(`[ChatSession] Failed to trigger lifecycle hook ${hook}:`, error)
+      return []
+    }
+  }
+
+  private buildLifecycleDraftSegments(results: AgentResult[], hook: AgentHook) {
+    const createdAt = Date.now()
+
+    return results.map((result, index) => {
+      const agentName = humanizeAgentName(result.agentId)
+      const suggestion = result.suggestion
+      const content = suggestion?.content
+        ? `${agentName}: ${this.describeAgentSuggestion(suggestion.type, suggestion.content)}`
+        : result.status === 'error'
+          ? `${agentName}: 执行失败${result.error ? ` - ${result.error}` : ''}`
+          : `${agentName}: 已完成`
+
+      return {
+        id: `${this.config.requestId}-agent-${hook}-${index}`,
+        content,
+        phase: 'agent' as const,
+        source: 'system' as const,
+        delta: false,
+        createdAt: createdAt + index,
+        agentId: result.agentId,
+        agentName,
+        agentHook: hook,
+        agentStatus: result.status,
+        agentSuggestionType: suggestion?.type,
+        agentSuggestionContent: suggestion?.content,
+      }
+    })
+  }
+
+  private describeAgentSuggestion(type: NonNullable<AgentResult['suggestion']>['type'], content: string) {
+    if (type === 'title')
+      return `建议将标题更新为「${content}」`
+    return content
+  }
+
+  private async applyLifecycleSuggestions(results: AgentResult[]) {
+    for (const result of results) {
+      if (result.status !== 'suggest' || !result.suggestion)
+        continue
+
+      if (result.suggestion.type === 'title') {
+        await updateChatTitle(this.config.chatUid, result.suggestion.content)
+        chatEventEmitter.emitChatUpdated(this.config.chatUid, {
+          title: result.suggestion.content,
+        })
+      }
+    }
+  }
+}
+
+function humanizeAgentName(agentId: string) {
+  return agentId
+    .split(':')
+    .pop()
+    ?.split('-')
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ')
+    ?? agentId
 }

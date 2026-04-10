@@ -70,9 +70,9 @@ It's not a one-time web chat tool, but a productivity-focused **AI client infras
 ### 5) Message-Level Execution Transparency
 
 - Assistant replies can be rendered as structured blocks instead of a single flat paragraph
-- Built-in execution timeline for model start, tool calls, approval waiting, command completion, and final answer
+- Built-in execution timeline for model start, tool calls, approval waiting, command completion, lifecycle agent execution, and final answer
 - Per-message telemetry panel showing provider, model, estimated tokens, and execution stats
-- Approval requests and command results are surfaced inline in the chat, with modal fallback only when the message cannot host the action
+- Approval requests, command results, and lifecycle agent outcomes are surfaced inline in the chat, with modal fallback only when the message cannot host the action
 
 ### 6) Complete Desktop Experience
 

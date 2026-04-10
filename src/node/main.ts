@@ -7,6 +7,7 @@ import { createStaticMiddleware } from '@holix/static'
 import { Effect } from 'effect'
 import { app, protocol, shell } from 'electron'
 import { agents } from './agents'
+import { initializeLifecycleAgents } from './agents/lifecycle/bootstrap'
 import { initChat } from './chat/init'
 import { SCHEME } from './constant'
 import { migrateDb } from './database/connect'
@@ -157,6 +158,10 @@ function createInitTasks(): LifecycleTask[] {
         catch: e => e,
       }),
       timeout: '3 seconds',
+    },
+    {
+      name: 'Initialize lifecycle agents',
+      execute: () => Effect.sync(() => initializeLifecycleAgents()),
     },
   ]
 }

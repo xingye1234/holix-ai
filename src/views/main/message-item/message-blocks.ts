@@ -22,6 +22,16 @@ export interface ApprovalBlock {
   isLiveRequest?: boolean
 }
 
+export interface AgentBlock {
+  id: string
+  type: 'agent'
+  status: 'done' | 'error' | 'suggest'
+  title: string
+  agentName?: string
+  hook?: string
+  description?: string
+}
+
 export interface CommandBlock {
   id: string
   type: 'command'
@@ -37,7 +47,7 @@ export interface CommandBlock {
 export interface TimelineItem {
   id: string
   at?: number
-  kind: 'model_start' | 'tool_call' | 'approval_waiting' | 'command_done' | 'final_answer'
+  kind: 'model_start' | 'tool_call' | 'approval_waiting' | 'command_done' | 'agent_run' | 'final_answer'
   title: string
   description?: string
   status: 'running' | 'done' | 'error'
@@ -69,6 +79,7 @@ export interface StatusBlock {
 export type MessageRenderBlock =
   | MarkdownBlock
   | ApprovalBlock
+  | AgentBlock
   | CommandBlock
   | TimelineBlock
   | ToolBlock
@@ -278,6 +289,29 @@ function buildOrderedContentBlocks({
   }
 
   for (const segment of segments) {
+    if (segment.phase === 'agent') {
+      flushMarkdown(false)
+
+      const agentStatus = segment.agentStatus === 'error'
+        ? 'error'
+        : segment.agentStatus === 'suggest'
+          ? 'suggest'
+          : 'done'
+
+      blocks.push({
+        id: `${segment.id}-agent`,
+        type: 'agent',
+        status: agentStatus,
+        title: segment.agentName
+          ? `${segment.agentName}${agentStatus === 'suggest' ? ' 给出建议' : ' 已执行'}`
+          : 'Agent 已执行',
+        agentName: segment.agentName,
+        hook: segment.agentHook,
+        description: segment.content,
+      })
+      continue
+    }
+
     if ((segment.phase === 'answer' || segment.phase === 'partial') && segment.source !== 'tool') {
       markdownBuffer += segment.content
       continue
@@ -367,6 +401,21 @@ function buildTimelineBlock({
         status: commandOutput.exitCode && commandOutput.exitCode !== 0 ? 'error' : 'done',
       })
     }
+  }
+
+  const agentSegments = [...(message.draftContent ?? [])]
+    .filter(segment => segment.phase === 'agent')
+    .sort((a, b) => a.createdAt - b.createdAt)
+
+  for (const segment of agentSegments) {
+    items.push({
+      id: `${segment.id}-timeline-agent`,
+      kind: 'agent_run',
+      title: segment.agentName ? `Agent 执行：${segment.agentName}` : 'Agent 执行',
+      description: segment.content || segment.agentSuggestionContent,
+      at: segment.createdAt,
+      status: segment.agentStatus === 'error' ? 'error' : 'done',
+    })
   }
 
   if (pendingApprovalRequest) {

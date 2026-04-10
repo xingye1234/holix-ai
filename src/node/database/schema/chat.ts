@@ -13,7 +13,7 @@ export interface DraftSegment {
   content: string
 
   /** 阶段 */
-  phase: 'thinking' | 'answer' | 'tool' | 'partial'
+  phase: 'thinking' | 'answer' | 'tool' | 'partial' | 'agent'
 
   /** 来源 */
   source: 'model' | 'tool' | 'system'
@@ -45,6 +45,26 @@ export interface DraftSegment {
    * - 'denied'   : 用户拒绝，工具调用被阻断
    */
   approvalStatus?: 'pending' | 'approved' | 'denied'
+
+  // ─── Agent 执行专属字段（phase === 'agent' 时填充）───────────────────────
+
+  /** Lifecycle / sub-agent 稳定 ID */
+  agentId?: string
+
+  /** 便于 UI 展示的 agent 名称 */
+  agentName?: string
+
+  /** 触发 agent 执行的 hook */
+  agentHook?: 'onChatCreated' | 'onMessageCompleted' | 'onChatIdle' | 'onMessageError'
+
+  /** agent 执行状态 */
+  agentStatus?: 'success' | 'error' | 'suggest'
+
+  /** 建议类型（若 agent 返回 suggestion） */
+  agentSuggestionType?: 'title' | 'summary' | 'tool' | 'agent' | 'action'
+
+  /** 建议内容（若 agent 返回 suggestion） */
+  agentSuggestionContent?: string
 }
 
 export interface PendingMessage {

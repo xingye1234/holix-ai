@@ -1,3 +1,4 @@
+import { AgentBlockCard } from './agent-block-card'
 import type { MessageRenderBlock } from './message-blocks'
 import { ApprovalBlockCard } from './approval-block-card'
 import { CommandBlockCard } from './command-block-card'
@@ -46,6 +47,10 @@ export function BlockRenderer({ blocks, isUser }: BlockRendererProps) {
 
         if (block.type === 'approval') {
           return <ApprovalBlockCard key={block.id} block={block} />
+        }
+
+        if (block.type === 'agent') {
+          return <AgentBlockCard key={block.id} block={block} />
         }
 
         if (block.type === 'command') {

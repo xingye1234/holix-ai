@@ -23,7 +23,7 @@ import { procedure, router } from './trpc'
 const draftSegmentSchema = z.object({
   id: z.string(),
   content: z.string(),
-  phase: z.enum(['thinking', 'answer', 'tool', 'partial']),
+  phase: z.enum(['thinking', 'answer', 'tool', 'partial', 'agent']),
   source: z.enum(['model', 'tool', 'system']),
   committed: z.boolean().optional(),
   delta: z.boolean().optional(),
@@ -32,6 +32,12 @@ const draftSegmentSchema = z.object({
   toolName: z.string().optional(),
   toolArgs: z.record(z.string(), z.unknown()).optional(),
   approvalStatus: z.enum(['pending', 'approved', 'denied']).optional(),
+  agentId: z.string().optional(),
+  agentName: z.string().optional(),
+  agentHook: z.enum(['onChatCreated', 'onMessageCompleted', 'onChatIdle', 'onMessageError']).optional(),
+  agentStatus: z.enum(['success', 'error', 'suggest']).optional(),
+  agentSuggestionType: z.enum(['title', 'summary', 'tool', 'agent', 'action']).optional(),
+  agentSuggestionContent: z.string().optional(),
 })
 
 // 定义消息相关的 procedures
