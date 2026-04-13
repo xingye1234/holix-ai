@@ -175,6 +175,7 @@ describe('wrapWithApproval - 需要用户审批', () => {
     expect(mockRecordSkillInvocation).toHaveBeenCalledWith(expect.objectContaining({
       skillName: 'my_skill',
       toolName: 'denied_tool',
+      args: {},
       rejected: true,
     }))
   })
@@ -190,6 +191,12 @@ describe('wrapWithApproval - 需要用户审批', () => {
     expect(fn).not.toHaveBeenCalled()
     expect(typeof result).toBe('string')
     expect(result).toContain('拒绝')
+    expect(mockRecordSkillInvocation).toHaveBeenCalledWith(expect.objectContaining({
+      skillName: 'my_skill',
+      toolName: 'error_tool',
+      args: {},
+      rejected: true,
+    }))
   })
 
   it('审批载荷包含 tool 描述', async () => {

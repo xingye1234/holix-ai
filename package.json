@@ -24,6 +24,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "test:aimock": "vitest run -c vitest.aimock.config.ts",
     "gen:db": "drizzle-kit generate",
     "studio": "drizzle-kit studio",
     "lint": "eslint . --fix",
@@ -32,7 +33,6 @@
     "postinstall": "electron-rebuild -f -w better-sqlite3",
     "rebuild:windows": "electron-rebuild -f -w better-sqlite3 --arch=x64",
     "rebuild:mac": "electron-rebuild -f -w better-sqlite3 --arch=arm64",
-    "test:skills": "vitest run -c vitest.skills.config.ts",
     "changelog": "node scripts/generate-changelog.js",
     "release-notes": "node scripts/generate-release-notes.js",
     "version:patch": "node scripts/bump-version.js patch",
@@ -123,6 +123,7 @@
   "devDependencies": {
     "@antfu/eslint-config": "^6.7.3",
     "@biomejs/biome": "2.3.10",
+    "@copilotkit/aimock": "^1.13.0",
     "@electron/rebuild": "^4.0.3",
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/router-plugin": "^1.145.2",

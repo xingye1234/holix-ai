@@ -252,6 +252,9 @@ importers:
       '@biomejs/biome':
         specifier: 2.3.10
         version: 2.3.10
+      '@copilotkit/aimock':
+        specifier: ^1.13.0
+        version: 1.13.0
       '@electron/rebuild':
         specifier: ^4.0.3
         version: 4.0.3
@@ -649,6 +652,11 @@ packages:
         optional: true
       conventional-commits-parser:
         optional: true
+
+  '@copilotkit/aimock@1.13.0':
+    resolution: {integrity: sha512-wcNQdicxSuaHf4MLtoC9bouKeYGcV9aBoIVJbeLtrBUhqz5LUAmo/U/S1WT69kyAEuM0uO1XyD3Jz+V+H9jsUw==}
+    engines: {node: '>=20.15.0'}
+    hasBin: true
 
   '@date-fns/tz@1.4.1':
     resolution: {integrity: sha512-P5LUNhtbj6YfI3iJjw5EL9eUAG6OitD0W3fWQcpQjDRc/QIsL0tRNuO1PcDvPccWL1fSTXXdE1ds+l95DV/OFA==}
@@ -8061,6 +8069,8 @@ snapshots:
     optionalDependencies:
       conventional-commits-filter: 5.0.0
       conventional-commits-parser: 6.3.0
+
+  '@copilotkit/aimock@1.13.0': {}
 
   '@date-fns/tz@1.4.1': {}
 

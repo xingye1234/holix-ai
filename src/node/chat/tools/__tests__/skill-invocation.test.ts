@@ -1,5 +1,5 @@
 import { DynamicStructuredTool as DynamicStructuredToolImpl } from '@langchain/core/tools'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import z from 'zod'
 import { wrapWithSkillInvocationLog } from '../skill-invocation'
 
@@ -10,6 +10,10 @@ vi.mock('../../../database/skill-invocation-log', () => ({
 }))
 
 describe('wrapWithSkillInvocationLog', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
   it('记录成功调用的参数和结果', async () => {
     const tool = new DynamicStructuredToolImpl({
       name: 'hello_tool',
@@ -28,6 +32,29 @@ describe('wrapWithSkillInvocationLog', () => {
       args: { name: 'codex' },
       result: 'hello codex',
       rejected: false,
+    })
+  })
+
+  it('记录失败调用的参数和错误，保持异常继续抛出', async () => {
+    const tool = new DynamicStructuredToolImpl({
+      name: 'failing_tool',
+      description: 'fail',
+      schema: z.object({ value: z.string() }),
+      func: async () => {
+        throw new Error('boom')
+      },
+    })
+
+    const wrapped = wrapWithSkillInvocationLog(tool, 'demo_skill')
+
+    await expect(wrapped.invoke({ value: 'x' })).rejects.toThrow('boom')
+
+    expect(mockRecordSkillInvocation).toHaveBeenCalledWith({
+      skillName: 'demo_skill',
+      toolName: 'failing_tool',
+      args: { value: 'x' },
+      rejected: false,
+      error: 'boom',
     })
   })
 })
