@@ -1,3 +1,4 @@
+import type { StreamContext } from '../stream-state'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { StreamProcessor } from '../stream-processor'
 
@@ -11,14 +12,14 @@ vi.mock('../../events/chat-event-emitter', () => ({
 
 describe('Stream transparency chain', () => {
   let processor: StreamProcessor
-  let throttledDbUpdate: { addItem: ReturnType<typeof vi.fn> }
+  let throttledDbUpdate: StreamContext['throttledDbUpdate']
 
   beforeEach(() => {
     vi.clearAllMocks()
 
     throttledDbUpdate = {
       addItem: vi.fn(),
-    }
+    } as unknown as StreamContext['throttledDbUpdate']
 
     processor = new StreamProcessor({
       chatUid: 'chat-transparency',
