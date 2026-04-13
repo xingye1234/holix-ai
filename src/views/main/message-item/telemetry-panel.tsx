@@ -30,6 +30,7 @@ function StatItem({ label, value }: { label: string, value: string | number | nu
 }
 
 export function TelemetryPanel({ telemetry }: TelemetryPanelProps) {
+  const lastRunStatus = telemetry.execution?.lastRunStatus
   const totalDuration = formatDuration(
     telemetry.execution?.startedAt,
     telemetry.execution?.completedAt,
@@ -38,6 +39,11 @@ export function TelemetryPanel({ telemetry }: TelemetryPanelProps) {
   const firstTokenDuration = formatDuration(
     telemetry.execution?.startedAt,
     telemetry.execution?.firstTokenAt,
+  )
+
+  const lastRunDuration = formatDuration(
+    telemetry.execution?.lastRunStartedAt,
+    telemetry.execution?.lastRunCompletedAt,
   )
 
   return (
@@ -73,6 +79,8 @@ export function TelemetryPanel({ telemetry }: TelemetryPanelProps) {
             <StatItem label="Chain Runs" value={telemetry.execution?.chainRuns} />
             <StatItem label="Tool Calls" value={telemetry.execution?.toolCalls} />
             <StatItem label="Tool Names" value={telemetry.execution?.toolNames?.join(', ')} />
+            <StatItem label="Last Run" value={lastRunStatus} />
+            <StatItem label="Last Error" value={telemetry.execution?.lastRunError} />
           </div>
         </div>
 
@@ -83,6 +91,8 @@ export function TelemetryPanel({ telemetry }: TelemetryPanelProps) {
             <StatItem label="First Token" value={firstTokenDuration} />
             <StatItem label="Completed" value={telemetry.execution?.completedAt ? formatWithLocalTZ(telemetry.execution.completedAt, 'HH:mm:ss') : null} />
             <StatItem label="Duration" value={totalDuration} />
+            <StatItem label="Last Started" value={telemetry.execution?.lastRunStartedAt ? formatWithLocalTZ(telemetry.execution.lastRunStartedAt, 'HH:mm:ss') : null} />
+            <StatItem label="Last Duration" value={lastRunDuration} />
           </div>
         </div>
       </div>

@@ -111,6 +111,11 @@ export interface MessageExecutionTelemetry {
   startedAt?: number
   firstTokenAt?: number
   completedAt?: number
+  lastRunStartedAt?: number
+  lastRunFirstTokenAt?: number
+  lastRunCompletedAt?: number
+  lastRunStatus?: 'running' | 'completed' | 'interrupted' | 'aborted' | 'error'
+  lastRunError?: string
 }
 
 export interface MessageTelemetry {

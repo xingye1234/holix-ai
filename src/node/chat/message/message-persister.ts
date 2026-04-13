@@ -94,23 +94,25 @@ export class MessagePersister {
   /**
    * 标记消息为错误
    */
-  async markAsError(messageUid: string, error: string): Promise<void> {
+  async markAsError(messageUid: string, error: string, telemetry?: MessageTelemetry): Promise<void> {
     logger.error(`[MessagePersister] Marking as error | messageUid=${messageUid} error=${error}`)
 
     await updateMessage(messageUid, {
       status: 'error',
       error,
+      telemetry,
     })
   }
 
   /**
    * 标记消息为已中止
    */
-  async markAsAborted(messageUid: string): Promise<void> {
+  async markAsAborted(messageUid: string, telemetry?: MessageTelemetry): Promise<void> {
     logger.info(`[MessagePersister] Marking as aborted | messageUid=${messageUid}`)
 
     await updateMessage(messageUid, {
       status: 'aborted',
+      telemetry,
     })
   }
 

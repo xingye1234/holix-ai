@@ -95,6 +95,10 @@ export class ChatSession {
     // 创建节流的数据库更新器
     const throttledDbUpdate = this.createThrottledDbUpdater()
     let streamProcessor: StreamProcessor | null = null
+    const telemetryHandler = new LangChainTelemetryHandler({
+      provider: modelConfig.provider,
+      model: modelConfig.model,
+    })
 
     try {
       // 更新状态为 streaming
@@ -116,11 +120,6 @@ export class ChatSession {
       const agent = await builder.buildAgent(chatUid)
       const messages = builder.buildMessages(contextMessages, userMessageContent)
       const context = builder.buildContext(chatUid)
-      const telemetryHandler = new LangChainTelemetryHandler({
-        provider: modelConfig.provider,
-        model: modelConfig.model,
-      })
-
       // 创建流处理器
       streamProcessor = new StreamProcessor({
         chatUid,
@@ -204,7 +203,7 @@ export class ChatSession {
       )
     }
     catch (error: any) {
-      await this.handleError(error, throttledDbUpdate, streamProcessor)
+      await this.handleError(error, throttledDbUpdate, streamProcessor, telemetryHandler)
     }
   }
 
@@ -262,7 +261,12 @@ export class ChatSession {
   /**
    * 处理错误
    */
-  private async handleError(error: any, throttledDbUpdate: any, streamProcessor?: StreamProcessor | null): Promise<void> {
+  private async handleError(
+    error: any,
+    throttledDbUpdate: any,
+    streamProcessor?: StreamProcessor | null,
+    telemetryHandler?: LangChainTelemetryHandler,
+  ): Promise<void> {
     const { chatUid, requestId, assistantMessageUid } = this.config
 
     // 取消节流队列
@@ -287,12 +291,16 @@ export class ChatSession {
     const isAbort = error?.name === 'AbortError' || this.status === 'aborted'
 
     if (isAbort) {
-      await messagePersister.markAsAborted(assistantMessageUid)
+      telemetryHandler?.markAborted(error?.message ?? 'aborted')
+      await messagePersister.markAsAborted(assistantMessageUid, telemetryHandler?.snapshot())
       this.status = 'aborted'
       chatEventEmitter.emitMessageUpdated({
         chatUid,
         messageUid: assistantMessageUid,
-        updates: { status: 'aborted' },
+        updates: {
+          status: 'aborted',
+          telemetry: telemetryHandler?.snapshot(),
+        },
       })
       logger.info(`[ChatSession] Session ${requestId} was aborted by user`)
       return
@@ -300,6 +308,13 @@ export class ChatSession {
 
     // 真实错误处理
     const errMsg = error?.message ?? String(error ?? 'Unknown error')
+    const interrupted = /terminated|disconnect|aborted/i.test(errMsg)
+    if (interrupted) {
+      telemetryHandler?.markInterrupted(errMsg)
+    }
+    else {
+      telemetryHandler?.markError(errMsg)
+    }
     const draftSegments = streamProcessor?.getFinalState().draftSegments ?? []
     const lifecycleResults = await this.runLifecycleHook('onMessageError', { error: errMsg })
     const lifecycleSegments = this.buildLifecycleDraftSegments(lifecycleResults, 'onMessageError')
@@ -309,7 +324,7 @@ export class ChatSession {
       await messagePersister.updateContentAndDraft(assistantMessageUid, '', nextDraftSegments)
     }
 
-    await messagePersister.markAsError(assistantMessageUid, errMsg)
+    await messagePersister.markAsError(assistantMessageUid, errMsg, telemetryHandler?.snapshot())
     this.status = 'error'
     chatEventEmitter.emitMessageUpdated({
       chatUid,
@@ -318,6 +333,7 @@ export class ChatSession {
         status: 'error',
         error: errMsg,
         draftContent: nextDraftSegments.length > 0 ? nextDraftSegments : undefined,
+        telemetry: telemetryHandler?.snapshot(),
       },
     })
 

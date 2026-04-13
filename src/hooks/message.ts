@@ -1,4 +1,5 @@
 import type { DraftContent, ToolCallTrace } from '@/node/database/schema/chat'
+import type { ToolCallStatus } from '@/node/chat/message/message-types'
 import { useCallback, useEffect, useRef } from 'react'
 import { onUpdate } from '@/lib/command'
 import logger from '@/lib/logger'
@@ -26,6 +27,7 @@ export function useMessageUpdates() {
         content: string
         draftContent: DraftContent
         toolCalls: ToolCallTrace[] | null | undefined
+        toolStatus: ToolCallStatus | null | undefined
       }
     >
   >(new Map())

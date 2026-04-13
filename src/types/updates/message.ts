@@ -29,6 +29,7 @@ export type MessageStreamingEnvelope = EventEnvelope<
     delta: string // 本次增量内容
     draftContent: DraftSegment[]
     toolCalls: Message['toolCalls']
+    toolStatus: Message['toolStatus']
   }
 >
 

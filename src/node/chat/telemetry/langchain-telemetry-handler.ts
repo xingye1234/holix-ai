@@ -30,6 +30,7 @@ export class LangChainTelemetryHandler extends BaseCallbackHandler {
         chainRuns: 0,
         toolCalls: 0,
         toolNames: [],
+        lastRunStatus: 'running',
       },
     }
   }
@@ -46,6 +47,11 @@ export class LangChainTelemetryHandler extends BaseCallbackHandler {
       ...this.telemetry.execution!,
       llmRuns: this.telemetry.execution!.llmRuns + 1,
       startedAt: this.telemetry.execution?.startedAt ?? Date.now(),
+      lastRunStartedAt: Date.now(),
+      lastRunFirstTokenAt: undefined,
+      lastRunCompletedAt: undefined,
+      lastRunStatus: 'running',
+      lastRunError: undefined,
     }
     this.updateTotal()
   }
@@ -57,6 +63,7 @@ export class LangChainTelemetryHandler extends BaseCallbackHandler {
     this.telemetry.execution = {
       ...this.telemetry.execution!,
       firstTokenAt: this.telemetry.execution?.firstTokenAt ?? Date.now(),
+      lastRunFirstTokenAt: this.telemetry.execution?.lastRunFirstTokenAt ?? Date.now(),
     }
     this.updateTotal()
   }
@@ -81,6 +88,9 @@ export class LangChainTelemetryHandler extends BaseCallbackHandler {
     this.telemetry.execution = {
       ...this.telemetry.execution!,
       completedAt: Date.now(),
+      lastRunCompletedAt: Date.now(),
+      lastRunStatus: 'completed',
+      lastRunError: undefined,
     }
     this.updateTotal()
   }
@@ -113,6 +123,30 @@ export class LangChainTelemetryHandler extends BaseCallbackHandler {
             toolNames: [...this.telemetry.execution.toolNames],
           }
         : undefined,
+    }
+  }
+
+  markInterrupted(reason?: string) {
+    this.telemetry.execution = {
+      ...this.telemetry.execution!,
+      lastRunStatus: 'interrupted',
+      lastRunError: reason,
+    }
+  }
+
+  markAborted(reason?: string) {
+    this.telemetry.execution = {
+      ...this.telemetry.execution!,
+      lastRunStatus: 'aborted',
+      lastRunError: reason,
+    }
+  }
+
+  markError(reason?: string) {
+    this.telemetry.execution = {
+      ...this.telemetry.execution!,
+      lastRunStatus: 'error',
+      lastRunError: reason,
     }
   }
 

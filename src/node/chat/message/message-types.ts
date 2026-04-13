@@ -2,7 +2,7 @@
  * 消息类型定义
  */
 
-import type { DraftContent, ToolCallTrace } from '../../database/schema/chat'
+import type { DraftContent, MessageTelemetry, ToolCallTrace } from '../../database/schema/chat'
 
 /**
  * 消息角色
@@ -73,6 +73,7 @@ export interface MessageUpdateEvent {
     toolCalls?: ToolCallTrace[]
     toolStatus?: ToolCallStatus
     error?: string
+    telemetry?: MessageTelemetry
   }
 }
 

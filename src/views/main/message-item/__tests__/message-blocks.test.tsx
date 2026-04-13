@@ -342,6 +342,90 @@ describe('buildMessageRenderBlocks', () => {
     })
   })
 
+  it('shows an interrupted status block when the last run was interrupted', () => {
+    const blocks = buildMessageRenderBlocks({
+      message: makeMessage({
+        status: 'error',
+        telemetry: {
+          version: 1,
+          execution: {
+            llmRuns: 1,
+            chainRuns: 0,
+            toolCalls: 0,
+            toolNames: [],
+            startedAt: 100,
+            lastRunStartedAt: 100,
+            lastRunStatus: 'interrupted',
+            lastRunError: 'terminated',
+          },
+        },
+      }),
+      content: 'partial answer',
+      toolCallPairs: [],
+      isStreaming: false,
+      isError: true,
+      isPending: false,
+      generating: false,
+      isToolRunning: false,
+      runningTools: [],
+    })
+
+    expect(blocks[0]).toMatchObject({
+      type: 'status',
+      status: 'error',
+      title: '生成过程中断',
+      description: 'terminated',
+    })
+
+    const timeline = blocks.find(block => block.type === 'timeline')
+    expect(timeline).toMatchObject({
+      type: 'timeline',
+      items: expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'final_answer',
+          title: '最终回答中断',
+          status: 'error',
+        }),
+      ]),
+    })
+  })
+
+  it('shows an aborted status block when the run was cancelled', () => {
+    const blocks = buildMessageRenderBlocks({
+      message: makeMessage({
+        status: 'aborted',
+        telemetry: {
+          version: 1,
+          execution: {
+            llmRuns: 1,
+            chainRuns: 0,
+            toolCalls: 0,
+            toolNames: [],
+            startedAt: 100,
+            lastRunStartedAt: 100,
+            lastRunStatus: 'aborted',
+            lastRunError: 'aborted',
+          },
+        },
+      }),
+      content: '',
+      toolCallPairs: [],
+      isStreaming: false,
+      isError: false,
+      isPending: false,
+      generating: false,
+      isToolRunning: false,
+      runningTools: [],
+    })
+
+    expect(blocks[0]).toMatchObject({
+      type: 'status',
+      status: 'error',
+      title: '生成已中止',
+      description: 'aborted',
+    })
+  })
+
   it('maps live tool approval request to approval block', () => {
     const blocks = buildMessageRenderBlocks({
       message: makeMessage({ status: 'streaming' }),

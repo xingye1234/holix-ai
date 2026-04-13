@@ -356,6 +356,7 @@ function buildTimelineBlock({
 }: Pick<BuildMessageBlocksOptions, 'message' | 'toolCallPairs' | 'pendingApprovalRequest' | 'content'>): TimelineBlock | null {
   const items: TimelineItem[] = []
   const startedAt = message.telemetry?.execution?.startedAt ?? message.createdAt
+  const lastRunStatus = message.telemetry?.execution?.lastRunStatus
 
   items.push({
     id: `${message.uid}-timeline-model-start`,
@@ -428,13 +429,27 @@ function buildTimelineBlock({
     })
   }
 
-  if (content || message.status === 'done' || message.status === 'error') {
+  if (content || message.status === 'done' || message.status === 'error' || message.status === 'aborted') {
+    const isInterrupted = lastRunStatus === 'interrupted' || message.status === 'aborted'
+    const isError = message.status === 'error' && !isInterrupted
+
     items.push({
       id: `${message.uid}-timeline-final`,
       kind: 'final_answer',
-      title: '最终回答输出',
-      at: message.telemetry?.execution?.completedAt ?? message.updatedAt,
-      status: message.status === 'error' ? 'error' : 'done',
+      title: isInterrupted
+        ? '最终回答中断'
+        : isError
+          ? '最终回答失败'
+          : '最终回答输出',
+      description: isInterrupted
+        ? message.telemetry?.execution?.lastRunError ?? '连接已中断，回答未完整输出。'
+        : isError
+          ? message.error ?? message.telemetry?.execution?.lastRunError
+          : undefined,
+      at: message.telemetry?.execution?.lastRunCompletedAt
+        ?? message.telemetry?.execution?.completedAt
+        ?? message.updatedAt,
+      status: isInterrupted || isError ? 'error' : 'done',
     })
   }
 
@@ -461,6 +476,30 @@ function buildAssistantStatusBlocks({
   runningTools,
 }: Pick<BuildMessageBlocksOptions, 'message' | 'generating' | 'isPending' | 'isToolRunning' | 'runningTools'>) {
   const blocks: StatusBlock[] = []
+  const lastRunStatus = message.telemetry?.execution?.lastRunStatus
+  const lastRunError = message.telemetry?.execution?.lastRunError
+
+  if (message.status === 'aborted' || lastRunStatus === 'aborted') {
+    blocks.push({
+      id: `${message.uid}-status-aborted`,
+      type: 'status',
+      status: 'error',
+      title: '生成已中止',
+      description: lastRunError ?? '当前回复在完成前被中止。',
+    })
+    return blocks
+  }
+
+  if (lastRunStatus === 'interrupted') {
+    blocks.push({
+      id: `${message.uid}-status-interrupted`,
+      type: 'status',
+      status: 'error',
+      title: '生成过程中断',
+      description: lastRunError ?? '连接中断，当前回复只输出了部分内容。',
+    })
+    return blocks
+  }
 
   if (message.status === 'error') {
     blocks.push({
@@ -468,7 +507,7 @@ function buildAssistantStatusBlocks({
       type: 'status',
       status: 'error',
       title: '生成失败',
-      description: message.error ?? undefined,
+      description: message.error ?? lastRunError ?? undefined,
     })
     return blocks
   }
