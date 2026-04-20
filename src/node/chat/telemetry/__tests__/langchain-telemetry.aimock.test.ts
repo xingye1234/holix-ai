@@ -277,6 +277,8 @@ describe('LangChain transparency with aimock', () => {
   })
 
   it('keeps the tool step complete while the final answer disconnects after the tool result round-trip', async () => {
+    const finalAnswer = 'The weather is sunny in Shanghai today, with light wind and clear skies for the rest of the afternoon.'
+
     mock.onMessage(
       'tool then answer',
       {
@@ -294,7 +296,7 @@ describe('LangChain transparency with aimock', () => {
         predicate: req => req.messages.at(-1)?.role === 'tool',
       },
       response: {
-        content: 'The weather is sunny in Shanghai today, with light wind and clear skies for the rest of the afternoon.',
+        content: finalAnswer,
       },
       disconnectAfterMs: 35,
       latency: 10,
@@ -363,8 +365,8 @@ describe('LangChain transparency with aimock', () => {
 
     expect(streamError).toBeTruthy()
     expect(partialAnswer.length).toBeGreaterThan(0)
-    expect(partialAnswer).toContain('weather')
-    expect(partialAnswer.length).toBeLessThan('The weather is sunny in Shanghai today, with light wind and clear skies for the rest of the afternoon.'.length)
+    expect(finalAnswer.startsWith(partialAnswer)).toBe(true)
+    expect(partialAnswer.length).toBeLessThan(finalAnswer.length)
     expect(snapshot.execution?.llmRuns).toBe(2)
     expect(snapshot.execution?.startedAt).toBeTruthy()
     expect(snapshot.output?.charCount).toBeGreaterThan(0)
