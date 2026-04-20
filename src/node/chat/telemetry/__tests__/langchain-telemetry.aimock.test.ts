@@ -37,14 +37,14 @@ describe('LangChain transparency with aimock', () => {
     started = true
   })
 
+  beforeEach(() => {
+    mock.reset()
+  })
+
   afterAll(async () => {
     if (started) {
       await mock.stop()
     }
-  })
-
-  beforeEach(() => {
-    mock.reset()
   })
 
   it('captures telemetry for a real streamed response over the provider protocol', async () => {
@@ -88,7 +88,7 @@ describe('LangChain transparency with aimock', () => {
     expect(snapshot.execution?.completedAt).toBeTruthy()
     expect(snapshot.execution?.lastRunStatus).toBe('completed')
     expect(snapshot.execution?.lastRunCompletedAt).toBeTruthy()
-    expect(snapshot.usage.totalEstimatedTokens).toBeGreaterThan(0)
+    expect(snapshot.usage?.totalEstimatedTokens).toBeGreaterThan(0)
   })
 
   it('preserves partial telemetry when the provider stream is truncated mid-response', async () => {
