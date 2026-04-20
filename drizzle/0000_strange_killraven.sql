@@ -29,7 +29,8 @@ CREATE TABLE `chat` (
 	`pending_messages` text,
 	`prompts` text DEFAULT '[]' NOT NULL,
 	`workspace` text,
-	`context_settings` text DEFAULT '{"maxMessages":10,"timeWindowHours":24}' NOT NULL
+	`context_settings` text DEFAULT '{"maxMessages":10,"timeWindowHours":24,"autoScrollToBottomOnSend":true}' NOT NULL,
+	`llm_settings` text
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `chat_uid_unique` ON `chat` (`uid`);--> statement-breakpoint
@@ -55,6 +56,7 @@ CREATE TABLE `message` (
 	`stream_id` text,
 	`tool_name` text,
 	`tool_payload` text,
+	`telemetry` text,
 	`error` text,
 	`created_at` integer DEFAULT (strftime('%s','now') * 1000) NOT NULL,
 	`updated_at` integer DEFAULT (strftime('%s','now') * 1000) NOT NULL,
@@ -82,3 +84,21 @@ CREATE TABLE `ky` (
 	`key` text PRIMARY KEY NOT NULL,
 	`value` text
 );
+--> statement-breakpoint
+CREATE TABLE `agent_execution_log` (
+	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`uid` text NOT NULL,
+	`chat_uid` text NOT NULL,
+	`agent_id` text NOT NULL,
+	`hook` text NOT NULL,
+	`status` text NOT NULL,
+	`result_data` text,
+	`error` text,
+	`duration` integer,
+	`created_at` integer NOT NULL
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `agent_execution_log_uid_unique` ON `agent_execution_log` (`uid`);--> statement-breakpoint
+CREATE INDEX `idx_agent_execution_chat` ON `agent_execution_log` (`chat_uid`);--> statement-breakpoint
+CREATE INDEX `idx_agent_execution_agent` ON `agent_execution_log` (`agent_id`);--> statement-breakpoint
+CREATE INDEX `idx_agent_execution_created` ON `agent_execution_log` (`created_at`);
