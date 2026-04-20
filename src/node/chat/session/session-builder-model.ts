@@ -7,7 +7,7 @@ type DeepAgentParams = NonNullable<Parameters<typeof createDeepAgent>[0]>
 export type SessionDeepAgentModel = Exclude<DeepAgentParams['model'], string | undefined>
 
 export async function buildSessionModel(modelConfig: SessionModelConfig) {
-  const { provider, model, apiKey, baseURL } = modelConfig
+  const { provider, model, apiKey, baseURL, temperature, maxTokens } = modelConfig
   const modelProvider = normalizeModelProvider(provider)
   const modelIdentifier = `${modelProvider}:${model}`
 
@@ -15,6 +15,8 @@ export async function buildSessionModel(modelConfig: SessionModelConfig) {
     return await initChatModel(modelIdentifier, {
       apiKey,
       anthropicApiUrl: baseURL,
+      temperature,
+      maxTokens,
       streaming: true,
     })
   }
@@ -23,6 +25,8 @@ export async function buildSessionModel(modelConfig: SessionModelConfig) {
     return await initChatModel(modelIdentifier, {
       apiKey,
       baseUrl: baseURL,
+      temperature,
+      maxTokens,
       streaming: true,
     })
   }
@@ -33,12 +37,16 @@ export async function buildSessionModel(modelConfig: SessionModelConfig) {
     return await initChatModel(modelIdentifier, {
       baseUrl: normalizeOllamaBaseUrl(baseURL),
       ...(headers ? { headers } : {}),
+      temperature,
+      numCtx: maxTokens,
       streaming: true,
     })
   }
 
   return await initChatModel(modelIdentifier, {
     apiKey,
+    temperature,
+    maxTokens,
     configuration: baseURL ? { baseURL } : undefined,
     streaming: true,
   })

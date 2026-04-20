@@ -71,6 +71,7 @@ vi.mock('@/lib/trpc-client', () => ({
     chat: {
       getSkillSettings: mocks.getSkillSettings,
       updateContextSettings: vi.fn(),
+      updateLlmSettings: vi.fn(),
       updateSkillSettings: vi.fn(),
       update: mocks.chatUpdate,
       delete: mocks.chatDelete,
@@ -103,6 +104,7 @@ function makeChat(overrides = {}) {
       timeWindowHours: 24,
       autoScrollToBottomOnSend: true,
     },
+    llmSettings: {},
     ...overrides,
   }
 }

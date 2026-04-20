@@ -25,6 +25,12 @@ export interface SessionModelConfig {
 
   /** Provider Base URL（OpenAI 兼容 / 自定义网关） */
   baseURL?: string
+
+  /** Sampling temperature */
+  temperature?: number
+
+  /** Max output tokens */
+  maxTokens?: number
 }
 
 /**

@@ -91,6 +91,17 @@ const EMPTY_FORM = {
   apiKey: '',
   apiType: 'openai' as ProviderType,
   models: [] as string[],
+  temperature: '',
+  maxTokens: '',
+}
+
+function toOptionalNumber(value: string) {
+  const trimmed = value.trim()
+  if (!trimmed)
+    return undefined
+
+  const parsed = Number(trimmed)
+  return Number.isFinite(parsed) ? parsed : undefined
 }
 
 interface ProviderFormDialogProps {
@@ -131,6 +142,8 @@ function ProviderFormDialog({
         apiKey: initialData.apiKey,
         apiType: initialData.apiType || 'openai',
         models: initialData.models,
+        temperature: initialData.temperature?.toString() ?? '',
+        maxTokens: initialData.maxTokens?.toString() ?? '',
       })
     }
     else {
@@ -147,12 +160,12 @@ function ProviderFormDialog({
       ...(mode === 'add' ? { name: vendor.name } : {}),
       avatar: vendor.avatar,
       baseUrl: vendor.baseUrl,
-      apiType: vendor.apiType,
-      models: vendor.models,
-    }))
+        apiType: vendor.apiType,
+        models: vendor.models,
+      }))
   }
 
-  function handleFieldChange(field: 'name' | 'avatar' | 'baseUrl', value: string) {
+  function handleFieldChange(field: 'name' | 'avatar' | 'baseUrl' | 'temperature' | 'maxTokens', value: string) {
     setSelectedVendorId(null)
     setForm(prev => ({ ...prev, [field]: value }))
   }
@@ -187,6 +200,9 @@ function ProviderFormDialog({
   }
 
   function handleSave() {
+    const temperature = toOptionalNumber(form.temperature)
+    const maxTokens = toOptionalNumber(form.maxTokens)
+
     if (mode === 'add') {
       onAdd?.({
         name: form.name,
@@ -195,6 +211,8 @@ function ProviderFormDialog({
         apiKey: form.apiKey,
         apiType: form.apiType,
         models: form.models,
+        temperature,
+        maxTokens,
         enabled: false,
       })
     }
@@ -207,6 +225,8 @@ function ProviderFormDialog({
         apiKey: form.apiKey,
         apiType: form.apiType,
         models: form.models,
+        temperature,
+        maxTokens,
       })
     }
     onOpenChange(false)
@@ -396,6 +416,41 @@ function ProviderFormDialog({
               onChange={e => setForm(prev => ({ ...prev, apiKey: e.target.value }))}
               placeholder={t('settings.provider.apiKeyPlaceholder')}
             />
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="dialog-temperature">{t('settings.provider.temperatureLabel')}</Label>
+              <Input
+                id="dialog-temperature"
+                type="number"
+                min={0}
+                max={2}
+                step="0.1"
+                value={form.temperature}
+                onChange={e => handleFieldChange('temperature', e.target.value)}
+                placeholder={t('settings.provider.temperaturePlaceholder')}
+              />
+              <p className="text-xs text-muted-foreground">
+                {t('settings.provider.temperatureDescription')}
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="dialog-maxTokens">{t('settings.provider.maxTokensLabel')}</Label>
+              <Input
+                id="dialog-maxTokens"
+                type="number"
+                min={1}
+                step="1"
+                value={form.maxTokens}
+                onChange={e => handleFieldChange('maxTokens', e.target.value)}
+                placeholder={t('settings.provider.maxTokensPlaceholder')}
+              />
+              <p className="text-xs text-muted-foreground">
+                {t('settings.provider.maxTokensDescription')}
+              </p>
+            </div>
           </div>
 
           {/* Models */}
@@ -629,6 +684,19 @@ function RouteComponent() {
                     <p className="px-4 pt-1 text-xs text-muted-foreground">
                       {getHostname(provider.baseUrl)}
                     </p>
+
+                    <div className="flex flex-wrap items-center gap-2 px-4 pt-2 text-[11px] text-muted-foreground">
+                      <span>
+                        {t('settings.provider.defaultTemperatureSummary', {
+                          value: provider.temperature ?? t('settings.provider.notSet'),
+                        })}
+                      </span>
+                      <span>
+                        {t('settings.provider.defaultMaxTokensSummary', {
+                          value: provider.maxTokens ?? t('settings.provider.notSet'),
+                        })}
+                      </span>
+                    </div>
 
                     {/* Row 3: model badges */}
                     <div className="flex flex-wrap items-center gap-1 px-4 pt-2">

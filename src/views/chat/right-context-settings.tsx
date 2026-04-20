@@ -1,4 +1,4 @@
-import type { ChatContextSettings } from '@/node/database/schema/chat'
+import type { ChatContextSettings, ChatLlmSettings } from '@/node/database/schema/chat'
 import { CalendarClock, Trash2 } from 'lucide-react'
 import { useNavigate, useRouterState } from '@tanstack/react-router'
 import { useEffect, useMemo, useState } from 'react'
@@ -26,6 +26,17 @@ function normalizeSettings(settings?: ChatContextSettings | null): ChatContextSe
     timeWindowHours: settings?.timeWindowHours ?? DEFAULT_CHAT_CONTEXT_SETTINGS.timeWindowHours,
     autoScrollToBottomOnSend: settings?.autoScrollToBottomOnSend ?? DEFAULT_CHAT_CONTEXT_SETTINGS.autoScrollToBottomOnSend,
   }
+}
+
+function normalizeLlmSettings(settings?: ChatLlmSettings | null): ChatLlmSettings {
+  return {
+    temperature: settings?.temperature,
+    maxTokens: settings?.maxTokens,
+  }
+}
+
+function formatOptionalValue(value: number | undefined | null, fallback: string) {
+  return value == null ? fallback : String(value)
 }
 
 function formatTimeValue(date: Date) {
@@ -58,6 +69,8 @@ export default function RightContextSettings() {
     DEFAULT_CHAT_CONTEXT_SETTINGS.autoScrollToBottomOnSend,
   )
   const [isSaving, setIsSaving] = useState(false)
+  const [temperature, setTemperature] = useState('')
+  const [maxTokens, setMaxTokens] = useState('')
   const [allSkills, setAllSkills] = useState<Array<{ name: string, description: string }>>([])
   const [globalDisabledSkills, setGlobalDisabledSkills] = useState<string[]>([])
   const [chatDisabledSkills, setChatDisabledSkills] = useState<string[]>([])
@@ -110,6 +123,7 @@ export default function RightContextSettings() {
     { label: t('chat.settingsPanel.timeWindow.lastWeek'), value: '168' },
   ], [t])
   const initialSettings = useMemo(() => normalizeSettings(chat?.contextSettings), [chat?.contextSettings])
+  const initialLlmSettings = useMemo(() => normalizeLlmSettings(chat?.llmSettings), [chat?.llmSettings])
   const expiresLabel = useMemo(() => formatExpiresLabel(chat?.expiresAt, t('chat.settingsPanel.neverExpires')), [chat?.expiresAt, t])
   const isTitleDirty = chatTitle.trim().length > 0 && chatTitle.trim() !== (chat?.title ?? '')
 
@@ -118,6 +132,11 @@ export default function RightContextSettings() {
     setTimeWindow(initialSettings.timeWindowHours ? String(initialSettings.timeWindowHours) : 'none')
     setAutoScrollToBottomOnSend(initialSettings.autoScrollToBottomOnSend)
   }, [initialSettings])
+
+  useEffect(() => {
+    setTemperature(formatOptionalValue(initialLlmSettings.temperature, ''))
+    setMaxTokens(formatOptionalValue(initialLlmSettings.maxTokens, ''))
+  }, [initialLlmSettings])
 
   useEffect(() => {
     setChatTitle(chat?.title ?? '')
@@ -148,6 +167,23 @@ export default function RightContextSettings() {
       autoScrollToBottomOnSend,
     }
 
+    const parsedTemperature = temperature.trim() === '' ? undefined : Number(temperature)
+    if (temperature.trim() !== '' && (!Number.isFinite(parsedTemperature) || parsedTemperature < 0 || parsedTemperature > 2)) {
+      toast.error(t('chat.settingsPanel.temperatureInvalid'))
+      return
+    }
+
+    const parsedMaxTokens = maxTokens.trim() === '' ? undefined : Number(maxTokens)
+    if (maxTokens.trim() !== '' && (!Number.isInteger(parsedMaxTokens) || parsedMaxTokens <= 0)) {
+      toast.error(t('chat.settingsPanel.maxTokensInvalid'))
+      return
+    }
+
+    const llmSettings: ChatLlmSettings = {
+      ...(parsedTemperature !== undefined ? { temperature: parsedTemperature } : {}),
+      ...(parsedMaxTokens !== undefined ? { maxTokens: parsedMaxTokens } : {}),
+    }
+
     try {
       setIsSaving(true)
       await Promise.all([
@@ -155,12 +191,17 @@ export default function RightContextSettings() {
           chatUid: chat.uid,
           contextSettings: settings,
         }),
+        trpcClient.chat.updateLlmSettings({
+          chatUid: chat.uid,
+          llmSettings,
+        }),
         trpcClient.chat.updateSkillSettings({
           chatUid: chat.uid,
           disabledSkills: chatDisabledSkills,
           enabledSkills: chatEnabledSkills,
         }),
       ])
+      updateChat(chat.uid, { contextSettings: settings, llmSettings })
       toast.success(t('chat.settingsPanel.saveSuccess'))
     }
     catch {
@@ -427,6 +468,44 @@ export default function RightContextSettings() {
       </div>
 
       <div className="rounded-xl border bg-card/70 p-4 space-y-3 shadow-sm">
+        <div className="space-y-1">
+          <h3 className="text-sm font-medium">{t('chat.settingsPanel.modelOverridesTitle')}</h3>
+          <p className="text-xs text-muted-foreground">
+            {t('chat.settingsPanel.modelOverridesDescription')}
+          </p>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="chat-temperature">{t('chat.settingsPanel.temperatureLabel')}</Label>
+            <Input
+              id="chat-temperature"
+              type="number"
+              min={0}
+              max={2}
+              step="0.1"
+              value={temperature}
+              onChange={e => setTemperature(e.target.value)}
+              placeholder={t('chat.settingsPanel.followProviderPlaceholder')}
+            />
+            <p className="text-xs text-muted-foreground">{t('chat.settingsPanel.temperatureHint')}</p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="chat-max-tokens">{t('chat.settingsPanel.maxTokensLabel')}</Label>
+            <Input
+              id="chat-max-tokens"
+              type="number"
+              min={1}
+              step="1"
+              value={maxTokens}
+              onChange={e => setMaxTokens(e.target.value)}
+              placeholder={t('chat.settingsPanel.followProviderPlaceholder')}
+            />
+            <p className="text-xs text-muted-foreground">{t('chat.settingsPanel.maxTokensHint')}</p>
+          </div>
+        </div>
+
         <div className="space-y-2">
           <Label htmlFor="context-max-messages">{t('chat.settingsPanel.maxMessagesLabel')}</Label>
           <Input

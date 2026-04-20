@@ -83,6 +83,7 @@ export function initChat() {
     )
 
     const contextSettings = chat.contextSettings || DEFAULT_CHAT_CONTEXT_SETTINGS
+    const llmSettings = chat.llmSettings || {}
     const contextMessagesRaw = await getLatestMessages(chatId, contextSettings.maxMessages)
     const contextMessages = contextSettings.timeWindowHours != null
       ? contextMessagesRaw.filter(msg => msg.createdAt >= Date.now() - contextSettings.timeWindowHours! * 60 * 60 * 1000)
@@ -96,6 +97,8 @@ export function initChat() {
         model,
         apiKey: provider.apiKey,
         baseURL: provider.baseUrl,
+        temperature: llmSettings.temperature ?? provider.temperature,
+        maxTokens: llmSettings.maxTokens ?? provider.maxTokens,
       },
       userMessageContent: content,
       contextMessages,

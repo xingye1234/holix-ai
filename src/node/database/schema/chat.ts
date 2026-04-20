@@ -152,6 +152,11 @@ export const DEFAULT_CHAT_CONTEXT_SETTINGS: ChatContextSettings = {
   autoScrollToBottomOnSend: true,
 }
 
+export interface ChatLlmSettings {
+  temperature?: number
+  maxTokens?: number
+}
+
 export const chats = sqliteTable(
   'chat',
   {
@@ -215,6 +220,11 @@ export const chats = sqliteTable(
       .$type<ChatContextSettings>()
       .notNull()
       .default(DEFAULT_CHAT_CONTEXT_SETTINGS),
+
+    /** 会话级 LLM 配置（覆盖 provider 默认值） */
+    llmSettings: t
+      .text('llm_settings', { mode: 'json' })
+      .$type<ChatLlmSettings>(),
   },
   table => ({
     chatUidIdx: index('idx_chat_uid').on(table.uid),

@@ -6,6 +6,8 @@ export interface AIProvider {
   apiKey: string
   apiType: ProviderType
   models: string[]
+  temperature?: number
+  maxTokens?: number
   enabled: boolean
   avatar: string
 }

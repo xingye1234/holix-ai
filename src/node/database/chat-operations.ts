@@ -44,6 +44,7 @@ export async function createChat(params: {
     prompts: '[]' as any,
     workspace: null,
     contextSettings: JSON.stringify(DEFAULT_CHAT_CONTEXT_SETTINGS) as any,
+    llmSettings: null,
   }
 
   await db.insert(chats).values(insert)
@@ -78,7 +79,7 @@ export async function updateChatModel(
  */
 export async function updateChat(
   chatUid: string,
-  updates: Partial<Pick<Chat, 'provider' | 'model' | 'title' | 'status' | 'pinned' | 'archived' | 'expiresAt' | 'contextSettings'>>,
+  updates: Partial<Pick<Chat, 'provider' | 'model' | 'title' | 'status' | 'pinned' | 'archived' | 'expiresAt' | 'contextSettings' | 'llmSettings'>>,
 ): Promise<Chat> {
   const db = await getDatabase()
   const serializedUpdates = serializeChat(updates)
@@ -86,6 +87,23 @@ export async function updateChat(
     .update(chats)
     .set({
       ...serializedUpdates,
+      updatedAt: Date.now(),
+    })
+    .where(eq(chats.uid, chatUid))
+
+  const [rawChat] = await db.select().from(chats).where(eq(chats.uid, chatUid))
+  return deserializeChat(rawChat)
+}
+
+export async function updateChatLlmSettings(
+  chatUid: string,
+  llmSettings: Chat['llmSettings'],
+): Promise<Chat> {
+  const db = await getDatabase()
+  await db
+    .update(chats)
+    .set({
+      llmSettings: llmSettings ? JSON.stringify(llmSettings) as any : null,
       updatedAt: Date.now(),
     })
     .where(eq(chats.uid, chatUid))

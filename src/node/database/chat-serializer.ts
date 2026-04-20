@@ -3,17 +3,18 @@
  * 处理数据库层的 JSON 字段转换，避免业务代码侵入
  */
 
-import type { Chat, ChatContextSettings, PendingMessage, Workspace } from './schema/chat'
+import type { Chat, ChatContextSettings, ChatLlmSettings, PendingMessage, Workspace } from './schema/chat'
 import { DEFAULT_CHAT_CONTEXT_SETTINGS } from './schema/chat'
 
 /**
  * 数据库原始 Chat 类型（JSON 字段为字符串）
  */
-export type RawChat = Omit<Chat, 'prompts' | 'workspace' | 'pendingMessages' | 'contextSettings'> & {
+export type RawChat = Omit<Chat, 'prompts' | 'workspace' | 'pendingMessages' | 'contextSettings' | 'llmSettings'> & {
   prompts: string | string[]
   workspace: string | Workspace[] | null
   pendingMessages: string | PendingMessage[] | null
   contextSettings: string | ChatContextSettings
+  llmSettings: string | ChatLlmSettings | null
 }
 
 /**
@@ -22,12 +23,14 @@ export type RawChat = Omit<Chat, 'prompts' | 'workspace' | 'pendingMessages' | '
  */
 export function deserializeChat(raw: RawChat): Chat {
   const contextSettings = deserializeJsonField(raw.contextSettings, DEFAULT_CHAT_CONTEXT_SETTINGS) as Partial<ChatContextSettings>
+  const llmSettings = deserializeJsonField(raw.llmSettings, {}) as ChatLlmSettings
 
   return {
     ...raw,
     prompts: deserializeJsonField(raw.prompts, []) as string[],
     workspace: deserializeJsonField(raw.workspace, null) as Workspace[] | null,
     pendingMessages: deserializeJsonField(raw.pendingMessages, null) as PendingMessage[] | null,
+    llmSettings,
     contextSettings: {
       ...DEFAULT_CHAT_CONTEXT_SETTINGS,
       ...contextSettings,
@@ -56,6 +59,10 @@ export function serializeChat<T extends Partial<Chat>>(chat: T): T {
 
   if ('contextSettings' in chat && chat.contextSettings !== undefined) {
     result.contextSettings = serializeJsonField(chat.contextSettings)
+  }
+
+  if ('llmSettings' in chat && chat.llmSettings !== undefined) {
+    result.llmSettings = serializeJsonField(chat.llmSettings)
   }
 
   return result

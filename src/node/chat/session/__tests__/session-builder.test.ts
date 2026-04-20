@@ -130,6 +130,8 @@ function createModelConfig(overrides: Partial<SessionModelConfig> = {}): Session
     model: 'gpt-4.1',
     apiKey: 'sk-test',
     baseURL: 'https://api.openai.com/v1',
+    temperature: undefined,
+    maxTokens: undefined,
     ...overrides,
   }
 }
@@ -229,6 +231,8 @@ describe('SessionBuilder', () => {
         options: {
           apiKey: 'sk-anthropic',
           anthropicApiUrl: 'https://anthropic.example.com',
+          temperature: undefined,
+          maxTokens: undefined,
           streaming: true,
         },
       },
@@ -239,6 +243,8 @@ describe('SessionBuilder', () => {
         options: {
           apiKey: 'sk-google',
           baseUrl: 'https://google.example.com',
+          temperature: undefined,
+          maxTokens: undefined,
           streaming: true,
         },
       },
@@ -248,6 +254,8 @@ describe('SessionBuilder', () => {
         expectedModelIdentifier: 'ollama:qwen3:32b',
         options: {
           baseUrl: 'http://localhost:11434',
+          temperature: undefined,
+          numCtx: undefined,
           streaming: true,
         },
       },
@@ -257,6 +265,8 @@ describe('SessionBuilder', () => {
         expectedModelIdentifier: 'openai:gpt-4.1',
         options: {
           apiKey: 'sk-openai',
+          temperature: undefined,
+          maxTokens: undefined,
           configuration: { baseURL: 'https://openai.example.com/v1' },
           streaming: true,
         },
@@ -267,6 +277,8 @@ describe('SessionBuilder', () => {
         expectedModelIdentifier: 'openai:deepseek-chat',
         options: {
           apiKey: 'sk-deepseek',
+          temperature: undefined,
+          maxTokens: undefined,
           configuration: { baseURL: 'https://api.deepseek.com/v1' },
           streaming: true,
         },
@@ -527,6 +539,29 @@ describe('SessionBuilder', () => {
         'mcp_tool',
         'custom_tool',
       ])
+    })
+
+    it('passes temperature and maxTokens through to the session model', async () => {
+      const builder = new SessionBuilder({
+        modelConfig: createModelConfig({
+          provider: 'openai',
+          model: 'gpt-4.1',
+          temperature: 0.35,
+          maxTokens: 2048,
+        }),
+      })
+
+      await builder.buildAgent('chat-123')
+
+      expect(mockInitChatModel).toHaveBeenCalledWith(
+        'openai:gpt-4.1',
+        expect.objectContaining({
+          temperature: 0.35,
+          maxTokens: 2048,
+          apiKey: 'sk-test',
+          configuration: { baseURL: 'https://api.openai.com/v1' },
+        }),
+      )
     })
   })
 

@@ -48,8 +48,8 @@ const mockUpdateChatTitle = vi.hoisted(() => vi.fn())
 const mockUpdate = vi.hoisted(() => vi.fn())
 const mockRunBuiltinSubAgent = vi.hoisted(() => vi.fn())
 const mockProviderStore = vi.hoisted(() => ({
-  get: vi.fn(() => [] as Array<{ name: string, apiType: string, apiKey: string, baseUrl: string }>),
-  list: vi.fn(() => [] as Array<{ name: string, apiType: string, apiKey: string, baseUrl: string }>),
+  get: vi.fn(() => [] as Array<{ name: string, apiType: string, apiKey: string, baseUrl: string, temperature?: number, maxTokens?: number }>),
+  list: vi.fn(() => [] as Array<{ name: string, apiType: string, apiKey: string, baseUrl: string, temperature?: number, maxTokens?: number }>),
 }))
 
 // ============================================
@@ -115,6 +115,7 @@ describe('initChat', () => {
         timeWindowHours: null,
         autoScrollToBottomOnSend: true,
       },
+      llmSettings: {},
       workspace: [],
     })
 
@@ -141,6 +142,8 @@ describe('initChat', () => {
         apiType: 'openai',
         apiKey: 'sk-test',
         baseUrl: 'https://api.openai.com/v1',
+        temperature: 0.4,
+        maxTokens: 1500,
       },
     ])
     // Initialize chat once
@@ -188,6 +191,8 @@ describe('initChat', () => {
             model: 'gpt-4',
             apiKey: 'sk-test',
             baseURL: 'https://api.openai.com/v1',
+            temperature: 0.4,
+            maxTokens: 1500,
           },
         }),
       )
@@ -210,6 +215,7 @@ describe('initChat', () => {
           timeWindowHours: null,
           autoScrollToBottomOnSend: true,
         },
+        llmSettings: {},
         workspace: [],
       })
 
@@ -219,6 +225,8 @@ describe('initChat', () => {
           apiType: 'ollama',
           apiKey: '',
           baseUrl: 'http://localhost:11434/v1',
+          temperature: 0.5,
+          maxTokens: 8192,
         },
       ])
 
@@ -235,6 +243,63 @@ describe('initChat', () => {
             model: 'qwen3:32b',
             apiKey: '',
             baseURL: 'http://localhost:11434/v1',
+            temperature: 0.5,
+            maxTokens: 8192,
+          },
+        }),
+      )
+    })
+
+    it('should prefer chat llm settings over provider defaults', async () => {
+      const { messageHandler } = getHandlers()
+
+      if (!messageHandler)
+        return
+
+      mockGetChatByUid.mockResolvedValueOnce({
+        uid: 'chat-override',
+        title: 'Override test',
+        provider: 'openai',
+        model: 'gpt-4',
+        prompts: [],
+        contextSettings: {
+          maxMessages: 10,
+          timeWindowHours: null,
+          autoScrollToBottomOnSend: true,
+        },
+        llmSettings: {
+          temperature: 0.9,
+          maxTokens: 3200,
+        },
+        workspace: [],
+      })
+
+      mockProviderStore.list.mockReturnValueOnce([
+        {
+          name: 'openai',
+          apiType: 'openai',
+          apiKey: 'sk-test',
+          baseUrl: 'https://api.openai.com/v1',
+          temperature: 0.2,
+          maxTokens: 1000,
+        },
+      ])
+
+      await messageHandler({
+        chatId: 'chat-override',
+        content: 'override config',
+        replyTo: null,
+      })
+
+      expect(mockSessionOrchestrator.startSession).toHaveBeenCalledWith(
+        expect.objectContaining({
+          modelConfig: {
+            provider: 'openai',
+            model: 'gpt-4',
+            apiKey: 'sk-test',
+            baseURL: 'https://api.openai.com/v1',
+            temperature: 0.9,
+            maxTokens: 3200,
           },
         }),
       )

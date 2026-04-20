@@ -10,6 +10,7 @@ import {
   searchChats,
   updateChat,
   updateChatContextSettings,
+  updateChatLlmSettings,
   updateChatModel,
   updateChatPrompts,
   updateChatWorkspace,
@@ -23,6 +24,11 @@ const contextSettingsSchema = z.object({
   maxMessages: z.number().int().min(1).max(200),
   timeWindowHours: z.number().int().min(1).max(24 * 30).nullable(),
   autoScrollToBottomOnSend: z.boolean().default(true),
+})
+
+const llmSettingsSchema = z.object({
+  temperature: z.number().min(0).max(2).optional(),
+  maxTokens: z.number().int().min(1).max(1_000_000).optional(),
 })
 
 function emitChatUpdated(chatUid: string, updates: Partial<Chat>) {
@@ -93,6 +99,7 @@ export const chatRouter = router({
         archived: z.boolean().optional(),
         expiresAt: z.number().nullable().optional(),
         contextSettings: contextSettingsSchema.optional(),
+        llmSettings: llmSettingsSchema.nullish(),
       }),
     )
     .mutation(async ({ input }) => {
@@ -162,6 +169,22 @@ export const chatRouter = router({
       const chat = await updateChatContextSettings(input.chatUid, input.contextSettings)
       emitChatUpdated(chat.uid, {
         contextSettings: chat.contextSettings,
+        updatedAt: chat.updatedAt,
+      })
+      return chat
+    }),
+
+  updateLlmSettings: procedure()
+    .input(
+      z.object({
+        chatUid: z.string(),
+        llmSettings: llmSettingsSchema.nullish(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const chat = await updateChatLlmSettings(input.chatUid, input.llmSettings ?? null)
+      emitChatUpdated(chat.uid, {
+        llmSettings: chat.llmSettings,
         updatedAt: chat.updatedAt,
       })
       return chat
