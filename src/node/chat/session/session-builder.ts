@@ -89,15 +89,21 @@ export class SessionBuilder {
 
     // 添加历史消息
     for (const msg of contextMessages) {
+      const content = typeof msg.content === 'string' ? msg.content.trim() : ''
+
+      if (!content) {
+        continue
+      }
+
       if (msg.role === 'user') {
-        messages.push(new HumanMessage(msg.content || ''))
+        messages.push(new HumanMessage(content))
       }
       else if (msg.role === 'assistant') {
         // Assistant 消息应该转换为 AIMessage
-        messages.push(new AIMessage(msg.content || ''))
+        messages.push(new AIMessage(content))
       }
       else if (msg.role === 'system') {
-        messages.push(new LangChainSystemMessage(msg.content || ''))
+        messages.push(new LangChainSystemMessage(content))
       }
     }
 

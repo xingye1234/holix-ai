@@ -583,14 +583,18 @@ describe('SessionBuilder', () => {
       expect(messages[3].constructor.name).toBe('HumanMessage')
     })
 
-    it('should handle empty content by normalizing to empty strings', () => {
+    it('should skip empty context messages', () => {
       const builder = new SessionBuilder({ modelConfig: createModelConfig() })
       const messages = builder.buildMessages([
         { role: 'user', content: '' } as any,
         { role: 'assistant', content: null } as any,
+        { role: 'assistant', content: '  ' } as any,
+        { role: 'assistant', content: 'Ready' } as any,
       ], 'Test')
 
-      expect(messages).toHaveLength(3)
+      expect(messages).toHaveLength(2)
+      expect(messages[0].constructor.name).toBe('AIMessage')
+      expect(messages[1].constructor.name).toBe('HumanMessage')
     })
   })
 
