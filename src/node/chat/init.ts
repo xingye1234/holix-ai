@@ -6,7 +6,6 @@ import {
 import { createUserMessage, getLatestMessages } from '../database/message-operations'
 import { DEFAULT_CHAT_CONTEXT_SETTINGS } from '../database/schema/chat'
 import { runBuiltinSubAgent } from '../agents/sub-agents'
-import { fallbackTitleFromQuestion } from '../agents/sub-agents/builtin/title-from-question'
 import { onCommand } from '../platform/commands'
 import { logger } from '../platform/logger'
 import { providerStore } from '../platform/provider'
@@ -129,8 +128,7 @@ export function initChat() {
 }
 
 function shouldAutoGenerateTitle(currentTitle: string, question: string) {
-  const fallbackTitle = fallbackTitleFromQuestion(question)
-  return currentTitle === '新对话' || currentTitle === fallbackTitle
+  return currentTitle === '新对话'
 }
 
 async function autoGenerateChatTitle(params: {

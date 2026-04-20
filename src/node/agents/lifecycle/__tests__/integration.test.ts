@@ -94,7 +94,7 @@ describe('Agent Lifecycle Integration (Unit)', () => {
     expect(results[0].suggestion).toBeUndefined()
   })
 
-  it('should suggest title at message threshold', async () => {
+  it('should not suggest title again after the first generation', async () => {
     // Create 5 messages
     const messages = Array.from({ length: 5 }, (_, i) => ({
       role: 'user',
@@ -109,7 +109,7 @@ describe('Agent Lifecycle Integration (Unit)', () => {
     } as any)
 
     expect(results.length).toBe(1)
-    expect(results[0].status).toBe('suggest')
-    expect(results[0].suggestion?.metadata?.reason).toBe('Message threshold reached')
+    expect(results[0].status).toBe('success')
+    expect(results[0].suggestion).toBeUndefined()
   })
 })

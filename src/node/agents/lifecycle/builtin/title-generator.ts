@@ -10,8 +10,7 @@ import type { LifecycleAgent, AgentContext } from '../types'
  *
  * Trigger: onMessageCompleted
  * Logic:
- * - Suggest title if current title is "新对话"
- * - Suggest title every 5 messages
+ * - Suggest title only when current title is the default "新对话"
  */
 export const titleGeneratorAgent: LifecycleAgent = {
   id: 'builtin:title-generator',
@@ -45,9 +44,7 @@ export const titleGeneratorAgent: LifecycleAgent = {
         metadata: {
           currentTitle: chat.title,
           messageCount: messages.length,
-          reason: chat.title === '新对话'
-            ? 'Default title detected'
-            : 'Message threshold reached',
+          reason: 'Default title detected',
         },
       },
     }
@@ -58,17 +55,7 @@ export const titleGeneratorAgent: LifecycleAgent = {
  * Check if title should be suggested
  */
 function shouldUpdateTitle(messages: any[], chat: any): boolean {
-  // Suggest if title is default
-  if (chat.title === '新对话') {
-    return true
-  }
-
-  // Suggest every 5 messages
-  if (messages.length > 0 && messages.length % 5 === 0) {
-    return true
-  }
-
-  return false
+  return chat.title === '新对话'
 }
 
 /**

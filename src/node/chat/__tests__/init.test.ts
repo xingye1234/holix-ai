@@ -397,6 +397,52 @@ describe('initChat', () => {
       })
     })
 
+    it('should not auto generate title again after the first title is set', async () => {
+      mockGetChatByUid
+        .mockResolvedValueOnce({
+          uid: 'chat-title-existing',
+          title: '已存在标题',
+          provider: 'openai',
+          model: 'gpt-4',
+          prompts: [],
+          contextSettings: {
+            maxMessages: 10,
+            timeWindowHours: null,
+            autoScrollToBottomOnSend: true,
+          },
+          workspace: [],
+        })
+        .mockResolvedValueOnce({
+          uid: 'chat-title-existing',
+          title: '已存在标题',
+          provider: 'openai',
+          model: 'gpt-4',
+          prompts: [],
+          contextSettings: {
+            maxMessages: 10,
+            timeWindowHours: null,
+            autoScrollToBottomOnSend: true,
+          },
+          workspace: [],
+        })
+
+      const { messageHandler } = getHandlers()
+
+      if (!messageHandler)
+        return
+
+      await messageHandler({
+        chatId: 'chat-title-existing',
+        content: '继续补充更多上下文',
+        replyTo: null,
+      })
+
+      await Promise.resolve()
+
+      expect(mockRunBuiltinSubAgent).not.toHaveBeenCalled()
+      expect(mockUpdateChatTitle).not.toHaveBeenCalled()
+    })
+
     it('should handle chat not found', async () => {
       mockGetChatByUid.mockResolvedValue(null)
 

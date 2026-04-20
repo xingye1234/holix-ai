@@ -50,7 +50,7 @@ describe('TitleGenerator Agent (Unit)', () => {
     })
   })
 
-  it('should skip suggestion when title exists and not at threshold', async () => {
+  it('should skip suggestion when title already exists', async () => {
     const mockContext: AgentContext = {
       chatUid: 'test-chat',
       messages: [] as any,
@@ -77,7 +77,7 @@ describe('TitleGenerator Agent (Unit)', () => {
     expect(result.suggestion).toBeUndefined()
   })
 
-  it('should suggest title at message threshold (5 messages)', async () => {
+  it('should not suggest title again after the first generation', async () => {
     const messages = Array.from({ length: 5 }, (_, i) => ({
       uid: `${i}`,
       seq: i + 1,
@@ -112,7 +112,7 @@ describe('TitleGenerator Agent (Unit)', () => {
     const result = await titleGeneratorAgent.handler(mockContext)
 
     expect(result.agentId).toBe('builtin:title-generator')
-    expect(result.status).toBe('suggest')
-    expect(result.suggestion?.metadata?.reason).toBe('Message threshold reached')
+    expect(result.status).toBe('success')
+    expect(result.suggestion).toBeUndefined()
   })
 })
