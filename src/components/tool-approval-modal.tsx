@@ -21,7 +21,11 @@ import { useToolApprovalStore } from '@/store/tool-approval'
 import { useMessageStore } from '@/store/message'
 
 export function ToolApprovalModal() {
-  const { pendingRequest, approve, deny, approveAlwaysForSkill, approveAllForSession } = useToolApprovalStore()
+  const pendingRequest = useToolApprovalStore(state => state.pendingRequest)
+  const approve = useToolApprovalStore(state => state.approve)
+  const deny = useToolApprovalStore(state => state.deny)
+  const approveAlwaysForSkill = useToolApprovalStore(state => state.approveAlwaysForSkill)
+  const approveAllForSession = useToolApprovalStore(state => state.approveAllForSession)
   const pathname = useRouterState({ select: state => state.location.pathname })
   const pendingMessage = useMessageStore((state) => {
     if (!pendingRequest?.messageUid)

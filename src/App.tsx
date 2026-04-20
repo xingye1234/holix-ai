@@ -1,7 +1,6 @@
 import { RouterProvider } from '@tanstack/react-router'
 import { useEffect } from 'react'
 import { ThemeProvider } from '@/components/theme-provider'
-import { ToolApprovalModal } from '@/components/tool-approval-modal'
 import { Toaster } from '@/components/ui/sonner'
 import { useChatUpdates, useInitChats } from '@/hooks/chat'
 import { useMessageUpdates } from '@/hooks/message'
@@ -50,7 +49,6 @@ export default function App() {
           <RouterProvider router={router} defaultPreload="intent" />
         </TooltipProvider>
         <Toaster position="top-center" />
-        <ToolApprovalModal />
       </ThemeProvider>
     </I18nProvider>
   )

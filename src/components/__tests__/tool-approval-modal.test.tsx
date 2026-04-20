@@ -1,3 +1,4 @@
+import type { Message } from '@/node/database/schema/chat'
 import { render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ToolApprovalModal } from '../tool-approval-modal'
@@ -40,7 +41,7 @@ vi.mock('@/lib/logger', () => ({
   },
 }))
 
-function makeAssistantMessage(overrides: Record<string, unknown> = {}) {
+function makeAssistantMessage(overrides: Partial<Message> = {}): Message {
   return {
     id: 1,
     uid: 'msg-1',
@@ -52,7 +53,7 @@ function makeAssistantMessage(overrides: Record<string, unknown> = {}) {
     draftContent: [],
     toolCalls: [],
     status: 'streaming',
-    toolStatus: undefined,
+    toolStatus: null,
     model: 'gpt-4o',
     searchable: true,
     searchIndexVersion: 1,
@@ -113,7 +114,7 @@ describe('ToolApprovalModal', () => {
   })
 
   it('renders the fallback modal when the request has no bound message uid', () => {
-    useToolApprovalStore.setState((state) => ({
+    useToolApprovalStore.setState(state => ({
       ...state,
       pendingRequest: state.pendingRequest
         ? {

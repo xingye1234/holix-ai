@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import AppMain from '@/components/app/app-main'
 import AppSetting from '@/components/app/app-setting'
 import AppSideBar from '@/components/app/app-sidebar'
+import { ToolApprovalModal } from '@/components/tool-approval-modal'
 import { SettingsPanelProvider } from '@/context/settings-panel'
 import { AsideChatSidebar } from '@/views/chat/chat'
 import { AsideChatHeader } from '@/views/chat/header'
@@ -55,6 +56,7 @@ function RootLayout() {
               <Outlet />
             </AppMain>
           </section>
+          <ToolApprovalModal />
         </SidebarProvider>
       </SettingsPanelProvider>
     </>
