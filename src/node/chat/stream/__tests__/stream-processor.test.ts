@@ -97,6 +97,28 @@ describe('streamProcessor', () => {
       expect(state.content).toBe('Hello world')
       expect(state.draftSegments).toHaveLength(2)
     })
+
+    it('should capture provider-specific thinking deltas without appending to answer content', () => {
+      const chunk = [
+        {
+          getType: () => 'ai',
+          content: '',
+          additional_kwargs: {
+            reasoning_content: 'need to inspect the tool result first',
+          },
+          tool_call_chunks: null,
+        },
+        {},
+      ]
+
+      processor.processChunk('messages', chunk)
+
+      const state = processor.getFinalState()
+      expect(state.content).toBe('')
+      expect(state.draftSegments).toHaveLength(1)
+      expect(state.draftSegments[0].phase).toBe('thinking')
+      expect(state.draftSegments[0].content).toBe('need to inspect the tool result first')
+    })
   })
 
   describe('getFinalState', () => {

@@ -56,12 +56,43 @@ export class MessageHandler extends BaseStreamHandler {
       return
     }
 
+    const thinkingDelta = this.extractThinkingDelta(aiChunk.additional_kwargs)
+    if (thinkingDelta) {
+      this.applyThinkingDelta(thinkingDelta, state, context)
+      return
+    }
+
     // 处理文本内容
     if (aiChunk.content) {
       const textDelta = contentExtractor.extractTextDelta(aiChunk.content)
       if (textDelta) {
         this.applyTextDelta(textDelta, state, context)
       }
+    }
+  }
+
+  private extractThinkingDelta(additionalKwargs: Record<string, unknown> | undefined): string {
+    if (!additionalKwargs) {
+      return ''
+    }
+
+    const value = additionalKwargs.reasoning_content
+      ?? additionalKwargs.reasoning_details
+      ?? additionalKwargs.thinking
+
+    if (typeof value === 'string') {
+      return value
+    }
+
+    if (value == null) {
+      return ''
+    }
+
+    try {
+      return JSON.stringify(value)
+    }
+    catch {
+      return String(value)
     }
   }
 
@@ -103,5 +134,16 @@ export class MessageHandler extends BaseStreamHandler {
         tools: [],
       }
     }
+  }
+
+  private applyThinkingDelta(thinkingDelta: string, state: StreamState, context: StreamContext): void {
+    state.draftSegments.push({
+      id: this.generateSegmentId(context, state),
+      content: thinkingDelta,
+      phase: 'thinking',
+      source: 'model',
+      delta: true,
+      createdAt: this.now(),
+    })
   }
 }

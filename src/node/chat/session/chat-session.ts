@@ -13,6 +13,7 @@ import { updateChatTitle } from '../../database/chat-operations'
 import { logger } from '../../platform/logger'
 import { chatEventEmitter } from '../events/chat-event-emitter'
 import { messagePersister } from '../message/message-persister'
+import { enhanceOpenAICompatibleErrorMessage } from '../llm/openai-compatible'
 import { StreamProcessor } from '../stream/stream-processor'
 import { LangChainTelemetryHandler } from '../telemetry/langchain-telemetry-handler'
 import { toolCallTracker } from '../tools/tool-call-tracker'
@@ -307,7 +308,13 @@ export class ChatSession {
     }
 
     // 真实错误处理
-    const errMsg = error?.message ?? String(error ?? 'Unknown error')
+    const rawErrMsg = error?.message ?? String(error ?? 'Unknown error')
+    const errMsg = enhanceOpenAICompatibleErrorMessage({
+      provider: this.config.modelConfig.provider,
+      model: this.config.modelConfig.model,
+      baseURL: this.config.modelConfig.baseURL,
+      error: rawErrMsg,
+    })
     const interrupted = /terminated|disconnect|aborted/i.test(errMsg)
     if (interrupted) {
       telemetryHandler?.markInterrupted(errMsg)
