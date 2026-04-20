@@ -160,9 +160,9 @@ function ProviderFormDialog({
       ...(mode === 'add' ? { name: vendor.name } : {}),
       avatar: vendor.avatar,
       baseUrl: vendor.baseUrl,
-        apiType: vendor.apiType,
-        models: vendor.models,
-      }))
+      apiType: vendor.apiType,
+      models: vendor.models,
+    }))
   }
 
   function handleFieldChange(field: 'name' | 'avatar' | 'baseUrl' | 'temperature' | 'maxTokens', value: string) {
@@ -245,7 +245,7 @@ function ProviderFormDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 py-2">
+        <div className="space-y-4 py-2 max-h-[70vh] overflow-y-auto">
           {/* Vendor preset chips */}
           <div className="space-y-2">
             <Label>{t('settings.provider.vendorPresetLabel')}</Label>
