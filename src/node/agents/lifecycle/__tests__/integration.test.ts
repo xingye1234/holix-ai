@@ -38,12 +38,21 @@ vi.mock('../context', () => ({
   },
 }))
 
+const titleStateMocks = vi.hoisted(() => ({
+  hasGeneratedInitialTitle: vi.fn(() => false),
+}))
+
+vi.mock('../../../database/chat-title-state', () => ({
+  hasGeneratedInitialTitle: titleStateMocks.hasGeneratedInitialTitle,
+}))
+
 describe('Agent Lifecycle Integration (Unit)', () => {
   let orchestrator: AgentOrchestrator
 
   beforeEach(() => {
     // Reset mocks
     vi.clearAllMocks()
+    titleStateMocks.hasGeneratedInitialTitle.mockReturnValue(false)
 
     // Create new instance for each test
     orchestrator = new AgentOrchestrator(5000)
@@ -89,13 +98,12 @@ describe('Agent Lifecycle Integration (Unit)', () => {
       },
     } as any)
 
-    expect(results.length).toBe(1)
-    expect(results[0].status).toBe('success')
-    expect(results[0].suggestion).toBeUndefined()
+    expect(results).toEqual([])
   })
 
   it('should not suggest title again after the first generation', async () => {
-    // Create 5 messages
+    titleStateMocks.hasGeneratedInitialTitle.mockReturnValue(true)
+
     const messages = Array.from({ length: 5 }, (_, i) => ({
       role: 'user',
       content: `Message ${i + 1}`,
@@ -108,8 +116,6 @@ describe('Agent Lifecycle Integration (Unit)', () => {
       },
     } as any)
 
-    expect(results.length).toBe(1)
-    expect(results[0].status).toBe('success')
-    expect(results[0].suggestion).toBeUndefined()
+    expect(results).toEqual([])
   })
 })

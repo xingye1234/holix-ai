@@ -34,6 +34,10 @@ vi.mock('../../platform/update', () => ({
   update: vi.fn(),
 }))
 
+vi.mock('../../database/chat-title-state', () => ({
+  markInitialTitleGenerated: vi.fn(),
+}))
+
 // ─── 测试数据工厂 ─────────────────────────────────────────────────────────────
 function makeChat(overrides = {}) {
   return {

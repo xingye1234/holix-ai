@@ -101,7 +101,7 @@ describe('ToolApprovalModal', () => {
   it('does not render the fallback modal when the approval can be shown inside the visible chat message', () => {
     render(<ToolApprovalModal />)
 
-    expect(screen.queryByText('高风险操作需要确认')).not.toBeInTheDocument()
+    expect(screen.queryByText('操作需要确认')).not.toBeInTheDocument()
   })
 
   it('renders the fallback modal when the request message belongs to a different chat route', () => {
@@ -109,7 +109,7 @@ describe('ToolApprovalModal', () => {
 
     render(<ToolApprovalModal />)
 
-    expect(screen.getByText('高风险操作需要确认')).toBeInTheDocument()
+    expect(screen.getByText('操作需要确认')).toBeInTheDocument()
     expect(screen.getByText('exec_command')).toBeInTheDocument()
   })
 
@@ -126,6 +126,6 @@ describe('ToolApprovalModal', () => {
 
     render(<ToolApprovalModal />)
 
-    expect(screen.getByText('高风险操作需要确认')).toBeInTheDocument()
+    expect(screen.getByText('操作需要确认')).toBeInTheDocument()
   })
 })

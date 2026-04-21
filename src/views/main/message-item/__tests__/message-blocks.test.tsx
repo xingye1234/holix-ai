@@ -270,13 +270,63 @@ describe('buildMessageRenderBlocks', () => {
     })
   })
 
-  it('renders lifecycle agent segments as agent blocks and timeline items', () => {
+  it('renders non-cosmetic lifecycle agent segments as agent blocks and timeline items', () => {
     const blocks = buildMessageRenderBlocks({
       message: makeMessage({
         status: 'done',
         draftContent: [
           {
             id: 'seg-agent-1',
+            content: 'Docs Agent: 已整理发布说明',
+            phase: 'agent',
+            source: 'system',
+            createdAt: 5,
+            agentId: 'builtin:docs-agent',
+            agentName: 'Docs Agent',
+            agentHook: 'onMessageCompleted',
+            agentStatus: 'success',
+            agentSuggestionType: 'summary',
+            agentSuggestionContent: '已整理发布说明',
+          },
+        ],
+      }),
+      content: 'final answer',
+      toolCallPairs: [],
+      isStreaming: false,
+      isError: false,
+      isPending: false,
+      generating: false,
+      isToolRunning: false,
+      runningTools: [],
+    })
+
+    expect(blocks.map(block => block.type)).toEqual(['agent', 'markdown', 'timeline'])
+    expect(blocks[0]).toMatchObject({
+      type: 'agent',
+      status: 'done',
+      agentName: 'Docs Agent',
+      hook: 'onMessageCompleted',
+    })
+
+    const timeline = blocks.find(block => block.type === 'timeline')
+    expect(timeline).toMatchObject({
+      type: 'timeline',
+      items: expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'agent_run',
+          title: 'Agent 执行：Docs Agent',
+        }),
+      ]),
+    })
+  })
+
+  it('hides cosmetic title-generator lifecycle segments from blocks and timeline', () => {
+    const blocks = buildMessageRenderBlocks({
+      message: makeMessage({
+        status: 'done',
+        draftContent: [
+          {
+            id: 'seg-agent-title',
             content: 'Title Generator: 建议将标题更新为「梳理仓库结构」',
             phase: 'agent',
             source: 'system',
@@ -300,24 +350,7 @@ describe('buildMessageRenderBlocks', () => {
       runningTools: [],
     })
 
-    expect(blocks.map(block => block.type)).toEqual(['agent', 'markdown', 'timeline'])
-    expect(blocks[0]).toMatchObject({
-      type: 'agent',
-      status: 'suggest',
-      agentName: 'Title Generator',
-      hook: 'onMessageCompleted',
-    })
-
-    const timeline = blocks.find(block => block.type === 'timeline')
-    expect(timeline).toMatchObject({
-      type: 'timeline',
-      items: expect.arrayContaining([
-        expect.objectContaining({
-          kind: 'agent_run',
-          title: 'Agent 执行：Title Generator',
-        }),
-      ]),
-    })
+    expect(blocks.map(block => block.type)).toEqual(['markdown'])
   })
 
   it('prepends status blocks when tools are running', () => {
@@ -378,16 +411,7 @@ describe('buildMessageRenderBlocks', () => {
     })
 
     const timeline = blocks.find(block => block.type === 'timeline')
-    expect(timeline).toMatchObject({
-      type: 'timeline',
-      items: expect.arrayContaining([
-        expect.objectContaining({
-          kind: 'final_answer',
-          title: '最终回答中断',
-          status: 'error',
-        }),
-      ]),
-    })
+    expect(timeline).toBeUndefined()
   })
 
   it('shows an aborted status block when the run was cancelled', () => {

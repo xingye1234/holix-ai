@@ -94,6 +94,11 @@ export class ChatSession {
   async run(userMessageContent: string, contextMessages: Message[] = []): Promise<void> {
     const { chatUid, requestId, assistantMessageUid, modelConfig } = this.config
 
+    if (this.status === 'aborted' || this.abortController.signal.aborted) {
+      logger.info(`[ChatSession] Session ${requestId} was aborted before run started`)
+      return
+    }
+
     // 创建节流的数据库更新器
     const throttledDbUpdate = this.createThrottledDbUpdater()
     let streamProcessor: StreamProcessor | null = null
