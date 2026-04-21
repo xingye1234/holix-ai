@@ -98,6 +98,12 @@ interface BuildMessageBlocksOptions {
   pendingApprovalRequest?: ToolApprovalRequest | null
 }
 
+function isCosmeticLifecycleAgentSegment(segment: Message['draftContent'][number]) {
+  return segment.phase === 'agent'
+    && (segment.agentId === 'builtin:title-generator'
+      || segment.agentSuggestionType === 'title')
+}
+
 function parseCommandFromArgs(args?: Record<string, unknown>) {
   const command = args?.cmd
   return typeof command === 'string' ? command : undefined
@@ -290,6 +296,9 @@ function buildOrderedContentBlocks({
 
   for (const segment of segments) {
     if (segment.phase === 'agent') {
+      if (isCosmeticLifecycleAgentSegment(segment))
+        continue
+
       flushMarkdown(false)
 
       const agentStatus = segment.agentStatus === 'error'
@@ -406,6 +415,7 @@ function buildTimelineBlock({
 
   const agentSegments = [...(message.draftContent ?? [])]
     .filter(segment => segment.phase === 'agent')
+    .filter(segment => !isCosmeticLifecycleAgentSegment(segment))
     .sort((a, b) => a.createdAt - b.createdAt)
 
   for (const segment of agentSegments) {
@@ -454,6 +464,14 @@ function buildTimelineBlock({
   }
 
   if (items.length <= 1) {
+    return null
+  }
+
+  const hasMeaningfulNonTerminalStep = items.some(item =>
+    item.kind !== 'model_start' && item.kind !== 'final_answer',
+  )
+
+  if (!hasMeaningfulNonTerminalStep) {
     return null
   }
 

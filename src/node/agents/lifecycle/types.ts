@@ -54,6 +54,7 @@ export interface LifecycleAgent {
   name: string
   description: string
   version: string
+  shouldRun?: (context: AgentContext) => boolean | Promise<boolean>
   handler: (context: AgentContext) => Promise<AgentResult>
 }
 

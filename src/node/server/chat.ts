@@ -1,6 +1,7 @@
 import type { Chat } from '../database/schema/chat'
 import { z } from 'zod'
 import logger from '@/lib/logger'
+import { markInitialTitleGenerated } from '../database/chat-title-state'
 import {
   cleanupExpiredChats,
   createChat,
@@ -50,11 +51,18 @@ export const chatRouter = router({
       }),
     )
     .mutation(async ({ input }) => {
+      const trimmedTitle = input.title?.trim()
+      const title = trimmedTitle || '新对话'
       const chat = await createChat({
         provider: input.provider,
         model: input.model,
-        title: input.title?.trim() || '新对话',
+        title,
       })
+
+      if (trimmedTitle && title !== '新对话') {
+        markInitialTitleGenerated(chat.uid)
+      }
+
       return chat
     }),
 

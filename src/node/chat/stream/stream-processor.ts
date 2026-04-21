@@ -3,7 +3,7 @@
  * 协调所有流处理逻辑
  */
 
-import type { DraftContent } from '../../database/schema/chat'
+import type { DraftContent, DraftSegment } from '../../database/schema/chat'
 import type { StreamContext, StreamMode, StreamState } from './stream-state'
 import { logger } from '../../platform/logger'
 import { chatEventEmitter } from '../events/chat-event-emitter'
@@ -106,10 +106,33 @@ export class StreamProcessor {
     }
   }
 
+  appendExternalSegment(segment: DraftSegment): void {
+    this.state.draftSegments.push(segment)
+    this.syncExternalUpdate()
+  }
+
+  updateExternalSegment(segmentId: string, patch: Partial<DraftSegment>): void {
+    const target = this.state.draftSegments.find(segment => segment.id === segmentId)
+    if (!target) {
+      return
+    }
+
+    Object.assign(target, patch)
+    this.syncExternalUpdate()
+  }
+
   /**
    * 获取上下文
    */
   getContext(): StreamContext {
     return this.context
+  }
+
+  private syncExternalUpdate(): void {
+    this.context.throttledDbUpdate.addItem({
+      content: this.state.fullContent,
+      segments: [...this.state.draftSegments],
+    })
+    this.pushStreamingUpdate()
   }
 }

@@ -79,6 +79,13 @@ export class AgentOrchestrator {
       }
 
       try {
+        if (agent.shouldRun) {
+          const shouldRun = await agent.shouldRun(context)
+          if (!shouldRun) {
+            return null
+          }
+        }
+
         const result = await this.executor.execute({
           agent,
           context,
@@ -105,7 +112,8 @@ export class AgentOrchestrator {
     })
 
     // Wait for all executions to complete
-    const results = await Promise.all(promises)
+    const results = (await Promise.all(promises))
+      .filter((result): result is AgentResult => result !== null)
 
     return results
   }

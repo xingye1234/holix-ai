@@ -9,10 +9,12 @@ import type { SessionConfig, SessionModelConfig, SessionStatus } from './session
 import { AsyncBatcher } from '@tanstack/pacer'
 import { nanoid } from 'nanoid'
 import { getOrchestrator } from '../../agents/lifecycle'
+import { markInitialTitleGenerated } from '../../database/chat-title-state'
 import { updateChatTitle } from '../../database/chat-operations'
 import { logger } from '../../platform/logger'
 import { chatEventEmitter } from '../events/chat-event-emitter'
 import { messagePersister } from '../message/message-persister'
+import { createRuntimeAuditApprovalRequester, runWithRuntimeAudit } from '../runtime/runtime-audit'
 import { StreamProcessor } from '../stream/stream-processor'
 import { LangChainTelemetryHandler } from '../telemetry/langchain-telemetry-handler'
 import { toolCallTracker } from '../tools/tool-call-tracker'
@@ -129,34 +131,45 @@ export class ChatSession {
       })
 
       // 开始流式处理
-      const stream = await agent.stream(
-        { messages },
+      await runWithRuntimeAudit(
         {
-          signal: this.abortController.signal,
-          streamMode: ['messages', 'updates'],
-          context,
-          callbacks: [telemetryHandler],
+          assistantMessageUid,
+          chatUid,
+          requestId,
+          appendSegment: segment => streamProcessor?.appendExternalSegment(segment),
+          updateSegment: (segmentId, patch) => streamProcessor?.updateExternalSegment(segmentId, patch),
+          requestApproval: createRuntimeAuditApprovalRequester(),
+        },
+        async () => {
+          const stream = await agent.stream(
+            { messages },
+            {
+              signal: this.abortController.signal,
+              streamMode: ['messages', 'updates'],
+              context,
+              callbacks: [telemetryHandler],
+            },
+          )
+
+          // 处理流数据
+          for await (const [streamMode, chunk] of stream) {
+            if (this.status === 'aborted') {
+              logger.info(`[ChatSession] Session ${requestId} was aborted`)
+              throttledDbUpdate.cancel()
+              return
+            }
+
+            logger.info(
+              `[ChatSession] Stream chunk | mode=${streamMode} | keys=${chunk ? Object.keys(chunk).join(',') : 'null'}`,
+            )
+
+            streamProcessor?.processChunk(streamMode as any, chunk)
+          }
         },
       )
 
-      // 处理流数据
-      for await (const [streamMode, chunk] of stream) {
-        if (this.status === 'aborted') {
-          logger.info(`[ChatSession] Session ${requestId} was aborted`)
-          throttledDbUpdate.cancel()
-          return
-        }
-
-        // 添加详细的调试日志
-        logger.info(
-          `[ChatSession] Stream chunk | mode=${streamMode} | keys=${chunk ? Object.keys(chunk).join(',') : 'null'}`,
-        )
-
-        streamProcessor.processChunk(streamMode as any, chunk)
-      }
-
       // 获取最终状态
-      const { content, draftSegments } = streamProcessor.getFinalState()
+      const { content, draftSegments } = streamProcessor?.getFinalState() || { content: '', draftSegments: [] }
 
       logger.info(`[ChatSession] Stream completed for session ${requestId}`)
 
@@ -396,6 +409,7 @@ export class ChatSession {
 
       if (result.suggestion.type === 'title') {
         await updateChatTitle(this.config.chatUid, result.suggestion.content)
+        markInitialTitleGenerated(this.config.chatUid)
         chatEventEmitter.emitChatUpdated(this.config.chatUid, {
           title: result.suggestion.content,
         })

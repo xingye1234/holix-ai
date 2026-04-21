@@ -75,7 +75,7 @@ export function ToolApprovalModal() {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-destructive">
             <ShieldAlert className="w-5 h-5" />
-            高风险操作需要确认
+            操作需要确认
           </DialogTitle>
           <DialogDescription>
             AI 正在请求执行以下操作，请确认是否允许。
@@ -117,8 +117,7 @@ export function ToolApprovalModal() {
           <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-400">
             <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
             <span>
-              此操作来自标记为高风险的 Skill，可能对您的文件系统或系统配置产生不可逆的影响。
-              请仔细核对参数后再决定。
+              此操作可能访问或修改本地文件、目录或系统资源。请仔细核对目标和参数后再决定。
             </span>
           </div>
         </div>

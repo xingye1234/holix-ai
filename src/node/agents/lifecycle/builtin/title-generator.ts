@@ -1,4 +1,5 @@
 import type { LifecycleAgent, AgentContext } from '../types'
+import { hasGeneratedInitialTitle } from '../../../database/chat-title-state'
 
 /**
  * TitleGenerator Agent
@@ -17,6 +18,9 @@ export const titleGeneratorAgent: LifecycleAgent = {
   name: 'Title Generator',
   description: 'Analyzes conversation and suggests chat titles',
   version: '1.0.0',
+  shouldRun: (context) => {
+    return context.chat.title === '新对话' && !hasGeneratedInitialTitle(context.chatUid)
+  },
 
   handler: async (context: AgentContext) => {
     const { messages, chat } = context
