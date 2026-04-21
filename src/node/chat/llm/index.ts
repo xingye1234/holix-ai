@@ -10,6 +10,7 @@ export {
   createOllamaAdapter,
   createOpenAIAdapter,
 } from './adapters'
+export { createCustomProviderModel, createKimiProvider, isKimiProvider, KimiChatModel } from './providers'
 
 // 导出工厂函数（主要 API）
 export { createLlm } from './factory'

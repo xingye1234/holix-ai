@@ -13,6 +13,7 @@ const mockCreateAnthropicAdapter = vi.hoisted(() => vi.fn())
 const mockCreateGeminiAdapter = vi.hoisted(() => vi.fn())
 const mockCreateOllamaAdapter = vi.hoisted(() => vi.fn())
 const mockCreateOpenAIAdapter = vi.hoisted(() => vi.fn())
+const mockCreateCustomProviderModel = vi.hoisted(() => vi.fn(() => null))
 
 // ============================================
 // Module Mocks (must be before imports)
@@ -23,6 +24,10 @@ vi.mock('../adapters', () => ({
   createGeminiAdapter: mockCreateGeminiAdapter,
   createOllamaAdapter: mockCreateOllamaAdapter,
   createOpenAIAdapter: mockCreateOpenAIAdapter,
+}))
+
+vi.mock('../providers', () => ({
+  createCustomProviderModel: mockCreateCustomProviderModel,
 }))
 
 // Mock LangChain classes to avoid actual API calls
@@ -77,6 +82,7 @@ describe('createLmm', () => {
       _modelType: 'openai',
       modelName: model,
     }))
+    mockCreateCustomProviderModel.mockReturnValue(null)
   })
 
   describe('anthropic Provider', () => {
@@ -221,12 +227,17 @@ describe('createLmm', () => {
     })
 
     it('should create OpenAI adapter for moonshot models', () => {
+      mockCreateCustomProviderModel.mockReturnValue({
+        _modelType: 'kimi',
+        modelName: 'moonshot-v1-8k',
+      })
+
       const result = createLlm('moonshot-v1-8k')
-      expect(result._modelType).toBe('openai')
-      expect(mockCreateOpenAIAdapter).toHaveBeenCalledWith(
-        'moonshot-v1-8k',
-        undefined,
-      )
+      expect(result._modelType).toBe('kimi')
+      expect(mockCreateCustomProviderModel).toHaveBeenCalledWith('moonshot-v1-8k', {
+        provider: 'moonshot',
+      })
+      expect(mockCreateOpenAIAdapter).not.toHaveBeenCalled()
     })
 
     it('should create OpenAI adapter for qwen models', () => {
@@ -281,6 +292,9 @@ describe('createLmm', () => {
     it('should not throw error when provider is explicitly set', () => {
       const result = createLlm('unknown-model', { provider: 'openai' })
       expect(result._modelType).toBe('openai')
+      expect(mockCreateCustomProviderModel).toHaveBeenCalledWith('unknown-model', {
+        provider: 'openai',
+      })
       expect(mockCreateOpenAIAdapter).toHaveBeenCalledWith('unknown-model', {
         provider: 'openai',
       })

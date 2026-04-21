@@ -192,6 +192,8 @@ export function inferProvider(model: string): ProviderType | null {
     return 'zhipu'
   if (lower.startsWith('deepseek'))
     return 'deepseek'
+  if (lower.startsWith('kimi-'))
+    return 'moonshot'
   if (lower.startsWith('moonshot'))
     return 'moonshot'
   if (lower.startsWith('qwen'))

@@ -1,29 +1,55 @@
 import type { BaseMessage, BaseMessageChunk } from '@langchain/core/messages'
 import type { CallbackManagerForLLMRun } from '@langchain/core/callbacks/manager'
 import type { ChatResult } from '@langchain/core/outputs'
-import { AIMessage, ChatGenerationChunk } from '@langchain/core/messages'
-import { AIMessageChunk } from '@langchain/core/messages'
+import type { LlmConfig } from '../types'
+import { ChatGenerationChunk } from '@langchain/core/outputs'
+import { AIMessage, AIMessageChunk } from '@langchain/core/messages'
 import { ChatOpenAICompletions, convertCompletionsDeltaToBaseMessageChunk, convertCompletionsMessageToBaseMessage, convertMessagesToCompletionsMessageParams } from '@langchain/openai'
+import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions'
+import process from 'node:process'
 
-const ASSISTANT_PASSTHROUGH_FIELDS = [
+const KIMI_ASSISTANT_PASSTHROUGH_FIELDS = [
   'reasoning_content',
   'reasoning_details',
   'thinking',
 ] as const
 
-type AssistantPassthroughField = (typeof ASSISTANT_PASSTHROUGH_FIELDS)[number]
+type KimiAssistantPassthroughField = (typeof KIMI_ASSISTANT_PASSTHROUGH_FIELDS)[number]
+type KimiAssistantPassthroughFields = Partial<Record<KimiAssistantPassthroughField, unknown>>
+type KimiMessageParam = ChatCompletionMessageParam & Record<string, unknown>
 
-type AssistantPassthroughFields = Partial<Record<AssistantPassthroughField, unknown>>
+export function isKimiProvider(config?: Pick<LlmConfig, 'provider' | 'baseURL'>) {
+  const normalizedProvider = config?.provider?.toLowerCase()
+  if (normalizedProvider === 'moonshot') {
+    return true
+  }
 
-export function getAssistantPassthroughFields(value: unknown): AssistantPassthroughFields {
+  const host = extractHost(config?.baseURL)
+  return host !== null && /(?:^|\.)moonshot\.cn$/i.test(host)
+}
+
+export function createKimiProvider(model: string, config?: LlmConfig) {
+  return new KimiChatModel({
+    model,
+    apiKey: config?.apiKey || process.env.OPENAI_API_KEY,
+    temperature: config?.temperature ?? 0.7,
+    maxTokens: config?.maxTokens,
+    streaming: config?.streaming ?? true,
+    configuration: {
+      baseURL: config?.baseURL || process.env.OPENAI_BASE_URL || 'https://api.moonshot.cn/v1',
+    },
+  })
+}
+
+export function getKimiAssistantPassthroughFields(value: unknown): KimiAssistantPassthroughFields {
   if (!value || typeof value !== 'object') {
     return {}
   }
 
   const record = value as Record<string, unknown>
-  const fields: AssistantPassthroughFields = {}
+  const fields: KimiAssistantPassthroughFields = {}
 
-  for (const key of ASSISTANT_PASSTHROUGH_FIELDS) {
+  for (const key of KIMI_ASSISTANT_PASSTHROUGH_FIELDS) {
     const fieldValue = record[key]
     if (fieldValue !== undefined && fieldValue !== null && fieldValue !== '') {
       fields[key] = fieldValue
@@ -33,28 +59,28 @@ export function getAssistantPassthroughFields(value: unknown): AssistantPassthro
   return fields
 }
 
-export function hasAssistantPassthroughFields(message: BaseMessage): boolean {
+export function hasKimiAssistantPassthroughFields(message: BaseMessage) {
   if (!AIMessage.isInstance(message)) {
     return false
   }
 
-  return Object.keys(getAssistantPassthroughFields(message.additional_kwargs)).length > 0
+  return Object.keys(getKimiAssistantPassthroughFields(message.additional_kwargs)).length > 0
 }
 
-export function convertMessagesToCompatibleCompletionsMessageParams(params: {
+export function convertMessagesToKimiMessageParams(params: {
   messages: BaseMessage[]
   model?: string
 }) {
-  const converted: Array<Record<string, unknown>> = []
+  const converted: KimiMessageParam[] = []
 
   for (const message of params.messages) {
     const next = convertMessagesToCompletionsMessageParams({
       messages: [message],
       model: params.model,
-    }) as Array<Record<string, unknown>>
+    }).map(param => ({ ...param }) as KimiMessageParam)
 
     if (AIMessage.isInstance(message)) {
-      const passthrough = getAssistantPassthroughFields(message.additional_kwargs)
+      const passthrough = getKimiAssistantPassthroughFields(message.additional_kwargs)
       if (Object.keys(passthrough).length > 0 && next.length > 0) {
         Object.assign(next[0], passthrough)
       }
@@ -66,43 +92,8 @@ export function convertMessagesToCompatibleCompletionsMessageParams(params: {
   return converted
 }
 
-export function enhanceOpenAICompatibleErrorMessage(params: {
-  provider: string
-  model: string
-  baseURL?: string
-  error: string
-}): string {
-  const { provider, model, error } = params
-  const normalizedProvider = provider.toLowerCase()
-  const lowerError = error.toLowerCase()
-
-  if (
-    /reasoning_content|reasoning_details/.test(lowerError)
-    && /tool call|assistant tool call message|index \d+/.test(lowerError)
-  ) {
-    return `${error}\n\nProvider hint: this OpenAI-compatible model expects the assistant thinking payload to be echoed back together with the tool call during the same agent loop. Holix now preserves provider-specific reasoning fields, but retrying this request is still required if the in-flight state was created before this fix.`
-  }
-
-  if (/tool_call_id not found/.test(lowerError)) {
-    return `${error}\n\nProvider hint: the provider expects the original assistant tool_call message to be preserved verbatim before the matching tool result. This usually means the upstream assistant payload was partially dropped in the tool loop.`
-  }
-
-  if (
-    normalizedProvider === 'deepseek'
-    && model.toLowerCase() === 'deepseek-reasoner'
-    && /temperature|top_p|presence_penalty|frequency_penalty|logprobs|top_logprobs/.test(lowerError)
-  ) {
-    return `${error}\n\nProvider hint: DeepSeek documents that \`deepseek-reasoner\` rejects sampling and logprob-style parameters. Clear custom temperature or other sampling overrides for this chat and retry.`
-  }
-
-  return error
-}
-
-function mergeAssistantPassthrough<T extends BaseMessage | BaseMessageChunk>(
-  target: T,
-  source: unknown,
-): T {
-  const passthrough = getAssistantPassthroughFields(source)
+function mergeKimiAssistantPassthrough<T extends BaseMessage | BaseMessageChunk>(target: T, source: unknown): T {
+  const passthrough = getKimiAssistantPassthroughFields(source)
   if (Object.keys(passthrough).length === 0) {
     return target
   }
@@ -148,7 +139,20 @@ function buildUsageMetadata(usage: any) {
   }
 }
 
-export class CompatibleChatOpenAI extends ChatOpenAICompletions {
+function extractHost(baseURL?: string) {
+  if (!baseURL) {
+    return null
+  }
+
+  try {
+    return new URL(baseURL).hostname.toLowerCase()
+  }
+  catch {
+    return null
+  }
+}
+
+export class KimiChatModel extends ChatOpenAICompletions {
   protected override _convertCompletionsDeltaToBaseMessageChunk(
     delta: Record<string, any>,
     rawResponse: any,
@@ -161,7 +165,7 @@ export class CompatibleChatOpenAI extends ChatOpenAICompletions {
       defaultRole: defaultRole as any,
     })
 
-    return mergeAssistantPassthrough(chunk, delta)
+    return mergeKimiAssistantPassthrough(chunk, delta)
   }
 
   protected override _convertCompletionsMessageToBaseMessage(
@@ -174,7 +178,7 @@ export class CompatibleChatOpenAI extends ChatOpenAICompletions {
       includeRawResponse: (this as any).__includeRawResponse,
     })
 
-    return mergeAssistantPassthrough(baseMessage, message)
+    return mergeKimiAssistantPassthrough(baseMessage, message)
   }
 
   override async _generate(
@@ -182,14 +186,14 @@ export class CompatibleChatOpenAI extends ChatOpenAICompletions {
     options: any,
     runManager?: CallbackManagerForLLMRun,
   ): Promise<ChatResult> {
-    if (!messages.some(hasAssistantPassthroughFields)) {
+    if (!messages.some(hasKimiAssistantPassthroughFields)) {
       return await super._generate(messages, options, runManager)
     }
 
     const data = await (this as any).completionWithRetry(
       {
         ...(this as any).invocationParams(options),
-        messages: convertMessagesToCompatibleCompletionsMessageParams({
+        messages: convertMessagesToKimiMessageParams({
           messages,
           model: (this as any).model,
         }),
@@ -232,19 +236,19 @@ export class CompatibleChatOpenAI extends ChatOpenAICompletions {
     }
   }
 
-  override async *_streamResponseChunks(
+  override async* _streamResponseChunks(
     messages: BaseMessage[],
     options: any,
     runManager?: CallbackManagerForLLMRun,
   ): AsyncGenerator<ChatGenerationChunk> {
-    if (!messages.some(hasAssistantPassthroughFields)) {
+    if (!messages.some(hasKimiAssistantPassthroughFields)) {
       yield* super._streamResponseChunks(messages, options, runManager)
       return
     }
 
     const params = {
       ...(this as any).invocationParams(options, { streaming: true }),
-      messages: convertMessagesToCompatibleCompletionsMessageParams({
+      messages: convertMessagesToKimiMessageParams({
         messages,
         model: (this as any).model,
       }),

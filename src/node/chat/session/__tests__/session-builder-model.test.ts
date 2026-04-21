@@ -1,32 +1,28 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockInitChatModel = vi.hoisted(() => vi.fn(async () => ({ kind: 'universal-model' })))
-const mockCompatibleChatOpenAI = vi.hoisted(() => vi.fn())
+const mockCreateCustomProviderModel = vi.hoisted(() => vi.fn(() => null))
 
 vi.mock('langchain/chat_models/universal', () => ({
   initChatModel: mockInitChatModel,
 }))
 
-vi.mock('../../llm/openai-compatible', () => ({
-  CompatibleChatOpenAI: class CompatibleChatOpenAI {
-    constructor(options: any) {
-      mockCompatibleChatOpenAI(options)
-      return {
-        kind: 'compatible-openai-model',
-        options,
-      }
-    }
-  },
+vi.mock('../../llm/providers', () => ({
+  createCustomProviderModel: mockCreateCustomProviderModel,
 }))
 
-import { buildSessionModel, shouldOmitTemperature, shouldUseCompatibleOpenAIModel } from '../session-builder-model'
+import { buildSessionModel, normalizeModelProvider } from '../session-builder-model'
 
 describe('session-builder-model', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockCreateCustomProviderModel.mockReturnValue(null)
   })
 
-  it('uses the provider-aware OpenAI compatible adapter for Moonshot', async () => {
+  it('uses a custom provider model when one is available', async () => {
+    const customModel = { kind: 'kimi-model' }
+    mockCreateCustomProviderModel.mockReturnValue(customModel)
+
     const model = await buildSessionModel({
       provider: 'moonshot',
       model: 'kimi-k2.5',
@@ -36,45 +32,44 @@ describe('session-builder-model', () => {
       maxTokens: 16000,
     })
 
-    expect(model).toEqual(expect.objectContaining({ kind: 'compatible-openai-model' }))
-    expect(mockCompatibleChatOpenAI).toHaveBeenCalledWith(expect.objectContaining({
-      model: 'kimi-k2.5',
+    expect(model).toBe(customModel)
+    expect(mockCreateCustomProviderModel).toHaveBeenCalledWith('kimi-k2.5', {
+      provider: 'moonshot',
       apiKey: 'sk-moonshot',
-      configuration: { baseURL: 'https://api.moonshot.cn/v1' },
-    }))
+      baseURL: 'https://api.moonshot.cn/v1',
+      temperature: 1,
+      maxTokens: 16000,
+      streaming: true,
+    })
     expect(mockInitChatModel).not.toHaveBeenCalled()
   })
 
-  it('uses the compatible adapter for custom OpenAI-format providers with non-OpenAI base URLs', () => {
-    expect(shouldUseCompatibleOpenAIModel({
-      provider: 'openai',
-      model: 'MiniMax-M2.7',
-      apiKey: 'sk-minimax',
-      baseURL: 'https://api.minimaxi.com/v1',
-      temperature: undefined,
-      maxTokens: undefined,
-    })).toBe(true)
-  })
-
-  it('keeps the universal OpenAI model for official OpenAI endpoints', () => {
-    expect(shouldUseCompatibleOpenAIModel({
+  it('falls back to initChatModel for standard openai providers', async () => {
+    await buildSessionModel({
       provider: 'openai',
       model: 'gpt-4.1',
       apiKey: 'sk-openai',
       baseURL: 'https://api.openai.com/v1',
-      temperature: undefined,
-      maxTokens: undefined,
-    })).toBe(false)
+      temperature: 0.2,
+      maxTokens: 4096,
+    })
+
+    expect(mockInitChatModel).toHaveBeenCalledWith('openai:gpt-4.1', {
+      apiKey: 'sk-openai',
+      temperature: 0.2,
+      maxTokens: 4096,
+      configuration: { baseURL: 'https://api.openai.com/v1' },
+      streaming: true,
+    })
   })
 
-  it('omits unsupported temperature overrides for deepseek-reasoner', () => {
-    expect(shouldOmitTemperature({
-      provider: 'deepseek',
-      model: 'deepseek-reasoner',
-      apiKey: 'sk-deepseek',
-      baseURL: 'https://api.deepseek.com/v1',
-      temperature: 0.3,
-      maxTokens: 4096,
-    })).toBe(true)
+  it('normalizes gemini provider names', () => {
+    expect(normalizeModelProvider('gemini')).toBe('google-genai')
+    expect(normalizeModelProvider('google-genai')).toBe('google-genai')
+  })
+
+  it('keeps anthropic and ollama provider names intact', () => {
+    expect(normalizeModelProvider('anthropic')).toBe('anthropic')
+    expect(normalizeModelProvider('ollama')).toBe('ollama')
   })
 })

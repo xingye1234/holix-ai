@@ -1,7 +1,7 @@
 import type { createDeepAgent } from 'deepagents'
 import type { SessionModelConfig } from './session-state'
-import { CompatibleChatOpenAI } from '../llm/openai-compatible'
 import { initChatModel } from 'langchain/chat_models/universal'
+import { createCustomProviderModel } from '../llm/providers'
 import { buildOllamaHeaders, normalizeOllamaBaseUrl } from '../../platform/ollama'
 
 type DeepAgentParams = NonNullable<Parameters<typeof createDeepAgent>[0]>
@@ -11,6 +11,18 @@ export async function buildSessionModel(modelConfig: SessionModelConfig) {
   const { provider, model, apiKey, baseURL, temperature, maxTokens } = modelConfig
   const modelProvider = normalizeModelProvider(provider)
   const modelIdentifier = `${modelProvider}:${model}`
+  const customProviderModel = createCustomProviderModel(model, {
+    provider,
+    apiKey,
+    baseURL,
+    temperature,
+    maxTokens,
+    streaming: true,
+  })
+
+  if (customProviderModel) {
+    return customProviderModel
+  }
 
   if (modelProvider === 'anthropic') {
     return await initChatModel(modelIdentifier, {
@@ -44,53 +56,13 @@ export async function buildSessionModel(modelConfig: SessionModelConfig) {
     })
   }
 
-  if (shouldUseCompatibleOpenAIModel(modelConfig)) {
-    return new CompatibleChatOpenAI({
-      model,
-      apiKey,
-      temperature: shouldOmitTemperature(modelConfig) ? undefined : temperature,
-      maxTokens,
-      configuration: baseURL ? { baseURL } : undefined,
-      streaming: true,
-    })
-  }
-
   return await initChatModel(modelIdentifier, {
     apiKey,
-    temperature: shouldOmitTemperature(modelConfig) ? undefined : temperature,
+    temperature,
     maxTokens,
     configuration: baseURL ? { baseURL } : undefined,
     streaming: true,
   })
-}
-
-export function shouldUseCompatibleOpenAIModel(modelConfig: SessionModelConfig) {
-  const normalizedProvider = modelConfig.provider.toLowerCase()
-
-  if (normalizedProvider !== 'openai') {
-    return true
-  }
-
-  const host = extractHost(modelConfig.baseURL)
-  return host !== null && !/(^|\.)openai\.com$/i.test(host)
-}
-
-export function shouldOmitTemperature(modelConfig: SessionModelConfig) {
-  return modelConfig.provider.toLowerCase() === 'deepseek'
-    && modelConfig.model.toLowerCase() === 'deepseek-reasoner'
-}
-
-function extractHost(baseURL?: string) {
-  if (!baseURL) {
-    return null
-  }
-
-  try {
-    return new URL(baseURL).hostname.toLowerCase()
-  }
-  catch {
-    return null
-  }
 }
 
 export function normalizeModelProvider(provider: string) {

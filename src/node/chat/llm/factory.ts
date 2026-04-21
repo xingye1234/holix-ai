@@ -6,6 +6,7 @@ import {
   createOllamaAdapter,
   createOpenAIAdapter,
 } from './adapters'
+import { createCustomProviderModel } from './providers'
 
 /**
  * 创建 LLM 实例的工厂函数
@@ -31,6 +32,15 @@ export function createLlm(model: string, config?: LlmConfig) {
   // Ollama (本地)
   if (provider === 'ollama') {
     return createOllamaAdapter(model, config)
+  }
+
+  const customProviderModel = createCustomProviderModel(model, {
+    ...config,
+    provider,
+  })
+
+  if (customProviderModel) {
+    return customProviderModel
   }
 
   // OpenAI 兼容接口（智谱AI、DeepSeek、Moonshot、Qwen 等）

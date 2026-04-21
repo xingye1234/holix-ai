@@ -4,7 +4,7 @@ import { ChatOpenAI } from '@langchain/openai'
 
 /**
  * 创建 OpenAI LLM 适配器
- * 也支持 OpenAI 兼容的 API（智谱AI、DeepSeek、Moonshot、Qwen 等）
+ * 默认用于官方 OpenAI 以及标准兼容接口
  */
 export function createOpenAIAdapter(model: string, config?: LlmConfig) {
   return new ChatOpenAI({
